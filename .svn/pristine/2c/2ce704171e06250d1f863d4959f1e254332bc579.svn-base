@@ -1,0 +1,12 @@
+exception 'ErrorException' with message 'Undefined variable: idx' in /usr/local/nginx/html/admin/model/model.member.ident.php:44
+Stack trace:
+#0 /usr/local/nginx/html/admin/model/model.member.ident.php(44): Slim\Slim::handleErrors(8, 'Undefined varia...', '/usr/local/ngin...', 44, Array)
+#1 /usr/local/nginx/html/admin/member.php(234): ModelMemberIdent->deleteById(Array)
+#2 [internal function]: {closure}()
+#3 /usr/local/nginx/html/admin/lib/Slim/Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 /usr/local/nginx/html/admin/lib/Slim/Slim.php(1326): Slim\Route->dispatch()
+#5 /usr/local/nginx/html/admin/lib/Slim/Middleware/Flash.php(85): Slim\Slim->call()
+#6 /usr/local/nginx/html/admin/lib/Slim/Middleware/MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 /usr/local/nginx/html/admin/lib/Slim/Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 /usr/local/nginx/html/admin/index.php(463): Slim\Slim->run()
+#9 {main}

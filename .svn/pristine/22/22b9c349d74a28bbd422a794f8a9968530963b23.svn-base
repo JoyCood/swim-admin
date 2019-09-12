@@ -1,0 +1,35 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelFinanceMain {
+    public function collection(){
+       return SwimAdmin::db('finance'); 
+    }
+
+    public function insert($data){
+        return $this->collection()->insert($data);
+    }
+
+    public function update($filters, $data, $options=array()){
+       return $this->collection()->update($filters, $data, $options); 
+    }
+
+    public function findOne($filters, $projection=array()){
+        return $this->collection()->findOne($filters, $projection);
+    }
+
+    public function pagination($url='', $pnValue=null, $sort='create_time'){
+        $params = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn = Helper::popValue($params, 'pn', 1);
+        $sort = Helper::popValue($params, 'sort', 'create_time');
+        $order = Helper::popValue($params, 'order', -1);
+        $filters = array();
+        $data = SwimAdmin::pagination(
+            $url, 
+            $this->collection(),
+            is_null($pnValue)? $pn : $pnValue,
+            $filters,
+            array($sort=> intval($order)>0 ? 1: -1)
+        );
+        return $data;
+    }
+}

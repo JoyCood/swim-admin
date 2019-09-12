@@ -1,0 +1,258 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelcourseComment
+{
+    private static $instance;
+    private $errMsg;
+     
+    public static function factory()
+    {
+        if(!is_object(self::$instance))
+        {
+            self::$instance = new Model_course_Comment();	
+        }
+
+        return self::$instance;	
+    }
+
+    /**
+     *
+     * @author joy.cood
+     *
+     * @return object
+     */
+    public function collection() {
+        return SwimAdmin::db('course_comment');
+    }
+
+    /**
+     * 发评论
+     *
+     * @author joy.cood
+     *
+     * @param $userId  string  评论者id
+     * @param $courseId string  动态id
+     * @param $content mix     评论内容
+     * @param $secret  string  密钥
+     *
+     * @return array
+     */
+    public function post($userId, $courseId, $content, $score, $secret, $time = null)
+    {
+     	$time = $time? $time: time();
+        $doc  = array(
+                    'user_id'     => $userId,
+                    'course_id'   => $courseId, 
+                    'content'     => $content,
+                    'score'       => $score,
+                    'statu'       => 0,
+                    'create_time' => $time
+                );
+
+        $this->collection()->insert($doc);
+
+        if(!isset($doc['_id']))
+        {
+            return FALSE;
+        }
+        $doc['id'] = (string)$doc['_id'];
+        unset($doc['_id']);
+        
+        return $doc;
+    }
+     
+    /**
+     * 删除评论
+     *
+     * @author joy.cood
+     *
+     * @param $userId     string
+     * @param $commentId  string
+     * @param $secret     string
+     *
+     * @return bool
+     */
+    public function delete($userId, $commentId, $secret)
+    {
+        $secret2 = Model_Member_Main::factory()->getSecret($userId);
+
+        if($secret != $secret2 OR (!$secret2))
+        {
+            $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+             
+            return FALSE; 
+        }
+
+     	try
+     	{
+     	    $commentId = new MongoId($commentId);
+
+            $macher = array(
+             	'_id'     => $commentId,
+             	'user_id' => $userId
+            );
+             
+            $options = array('justOne' => TRUE);
+
+            Loader_Mongo::dbmaster()->course_comment()->remove($macher, $options);
+
+            return TRUE;
+        }
+        catch(MongoException $e)
+        {
+            $this->setError(Config_Statu_Code::$code['error_delete_failure']);
+             
+            return FALSE;	
+        }
+    }
+
+    /**
+     * 删除某条动态下的所有评论
+     *
+     * @author joy.cood
+     *
+     * @param  $courseId  string
+     *
+     * @return bool
+    */
+    public function remove($courseId)
+    {
+        $macher = array('course_id' => $courseId);
+         
+        Loader_Mongo::dbmaster()->course_comment()->remove($macher);
+
+        return TRUE;	
+    }
+
+    /**
+     * 获取动态评论列表
+     *
+     * @author joy.cood
+     *
+     * @param $courseId  string  动态id
+     * @param $offset   int     分页时间戳
+     * @param $limit    int     每页显示数 
+     *
+     * @return array
+     */
+    public function getComments($courseId, $offset=0, $limit=10)
+    {
+     	$offset = (int)$offset;
+
+        $limit = Helper::uint($limit);
+        $limit = $limit ? min(20, $limit) : 20;
+
+     	$offset = $offset ? array('create_time' => array('$lt' => $offset)) : array();
+
+        $macher = array('course_id' => $courseId);
+
+        $macher = array_merge($macher, $offset);
+         
+        $sort = array('create_time' => -1);
+
+        $cursor = $this->collection()->find($macher)->sort($sort); //->limit($limit);
+         
+        $comments = array();
+
+        foreach($cursor as $item)
+        {
+         	$item['id'] = (string)$item['_id'];
+         	unset($item['_id']);
+
+            $userId = $item['user_id'];
+            $member = SwimAdmin::model('member.main')->findOneById($userId);
+             
+            if(!$member)
+            {
+                continue;
+            }
+
+            $field  = array('id', 'nick', 'sex', 'avatar_small');
+            $member = Helper::allowed($member, $field);      
+             
+            $item['user'] = $member;
+            $comments[]   = $item;
+        }
+
+        return $comments;
+    }
+
+    public function getCommentCount($courseId) {
+        $macher = array('course_id' => $courseId);
+        return $this->collection()->find($macher)->count();
+    }
+
+    public function detail($id) {
+        return $this->collection()->findOne(array(
+            '_id' => new MongoId($id)
+        ));
+    }
+
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+
+    public function getMsg($commentId)
+    {
+        try
+        {
+            $id = new MongoId($commentId);
+
+            $macher = array(
+                '_id' => $id
+            );
+
+            $comment = $this->collection()->findOne($macher);
+
+            if($comment)
+            {
+                $member = SwimAdmin::model('member.main')->findOneById($comment['user_id']);
+                
+                if(!$member)
+                {
+                    return FALSE;
+                }
+
+                $course = SwimAdmin::model('course.main')->detail($comment['course_id']);
+				if(!$course)
+				{
+				    return FALSE;
+				}
+
+                $allowed = array('id', 'nick', 'sex', 'avatar_small', 'avatar_mid', 'avatar_big', 'sns');
+
+                $comment['user']  = Helper::allowed($member, $allowed);
+                $comment['id']    = (string)$comment['_id'];
+                $comment['course'] = $course;
+                
+                unset($comment['_id']);
+
+                return $comment; 
+            }
+        }
+        catch(MongoException $e)
+        {
+
+        }
+
+        return FALSE;
+    }
+
+    public function setError($msg)
+    {
+        $this->errMsg = $msg;   
+    }
+
+    public function getError()
+    {
+        return $this->errMsg; 
+    }
+ }

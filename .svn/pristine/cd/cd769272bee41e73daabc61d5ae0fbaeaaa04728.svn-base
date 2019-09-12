@@ -1,0 +1,469 @@
+<?php
+require('common.php');
+\Slim\Slim::registerAutoloader();
+
+ini_set('display_errors', 'on');
+error_reporting(E_ALL);
+
+if(DEVELOPMENT)
+{
+    $logWriter = new \Slim\LogWriter(fopen('logs/log', 'a'));
+    $setting = array('log.enable' => FALSE, 'log.level'=>\Slim\Log::DEBUG, 'log.writer' => $logWriter);
+}
+else
+{
+    $setting = array('mode' => 'production', 'log.enable'=>FALSE, 'debug'=>FALSE);
+}
+
+$app = new \Slim\Slim($setting);
+
+SwimAdmin::init($app);
+
+define('S_USER',  'sa_username');
+define('S_GROUP', 'sa_group');
+define('S_TYPE',  'sa_type');
+define('S_ID',    'sa_id');
+define('S_TEACHER_ID', 'sa_teacher_id');
+define('S_NATATORIUM_ID', 'sa_natatorium_id');
+
+session_start();
+
+$app->hook('slim.before.router', function () use ($app) {
+	
+	// 判断是否需要登录
+	$path =	$app->request()->getPathInfo();
+	
+	if(!isset($_SESSION[S_USER]) || !$_SESSION[S_USER]) {
+		if(!in_array($path, array(
+			'/test.html',
+			//'upload.html',
+			'/login.html',
+			'/logout.html'
+		))) {
+			$app->redirect(BASE_URL. '/login.html?from='. urlencode($_SERVER['REQUEST_URI']));
+		}
+	}
+});
+
+// 首页
+$app->get('/index.html', function() use($app) {
+	$app->redirect(BASE_URL. '/adv/index.html');
+});
+
+// 登录
+$app->get('/login.html', function() use($app) {
+	$app->render('login.html', array(
+		'from' => $app->request->get('from')
+	));
+});
+// 验证登录
+$app->post('/login.html', function() use($app) {
+	$admin 		= SwimAdmin::db('admin');
+	$rs 		= false;
+	$username 	= $app->request->post('username', null);
+	$password	= $app->request->post('password', '');
+	$data 		= $admin->findOne(array('username' => $username));
+	$user 		= SwimAdmin::model('user.main');
+
+	// 管理员首次登录
+	if(!$data) {
+		// 管理员首次登录默认帐号密码为 admin / admin，并生成管理员记录
+		if($username == 'admin' && $password == 'admin') {
+			$data = $user->addUser(array(
+				'username' 	=> 'admin',
+				'password' 	=> $user->password('admin'),
+				'name'		=> '管理员',
+				'group' 	=> -1
+			));
+			$rs = true;
+		} else {
+			$rs = false;
+		}
+	} else {
+		// 密码验证
+		$password = $user->password($password);
+		if($password == $data['password']) {
+			$data['id'] = (string)$data['_id'];
+			unset($data['_id']);
+
+			$rs = true;
+		} else {
+			$rs = false;
+		}
+	}
+	if($rs) {
+		$_SESSION[S_USER]  = $data['username'];
+		$_SESSION[S_GROUP] = $data['group'];
+        $_SESSION[S_TYPE]  = $data['type'];
+		$_SESSION[S_ID]    = $data['id'];
+		$_SESSION[S_TEACHER_ID] = $data['teacher_id'];
+		$_SESSION[S_NATATORIUM_ID] = $data['natatorium_id'];
+
+		$admin->update(
+			array('_id' => new MongoId($data['id'])), 
+			array('$set' => array(
+				'last_login' 	=> time(),
+				'last_ip' 		=> SwimAdmin::getRemoteIP()
+			))
+		);
+	}
+	$app->view()->renderJSON(array(
+		'result' => $rs
+	));
+});
+
+
+// 注销
+$app->get('/logout.html', function() use($app) {
+	session_destroy();
+	$app->redirect(BASE_URL. '/login.html');
+});
+
+$app->get('/blank.html', function() use($app) {
+	
+});
+
+// 上传
+$app->post('/upload.html', function() use($app) {
+	try{
+		require_once(DOC_ROOT. '/helper/upload.php');
+
+		$name 	= $app->request->post('name', '');
+		$type 	= $app->request->post('type', '');
+		$type 	= empty($type)? 'default': $type;
+
+		if(isset($_FILES['upload'])) {
+			$len = sizeof($_FILES['upload']['name']);
+			$html = array();
+			for($i=0; $i<$len; $i++) {
+				$pathinfo 	= pathinfo($_FILES['upload']['name'][$i]);
+				$ext 		= $pathinfo['extension']? '.'. $pathinfo['extension']: '';
+				$base64name = str_replace('/', '', base64_encode($_FILES['upload']['name'][$i]. '-'. rand(10001, 99999)));
+                $base64name = str_replace('+', '', $base64name);
+                $base64name = str_replace('=', '', $base64name);
+				$src 		= date('Ymd'). '/'. $base64name. '-'. date('His'). $ext;
+				$file 		= $_FILES['upload']['tmp_name'][$i];
+				$fileType 	= strtolower($_FILES['upload']['type'][$i]);
+
+				if($type == 'file') {
+					$fileType = 'file';
+				} else if(strpos($fileType, 'video') === 0) {
+					$fileType = 'video';
+				} else {
+					$fileType = 'image';
+				}
+				$src = Upload::put($file, $fileType. '/' .$src, $fileType, $type);
+				if($src) {
+					if($fileType == 'image') {
+						$info   = getimagesize($file);
+						$size   = join(',', array(intval($info[0]), intval($info[1])));
+						$html[] = join('', array(
+							'<div class="thumb">',
+								'<img src="image/nothing.gif" style="background-image:url(\''. $src. '\');" />',
+								'<a>&times;</a>',
+								'<input type="hidden" name="'. $name. '" value="'. $src. '" />',
+								'<input type="hidden" name="size_of_'. $name. '" value="'. $size. '" />',
+							'</div>'
+						));
+					} else if($fileType == 'file') {
+						$html[] = join('', array(
+							'<div class="thumb">',
+								'<i class="fa fa-file"></i>',
+								'<a>&times;</a>',
+								'<input type="hidden" name="'. $name. '" value="'. $src. '" />',
+							'</div>'
+						));
+					} else {
+						$html[] = join('', array(
+							'<div class="thumb">',
+								'<video controls="controls" src="'. $src. '"></video>',
+								'<a>&times;</a>',
+								'<input type="hidden" name="'. $name. '" value="'. $src. '" />',
+							'</div>'
+						));
+					}
+				}
+			}
+			if($html) {
+				echo '<div id="upload">';
+				echo join('', $html);
+				echo '</div>';
+			}
+		}
+	} catch(Exception $e) {
+		$app->log->error($e);
+	}
+});
+
+$app->get('/upload-package.html', function() {
+	require_once(LIB_DIR. 'youpaiyun/upyun.class.php');
+	$host         = Config::$storage['file']['host'];
+    $bucketName   = Config::$storage['file']['bucket'];
+	$operatorName = Config::$storage['file']['user'];
+	$operatorPwd  = Config::$storage['file']['pass'];
+
+	$filePath = DOC_ROOT. '/com.youngteam.funswimming_1.0.1_2.apk';
+	$upyun 	  = new UpYun($bucketName, $operatorName, $operatorPwd);
+	$fh 	  = fopen($filePath, 'rb');
+	$start    = time();
+	if($fh) {
+		try {
+			set_time_limit(60 * 10);
+			phpinfo();
+			$result   = $upyun->writeFile('/file/7swim.apk', $fh, true, array()); 
+			if($result) {
+				echo '<a href="http://funswim-media.b0.upaiyun.com/file/7swim.apk">http://funswim-media.b0.upaiyun.com/file/7swim.apk</a>';
+				echo '<p>success</p>';
+			} else {
+				echo '<p>failure</p>';
+			}
+		} catch(Exception $e) {
+			echo '<p>error</p>';
+		}
+		fclose($fh);
+	} else {
+		echo 'load file failure';
+	}
+	$end = time();
+	echo "<p>". ($end - $start). "s</p>";
+});
+
+// 测试
+$app->get('/test.html', function() use($app) {
+	$app->render('test.html');
+});
+$app->post('/test.html', function() use($app) {
+	
+});
+
+// 推送
+$app->get('/push.html', function() use($app) {
+	$id   = trim($app->request->get('id'));
+	$mod  = trim($app->request->get('mod'));
+	$text = trim($app->request->get('text'));
+	$app->render('push.html', array(
+		'id'   => $id,
+		'mod'  => $mod,
+		'text' => $text,
+		'date' => array(
+			'Y' => date('Y'),
+			'm' => date('m'),
+			'd' => date('d'),
+			'h' => date('H'),
+			'i' => ceil(date('i') / 10),
+			's' => date('s')
+		)
+	));
+});
+$app->post('/push.html', function() use($app) {
+	SwimAdmin::checkPermission('main-contents', PERM_PUSH);
+	$id    = trim($app->request->post('id'));
+	$mod   = trim($app->request->post('mod'));
+	$now   = intval($app->request->post('now'));
+	$title = trim($app->request->post('title'));
+	$text  = trim($app->request->post('text'));
+	// $title = 'title';
+	// $text  = 'text'; 
+	if($now) {
+		$time = time() + 30;
+	} else {
+		$time = join(' ', array(
+			join('-', array(
+				intval($app->request->post('year')),
+				intval($app->request->post('month')),
+				intval($app->request->post('date'))
+			)),
+			join(':', array(
+				intval($app->request->post('hour')),
+				intval($app->request->post('minute')),
+				'00'
+			))
+		));
+		$time = strtotime($time);
+		if($time === false) {
+			SwimAdmin::error('输入了无效的推送时间。');
+		}
+	}
+
+	$PushModel = SwimAdmin::model('push.main');
+	$method = $mod. 'Push';
+	if(method_exists($PushModel, $method)) {
+		$PushModel->$method($id, intval($time), $title, $text);
+	}
+	$app->view()->renderJSON(array(
+		'result' => true,
+		'id'     => $id,
+		'time'   => $time,
+		'mod'    => $mod
+	));
+});
+
+// 首页管理
+$app->group('/home', function () use ($app) {
+	require 'home.php';
+});
+
+// 教与学
+$app->group('/school', function () use ($app) {
+	require 'school.php';
+});
+
+// 牛装备
+$app->group('/goods', function () use ($app) {
+	require 'goods.php';
+});
+
+// 鲜资讯
+$app->group('/news', function () use ($app) {
+	require 'news.php';
+});
+
+// 附近
+$app->group('/lbs', function () use ($app) {
+	require 'lbs.php';
+});
+
+// 广告
+$app->group('/adv', function () use ($app) {
+	require 'adv.php';
+});
+
+// 泳圈
+$app->group('/tweet', function () use ($app) {
+	require 'tweet.php';
+});
+
+$app->group('/order', function() use($app){
+    require 'order.php';
+});
+
+// 举报
+$app->group('/report', function () use ($app) {
+	require 'report.php';
+});
+
+// member
+$app->group('/member', function () use ($app) {
+	require 'member.php';
+});
+
+// member
+$app->group('/user', function () use ($app) {
+	require 'user.php';
+});
+
+// upgrade
+$app->group('/upgrade', function () use ($app) {
+	require 'upgrade.php';
+});
+
+// feedback
+$app->group('/feedback', function () use ($app) {
+	require 'feedback.php';
+});
+
+// course
+$app->group('/course', function () use ($app) {
+	require 'course.php';
+});
+
+$app->get('/test.html', function() use($app) {
+	$app->render('test.html');
+});
+
+$app->get('/update-photos.html', function() use($app) {
+	header('Content-type: text/html;charset=utf-8');  
+	$collection = $app->request->get('collection');
+	if(!in_array($collection, array('technical', 'goods', 'news', 'natatorium'))) {
+		exit('collection does not exists.');
+	}
+
+	$db     = SwimAdmin::db($collection);
+	$skip   = intval($app->request->get('skip'));
+	$limit  = 1;
+	$cursor = $db->find();
+	$result = $cursor->skip($skip)->limit($limit);
+	$total  = $cursor->count();
+	$skip   = $skip + $limit;
+	$url    = BASE_URL. '/update-photos.html?collection='. $collection. '&skip='. $skip;
+	echo '<style>font-size: 12px;</style>';
+	echo '<h3>'. $collection. '</h3>';
+	echo '<p>'. $skip. ' / '. $total. '</p>';
+	if($result->count(true)) {
+		foreach($result as $id => $row) {
+			$doc    = array();
+			$photos = array();
+			foreach($row['photos'] as $photo) {
+				if(is_array($photo)) {
+					$photos[] = $photo;
+				} else {
+					$info = getimagesize($photo);
+					$photos[] = array(
+						'url' => $photo,
+						'w'   => intval($info[0]),
+						'h'   => intval($info[1])
+					);
+				}
+			}
+			$doc['photos'] = $photos;
+
+			if($collection != 'natatorium') {
+				if($collection == 'technical') {
+					$key = 'steps';
+				} else {
+					$key = 'contents';
+				}
+				$steps  = array();
+				foreach($row[$key] as $step) {
+					$media    = array();
+					foreach($step['media'] as $item) {
+						if($item['type'] == 'photo') {
+							$info = getimagesize($item['url']);
+							$item['w'] = intval($info[0]);
+							$item['h'] = intval($info[1]);
+						}
+						$media[] = $item;
+					}
+					$step['media'] = $media;
+					$steps[]       = $step;
+				}
+				$doc[$key]  = $steps; 
+			}
+
+			$db->update(array('_id' => new MongoId($id)), array('$set' => $doc));
+			echo $id;
+			echo '<pre>';
+			print_r($doc);
+			echo '</pre>';
+		}
+		echo '<p><a href="'. $url. '">Next</p>';
+		echo '<script>setTimeout(function() { location.href="'. $url. '"; }, 1000);</script>';
+	} else {
+		echo '<strong>Done!</strong>';
+	}
+	exit;
+});
+
+$app->post('/upyun-sign', function() use($app) {
+	$opts               = $app->request->post();
+	$optString          = '';
+	$apikey             = Config::$storage['APIKey'];
+
+	$keys = array();
+	foreach($opts as $k => $v) {
+		$keys[] = $k;
+	}
+	asort($keys);
+
+	foreach($keys as $k) {
+		if($k != 'signature') {
+			$optString .= $k. $opts[$k];
+		}
+	}
+	$signature          = md5($optString.$apikey);
+	$opts['signature']  = $signature;
+
+	$app->view->renderJSON($opts);
+});
+$app->run();
+

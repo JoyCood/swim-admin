@@ -1,0 +1,74 @@
+{% set _Title = '反馈管理' %}
+{% extends '_base.html' %}
+
+{% block css %}
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>系统</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>{{_Title}}</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="feedback-list">
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th width="30"><input type="checkbox" rel="#feedback-trash-btn" /></th>
+						<th width="90">用户</th>
+						<th width="120">设备ID</th>
+						<th width="90">平台</th>
+						<th width="70">版本</th>
+						<th>反馈内容</th>
+						<th>反馈图片</th>
+                        <th width="120">联系方式</th>
+						<th width="40">状态</th>
+						<th width="90">时间</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in data.items %}{% set uid = item.user_id %}
+					<tr data-id="{{item._id}}">
+						<td><input type="checkbox" name="feedback" value="{{item._id}}" /></td>
+						<td>{{uid and data.member[uid]? data.member[uid].nick: ''}}</td>
+						<td>{{item.device_id}}</td>
+						<td>{{item.platform}}</td>
+						<td>{{item.version}}</td>
+						<td>{{item.content}}</td>
+						<td>
+						{% for img in item.feedbackImg %}
+							<a href="{{img.min}}" target="_black"><img src="{{img.min}}" height="100" width="100"/></a>
+						{% endfor %}
+						</td>
+                        <td>{{(item.contact? item.contact: '-')}}</td>
+						<td>{{item.statu|fb_status}}</td>
+						<td>{{item.create_at? item.create_at|date('Y-m-d H:i:s'): '-'}}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% include '_pagination.html' with data %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(function() {
+
+});
+</script>
+{% endblock %}

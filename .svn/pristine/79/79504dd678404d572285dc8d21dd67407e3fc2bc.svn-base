@@ -1,0 +1,20 @@
+
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#moov-order-trash-btn" /></th>
+			<th width="80">订单号</th>
+			<th width="50">创建时间</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for order in data.items %}
+		<tr merchant-id="{{order._id}}">
+			<td><input type="checkbox" name="order" value="{{order._id}}" /></td>
+			<td>{{order.order_id}}</td>
+			<td>{{order.create_time}}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

@@ -1,0 +1,95 @@
+{% set _Title = '泳圈' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#report-form { width: 720px; }
+#report-form-contet { height: 420px; overflow: auto; }
+/*#report-form-contet>div { display: inline-block; vertical-align: top; }*/
+#report-form-main { /*width: 400px; display: inline-block; vertical-align: top;*/ }
+/*#report-form-photos { width: 300px; padding-left: 10px; display: inline-block; vertical-align: top; }*/
+#report-contents textarea { height: 80px; resize: none; }
+.report-icon { max-height: 60px; max-width: 60px; }
+.report-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.report-actions { text-align: left; }
+.report-actions>a.fa { padding: 3px; }
+.report-img { width: 60px; max-height: 60px; }
+span.statu { display: none; }
+tr.statu_0 span.statu_0 { display: inline; }
+tr.statu_1 td { color: #f55; }
+tr.statu_1 span.statu_1 { display: inline; }
+tr.statu_2 td { color: #888; }
+tr.statu_2 span.statu_2 { display: inline; }
+tr.statu_4 td { color: green; }
+tr.statu_4 span.statu_4 { display: inline; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>举报列表 <small>泳圈</small></h1>
+	{#% include 'report/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>举报列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="report-list">
+			{% include 'report/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#report-list').on('click', '#report-add-btn', function() {
+		App.Box.open('report/form.html');
+	}).on('click', 'button.report-btn', function() {
+		var slted = $('#report-list input[name="report"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			var statu = $(this).attr('statu');
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'report/status.html',
+				type: 'post',
+				data: {'items[]': items, 'statu': statu},
+				dataType: 'json',
+				success: function() {
+					location.reload();
+				}
+			});
+		}
+	});
+	$('#report-list').on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('report/form.html?id=' + id);
+	});
+});
+</script>
+{% endblock %}

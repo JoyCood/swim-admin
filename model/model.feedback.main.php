@@ -1,0 +1,40 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+class ModelFeedbackMain {
+	public function collection() {
+		return SwimAdmin::db('feedback');
+	}
+
+	public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'create_at');
+        $order   = Helper::popValue($params, 'order', -1);
+        $filters = array();
+        $data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1)
+        );
+
+        $member = array();
+        if($data['items']) {
+        	$ids = array();
+        	foreach($data['items'] as $item) {
+        		if(isset($item['user_id']) && $item['user_id']) {
+        			$ids[] = new MongoId($item['user_id']);
+        		}
+        	}
+        	if($ids) {
+        		$m  = SwimAdmin::db('member');
+        		$rs = $m->find(array('_id' => array('$in' => $ids)));
+        		foreach($rs as $row) {
+        			$member[(string)$row['_id']] = $row;
+        		}
+        	}
+        }
+        $data['member'] = $member;
+        return $data;
+    }
+}

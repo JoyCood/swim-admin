@@ -1,0 +1,76 @@
+{% set _Title = '同城' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+	#app-box-content{
+		width: 640px;
+	}
+	.h5-link{
+		display: none;
+	}
+</style>
+{% endblock %}
+{% block main %}
+	<h1>协会 </h1>
+	<input type="hidden" name="id" id="club-id" value="{{club_id}}" />
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>公告</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="club-notice-list">
+			{% include 'lbs/club-notice-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('#club-notice-list').on('click', '#club-add-btn,a.icon-edit', function() { 
+    	var p   = [];
+		var club_id = $.trim($('#club-id').val());
+		var vid = $.trim($(this).attr('vid') || '');
+		console.log(vid)
+		p.push('club_id=' + encodeURIComponent(club_id));
+		p.push('vid=' + encodeURIComponent(vid));
+		App.Box.open('lbs/club-notice-form.html?' + p.join('&'));
+    }).on('click', '#club-trash-btn', function() { 
+		if(!$(this).hasClass('disabled')) {
+			var ids = [];
+			$('#club-notice-list input[name="name"]:checked').each(function() {
+				ids.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'lbs/club-notice-delete.html',
+				data: {'items[]': ids},
+				target: '#club-list',
+				dataType: 'html',
+				type: 'post',
+				success: function() {
+						location.reload();
+					}
+			});
+		}
+	});
+});
+</script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+{% endblock %}

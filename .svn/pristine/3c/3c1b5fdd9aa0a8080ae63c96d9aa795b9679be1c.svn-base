@@ -1,0 +1,163 @@
+{% set _Title = '订单' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/3rd/plugins/datepicker/datepicker.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#query-search { padding: 0 0 10px 0; }
+#query-search>* { float: left; width: auto; }
+#order-menu { 
+	position: absolute; display: none; margin-top: -34px;
+	background-color: #fff;
+	border: 1px solid #369; padding: 3px; 
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+#order-menu>i.fa-caret-right {
+	position: absolute; top: 50%; right: -7px; margin-top: -14px;
+	color: #369;
+	font-size: 18px;
+}
+#order-menu>a.disabled { color: #999!important; cursor: default; background-color: #fff!important; }
+#order-menu>a { 
+	display: block; padding: 5px 30px 5px 10px;
+	text-decoration: none;
+}
+#order-menu>a:hover {
+	background-color: #69c; color: #fff;
+}
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>场馆打款</small></h1>
+	{#% include 'order/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="order/list.html">订单</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>打款记录</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="order-body">
+			<div class="text-right bar">
+				 <form id="query-search" method="GET" action="order/remit-list.html">
+				 	<select name="region" id="finance-region" class="form-control" >
+				 		<option value="-">请选择校区</option>
+                        {% for region in regions %}
+                        <option value="{{region._id}}">{{region.name}}</option>
+                        {% endfor %}
+					</select>
+					<select name="natatorium" id="finance-natatorium" class="form-control">
+						<option value="-">请选择场馆名称</option>
+					</select>
+					<select name="teacher" class="form-control">
+						<option value="-">请选择教练</option>
+                        {% for teacher in teachers %}
+                        <option value="{{teacher.id}}">{{teacher.nick}}</option>
+                        {% endfor %}
+					</select>
+					<input type="text" class="form-control" name="teacher_phone" placeholder="请输入教练联系方式">
+					<input type="text" class="datepicker" name="start" class="form-control" style="float: left; margin-left:10px; width:150px; height:34px;" placeholder="开始时间">
+					<input type="text" class="datepicker" name="end" class="form-control" style="float: left;margin-right:10px; width:150px; height:34px;" placeholder="结束时间">
+				 </form>
+				 <form id="up-form" method="POST" target="up" action="order/import.html" enctype="multipart/form-data" style="right:0px; width:30%; left:70%;">
+            		<button type="button" id="remit-export-btn" class="btn btn-info"><b class="fa fa-cloud-upload"></b>报表导出</button> 
+				 </form>
+			</div>
+			<div id="remit-list">
+				{% include 'order/remit-list.html' %}
+			</div>
+			<nav id="order-menu">
+				<a href="javascript:;" data-action="edit"><i class="fa fa-edit"></i>修改</a>
+				<a href="javascript:;" data-action="delete"><i class="fa fa-check-square-o"></i> 删除</a>
+			</nav>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/bootstrap-datepicker.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/locales/bootstrap-datepicker.zh-CN.js"></script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+<script type="text/javascript">
+$(document).ready(function() {
+    $('.datepicker').datepicker({
+        language: 'zh-CN',
+        format: 'yyyy-mm-dd'
+    });
+    $('#remit-list').on('click', 'a.fa-bars', function() {
+		var id     = $(this).closest('tr').attr('data-id');
+		var offset = $(this).offset();
+		$('#order-menu').css({
+			'display': 'block', 
+			'top':     -1000,
+			'left':    -1000
+		});
+		var w = $('#order-menu').outerWidth();
+		var h = $('#order-menu').outerHeight();
+		$('#order-menu').css({
+			'display': 'block',
+			'top': offset.top,
+			'left': offset.left - w - 5
+		}).data('order-id', id);
+		$(window).one('click', function() {
+			$('#order-menu').css({
+				'display': 'none'
+			});
+		});
+		return false;
+	});
+	$('#order-menu').on('click', 'a[data-action]', function() {
+		var oid = $('#order-menu').data('order-id');
+		if(!$(this).hasClass('disabled')) {
+			switch(this.getAttribute('data-action')) {
+				case 'edit':
+					App.Box.open('order/remit-form.html?id=' + encodeURIComponent(oid));
+					break;
+			}
+		}
+	});
+
+	$('#remit-export-btn').on('click', function() {
+        location.href="order/remit-export";	
+	});
+
+    $('#finance-region').on('change', function(){
+        var regionId = this.value;
+        if(regionId != '') {
+            App.ajax({
+                url: 'order/natatorium.html',
+                data: {region:regionId},
+                success: function(result){
+                    $('#finance-natatorium').find('option').remove();                
+                    var rs;
+                    rs = JSON.parse(result);
+                    $.each(rs, function(index, item){
+                        $('#finance-natatorium').append($('<option>', {
+                            value:item.id,
+                            text:item.title
+                        })); 
+                    });
+                }
+            });
+        } 
+    });
+});
+</script>
+{% endblock %}

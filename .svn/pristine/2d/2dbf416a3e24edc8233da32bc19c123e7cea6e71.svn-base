@@ -1,0 +1,28 @@
+{% import "_macro.html" as macro %}
+<form id="op-finish-form" action="order/finance-finish" target="#op-finish-list">
+	<div class="box" style="width: 500px;">
+		<div class="box-title">
+			<h3>结算</h3>
+		</div>
+		<div class="box-content">
+            <div id="detail-order-detail" style="overflow: auto;">
+                <table class="form">
+                    <tr><th>校区\教练：</th><td>1/1</td></tr>
+					<tr><th>场馆\教练联系方式：</th><td>1/1</td></tr>
+					<tr><th>上次操作时间：</th><td>2017-10-28 11:12</td></tr>
+					<tr><th>待结算：</th><td class="text-danger">100.00元</td></tr>
+					<tr><th>打款完成后剩余金额：</th><td class="text-danger">99.99元</td></tr>
+					<tr><th>打款金额：</th><td><input type="text" name="op_money" class="form-control" style="width: 200px;height: 30px; font-size: 16px;"></td></tr>
+					<tr><th>备注：</th><td><input type="text" name="money" class="form-control" placeholder="请填写备注（选填）" style="width: 200px;height: 30px; font-size: 12px;"></td></tr>
+                    <tr><th>请上传打款凭证：</th><td>{{ macro.upload('settlement-photo', 'photo') }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="box-footer">
+            <input type="hidden" name="id" value="" />
+			<button type="button" class="btn btn-primary" app-state="cancel">确定</button>
+		</div>
+	</div>
+</form>
+<script>
+</script>

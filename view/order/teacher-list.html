@@ -1,0 +1,27 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="60">头像</th>
+			<th width="100">名称</th>
+			<th width="40">性别</th>
+			<th width="">地区</th>
+			<th width="140">坐标</th>
+			<th width="90">电话</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td>{% if item.avatar_small %}<img src="{{item.avatar_small}}" class="teacher-avatar" />{% endif %}</td>
+			<td><span class="push-text">{{item.nick}}</span></td>
+			<td>{{item.sex}}</td>
+			<td>{{item.district}}</td>
+			<td>{{item.coords.coordinates|join(',')}}</td>
+			<td>{{item.phone}}</td>
+			<td><input type="radio" name="teacher" value="{{item._id}}" /></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

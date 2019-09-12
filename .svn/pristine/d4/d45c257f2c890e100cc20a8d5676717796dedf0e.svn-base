@@ -1,0 +1,61 @@
+<form id="pass-form" action="goods/mall-form.html" data-type="json">
+	<div class="box">
+		<div class="box-title">
+			<h3>商城跳转编辑</h3>
+		</div>
+		<div id="pass-form-contet" class="box-content">
+			<div id="pass-form-main">
+				<table class="form">
+					<tr>
+						<th width="80">商城主页：</th>
+						<td>
+							<input type="text" name="mall" class="form-control"  value="{{data.mall}}" 
+							autofocus="on" autocomplete="off"  />
+						</td>
+					</tr>
+					<tr>
+						<th>分类检索：</th>
+						<td>
+							<input type="text" name="class" class="form-control" value="{{data.class}}"
+							autofocus="on" autocomplete="off"  />
+						</td>
+					</tr>
+					<tr>
+						<th>会员主页：</th>
+						<td>
+							<input type="text" name="member" class="form-control" value="{{data.member}}" autofocus="on"  autocomplete="off" />
+						</td>
+					</tr>
+						<th>我的订单：</th>
+						<td>
+							<input type="text" name="order" class="form-control" value="{{data.order}}" autofocus="on" autocomplete="off"  />
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+		    <input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<button type="submit" id="pass-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#pass-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						App.popover('资料修改成功。');
+					}
+				});
+			}
+			return false;
+		});
+	});
+});
+</script>

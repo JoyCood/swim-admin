@@ -1,0 +1,40 @@
+{% set _Title = title %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link href="css/admin/user.css" type="text/css" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>{{title}} <small>用户管理</small></h1>
+	{% include 'user/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>{{title}}</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="user-list">
+			{#% include 'member/list.html' %#}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(function() {
+	
+});
+</script>
+{% endblock %}

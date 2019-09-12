@@ -1,0 +1,49 @@
+.btn { border-radius: 0; font-size: 12px; }
+.btn-primary { background-color: #368EE0; }
+.btn-primary:hover { background-color: #1E74C5; }
+.btn-secondary { background-color: #DF7514; color: #fff; }
+.btn-secondary:hover { background-color: #FF9534; color: #fff; }
+
+.box-footer { margin-top: 5px; }
+.box-pd { padding: 20px; }
+
+.relative { position: relative; }
+
+.breadcrumbs {
+	background: #f4f4f4;
+	margin-bottom: 10px;
+}
+.breadcrumbs:after {
+	content: "";
+	display: table;
+	clear: both;
+}
+.breadcrumbs ul {
+	display: block; list-style-type: none;
+	margin: 0;
+	padding: 4px 5px;
+}
+.breadcrumbs ul > li {
+	float: left;
+	color: #666; line-height: 20px;
+}
+.breadcrumbs ul > li > a, .breadcrumbs ul > li > span {
+	color: #666;
+	display: block;
+	padding: 2px 6px;
+	float: left;
+}
+.breadcrumbs ul > li > i.fa { line-height: inherit; }
+.breadcrumbs .close-bread {
+	float: right; padding: 0 10px;
+}
+
+.form-control { border-radius: 0; }
+.control-label  { float: left; }
+
+.icon-edit:before { content: "\f022"; }
+
+
+::-moz-placeholder{color: #aaa!important;} 
+::-webkit-input-placeholder{color: #aaa!important;}
+:-ms-input-placeholder{color: #aaa!important;}

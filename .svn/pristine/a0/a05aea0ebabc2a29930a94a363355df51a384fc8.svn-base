@@ -1,0 +1,84 @@
+{% set _Title = '看点' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#interview-form { width: 720px; }
+#interview-form-contet { height: 520px; overflow: auto; }
+/*#interview-form-contet>div { display: inline-block; vertical-align: top; }*/
+#interview-form-main { width:680px; padding-bottom: 30px; }
+/*#interview-form-photos { width: 300px; padding-left: 10px; display: inline-block; vertical-align: top; }*/
+#interview-contents textarea { height: 80px; resize: none; }
+.interview-icon { max-height: 60px; max-width: 60px; }
+.interview-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.interview-actions { text-align: left; }
+.interview-actions>a.fa { padding: 3px; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}}列表 <small>首页管理</small></h1>
+	{% include 'interview/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>{{_Title}}列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="interview-list">
+			{% include 'interview/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#interview-list').on('click', '#interview-add-btn', function() {
+		App.Box.open('home/interview/form.html');
+	}).on('click', '#interview-trash-btn', function() {
+		var slted = $('#interview-list input[name="interview"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'home/interview/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'json',
+				success: function() {
+					location.href = App.urlReplace(location.href, 'pn', 1);
+				}
+			});
+		}
+	});
+	$('#interview-list').on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('home/interview/form.html?id=' + id);
+	});
+});
+</script>
+{% endblock %}

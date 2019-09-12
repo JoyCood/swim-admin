@@ -1,0 +1,58 @@
+{% import "_macro.html" as macro %}
+<form id="op-finish-form" method="POST" action="order/finance-finish" target="#finance-list">
+	<div class="box" style="width: 500px;">
+		<div class="box-title">
+			<h3>结算</h3>
+		</div>
+		<div class="box-content">
+            <div id="detail-order-detail" style="overflow: auto;">
+                <table class="form">
+					<tr><th>校区\教练：</th><td>{{data.region_name}}\{{data.teacher_name}}</td></tr>
+					<tr><th>场馆\教练联系方式：</th><td>{{data.natatorium_name}}\{{data.teacher_phone}}</td></tr>
+					<tr><th>上次操作时间：</th><td>{{data.last_updated|date('Y-m-d H:i:s')}}</td></tr>
+					<tr><th>待结算：</th><td class="text-danger" id="money-settle">{{data.settle}}元</td></tr>
+					<!--
+					<tr><th>打款完成后剩余金额：</th><td class="text-danger" id="money-leave">{{data.settle}}元</td></tr>
+					-->
+					<tr><th>打款金额：</th><td><input type="text" name="money" id="money-input" class="form-control" style="width: 200px;height: 30px; font-size: 16px;"></td></tr>
+					<tr><th>备注：</th><td><input type="text" name="notes" class="form-control" placeholder="请填写备注（选填）" style="width: 200px;height: 30px; font-size: 12px;"></td></tr>
+                    <tr><th>请上传打款凭证：</th><td>{{ macro.upload('settlement-photo', 'photo') }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="box-footer">
+			<input type="hidden" name="id" value="{{data._id}}" />
+			<button type="submit" class="btn btn-primary">确定</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+    $('#op-finish-form').on('submit', function() {
+		var money = parseFloat($('#money-input').val());
+		var settle = parseFloat($('#money-settle').text());
+		if(money<=0 || isNaN(money)){
+		    App.Notific.warning('打款金额须大于零');
+			return false;
+		}
+		if(money>settle) {
+		    App.Notific.warning('打款金额不能大于待结算金额。');
+			return false;
+		}
+		App.ajax({
+		    url: $(this).attr('action'),
+			type: 'post',
+			data: $(this).serialize(),
+			target: '#finance-list',
+			dataType: 'html',
+			success: function(rs) {
+			    App.Box.close();
+				App.Notific.success('已成功打款。');
+			}
+		});
+		return false;
+	});
+
+});
+
+</script>

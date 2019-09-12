@@ -1,0 +1,127 @@
+{% import "_macro.html" as macro %}
+<form id="tweet-recommand-form" action="tweet/recommand-form.html" target="#tweet-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>推荐{{data.id? ' - ' ~ data.id: ''}}</h3>
+		</div>
+		<div class="box-content" style="height: 420px; width: 480px; padding: 10px;">
+			<table class="form">
+				<tr>
+					<th width="80">推荐标题：*</th>
+					<td>
+						<input type="text" name="title" id="tweet-title" class="form-control" value="{{data.recommand and data.recommand.title? data.recommand.title: data.content.title}}" placeholder="请输入标题" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+					</td>
+				</tr>
+				<tr>
+					<th>推荐时间：</th>
+					<td>
+						<input type="text" name="date" id="tweet-date" class="form-control" value="{{(data.recommand.date? ata.recommand.date: '')|date('Y-m-d H:i:s')}}" placeholder="年-月-日 时:分:秒" />
+					</td>
+				</tr>
+				<tr>
+					<th>图片：</th>
+					<td>
+						<!--{% set photo = data.recommand.photo %}
+						{% if not photo %}
+							{% if data.content and data.content.photos %}
+								{% for p in data.content.photos|slice(0, 1) %}
+									{% set photo = p.min? p.min: p.big %}
+								{% endfor %}
+							{% endif %}
+						{% endif %}
+						{{ macro.thumb('photo', photo) }}
+						{{ macro.upload('tweet-recommand-photo', 'photo', '', false) }}-->
+						
+						{% set photo = data.recommand.photo %}
+						{% if not photo %}
+							{% if data.content and data.content.photos %}
+								{% for photo in data.content.photos %}
+								{{ macro.thumb('photos[]', photo.min, photo.w ~ ',' ~ photo.h) }}
+								{% endfor %}
+							{% endif %}
+						{% endif %}
+						{{ macro.thumb('photo', photo) }}
+						{{ macro.upload('tweet-recommand-photo', 'photo', '', false) }}
+					</td>
+				</tr>
+				<tr>
+					<th>状态：</th>
+					<td>
+						<input type="checkbox" id="tweet-recommand-status" name="status"{{not data.recommand or data.recommand.status? ' checked': ''}} value="1" />
+						<label for="tweet-recommand-status">启用</label>
+					</td>
+				</tr>
+			</table>
+			<div style="height: 220px; margin: 5px 0 0 0; padding: 5px; border: 1px solid #eee; overflow: auto;">
+				<table class="form">
+					<tr>
+						<th width="80" style="vertical-align: top;">泳圈标题：</th>
+						<td>
+							{{data.content.title}}
+						</td>
+					</tr>
+					<tr>
+						<th valign="top" style="vertical-align: top;">内容：</th>
+						<td>
+							{{data.content.text|nl2br}}
+						</td>
+					</tr>
+					<tr>
+						<th>时间：</th>
+						<td>
+							{{data.create_time? data.create_time|date('Y-m-d H:i:s'): ''}}
+						</td>
+					</tr>
+					<tr>
+						<th>阅读次数：</th>
+						<td>
+							{{data.views_counter|number_format}}
+						</td>
+					</tr>
+					<tr>
+						<th>点赞次数：</th>
+						<td>
+							{{data.likes_counter|number_format}}
+						</td>
+					</tr>
+					<tr>
+						<th>评论次数：</th>
+						<td>
+							{{data.comments_counter|number_format}}
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="tweet-id" name="id" value="{{data.id}}" />
+			<button type="submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+
+
+<script>
+$(function() {
+	$('#tweet-recommand-form').on('init', function() {
+		$(this).on('submit', function() {
+			App.ajax({
+				url      : 'tweet/recommand-form.html',
+				data     : $(this).serialize(),
+				dataType : 'json',
+				type     : 'post',
+				success: function(data) {
+					if(data.tweet_id) {
+						$('#reco-' + data.tweet_id).prop('checked', data.status? true: false);
+					}
+					App.Box.close();
+				}
+			});
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

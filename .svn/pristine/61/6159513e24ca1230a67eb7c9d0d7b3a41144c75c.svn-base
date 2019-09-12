@@ -1,0 +1,76 @@
+<div id="teacher-box" action="order/teacher.html" target="#teacher-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>关联教练 订单号：#{{orderId}}</h3>
+		</div>
+		<div id="teacher-box-content" class="box-content">
+			<div style="width: 700px; height: 490px; overflow: auto;">
+				<form id="teacher-search" action="order/teacher.html">
+					<input type="text" name="name" class="form-control" placeholder="教练名称" />
+					<input type="text" name="district" class="form-control" placeholder="地区" />
+					<button type="submit" class="btn btn-success">搜索</button>
+					<input type="hidden" name="from" value="ajax" />
+				</form>
+				<div id="teacher-list">
+					{% include 'order/teacher-list.html' %}
+				</div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<form id="teacher-form" method="POST" action="order/allocation">
+				<input type="hidden" name="orderId" value="{{orderId}}" />
+				<input type="hidden" name="teacherId" id="teacher-id" value="" />
+				<button type="submit" class="btn btn-primary">确定</button>
+				<button type="button" class="btn" app-state="cancel">取消</button>
+			</form>
+		</div>
+	</div>
+</div>
+<script>
+$(function() {
+	$('#teacher-box').on('init', function() {
+		$('#teacher-search').on('submit', function() {
+			App.ajax({
+				url: $(this).attr('action'),
+				data: $(this).serialize(),
+				target: '#teacher-list'
+			});
+			return false;
+		});
+		$('#teacher-form').on('submit', function() {
+			if($('#teacher-id').val()) {
+				App.ajax({
+					form: this,
+					type: 'post',
+					target: '#order-list',
+					dataType: 'html',
+					success: function(rs) {
+						App.Box.close();
+					}
+				});
+			} else {
+				alert('请选择一个教练。');
+			}
+			return false;
+		});
+		$('#teacher-list').on('click', 'tbody>tr', function(e) {
+			var row   = $(this);
+			var radio = row.find('input:radio');
+			if(e.target.tagName != 'INPUT') {
+				radio.prop('checked', true);
+			}
+			var teacherId = $('#teacher-list input[name="teacher"]:checked').val();
+			$('#teacher-id').val(teacherId);
+		}).on('click', 'ul.pagination a', function() {
+			App.ajax({
+				url: $(this).attr('href') + '&from=ajax',
+				target: '#teacher-list'
+			});
+			return false;
+		});
+		$('#teacher-box-content').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

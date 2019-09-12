@@ -1,0 +1,92 @@
+html, body { margin: 0; padding: 0; height: 100%; font-size: 12px; }
+#main-section { min-height: 100%; }
+
+#main-header {
+	position: fixed; top: 0; right: 0; left: 0;
+	z-index: 3;
+	height: 40px; line-height: 40px;
+	background-color: #368EE0;
+	color: #fff;
+}
+#main-header>div, #main-logo { position: absolute; top: 0; bottom: 0; }
+#main-logo { left: 20px; width: 80px; color: #fff; text-decoration: none; }
+#main-logo>img { width: 36px; height: 36px; margin: 2px 0 0 10px; }
+
+#main-nav { left: 90px; font-size: 0; right: 10px; }
+#main-nav a { 
+	display: block; color: #333; 
+	padding: 0 10px;
+	text-decoration: none;
+}
+#main-nav>nav {
+	position: relative; display: inline-block;
+	font-size: 12px;
+	margin: 0 1px;
+}
+#main-nav>nav>a {
+	display: block; line-height: 38px;
+	border: 1px solid transparent;
+	color: #fff; padding: 0 15px;
+}
+#main-nav>nav.current>a { 
+	background-color: #fff!important;
+	color: #333!important;
+}
+#main-nav>nav.actived>a {
+	background-color: #1e74c5;
+}
+#main-nav.actived>nav.actived>div { display: block; }
+#main-nav>nav>div { 
+	position: absolute; left: -2px; 
+	padding: 5px 0;
+	border: 2px solid #368EE0; border-top: 0;
+	line-height: 28px; white-space: nowrap;
+	background-color: #fff;
+	display: none;
+}
+#main-nav>nav>div>nav { display: inline-block; vertical-align: top; min-width: 100px; }
+#main-nav>nav>div>nav>strong { 
+	display: block;
+	color: #999; width: 100%; margin: auto;
+	border-bottom: 1px solid #e4e4e4; 
+	line-height: 20px; text-indent: 10px;
+}
+#main-nav>nav>div a:hover {
+	background-color: #368EE0; color: #fff;
+}
+#main-nav-profile {
+	float: right; 
+}
+#main-nav>#main-nav-profile>div {
+	left: 0; right: -2px; left: auto;
+}
+
+
+#main-section {
+	position: relative;
+	padding: 50px 10px 10px 10px; 
+}
+#main-section>h1, #main-section>nav {
+	position: fixed; top: 40px;
+	z-index: 1;
+}
+#main-section>h1 {
+	font-size: 18px;
+	padding: 10px 20px;
+	left: 0; right: 0;
+	background-color: #fff;
+}
+#main-section>nav {
+	right: 10px;
+}
+#main-section>nav>a {
+	display: inline-block;
+	padding: 10px;
+}
+#main-content { padding-top: 32px; }
+
+.quick-search {  }
+.quick-search>select { display: inline-block; max-width: 200px; }
+
+.pagination-info { float: left; margin: 30px 20px 0 0; }
+.pagination > .disabled > a:hover > span { cursor: default; }

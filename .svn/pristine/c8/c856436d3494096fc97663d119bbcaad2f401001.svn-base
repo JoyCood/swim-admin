@@ -1,0 +1,106 @@
+{% set _Title = '优惠券' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/3rd/plugins/datepicker/datepicker.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+    #order-menu {
+        position: absolute; display: none; margin-top: -34px;
+        background-color: #fff;
+        border: 1px solid #369; padding: 3px;
+        box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>优惠券列表 <small>{{_Title}}</small></h1>
+	{% include 'courpon/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>优惠券列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="courpon-body">
+			<div class="text-right bar">
+				{% if check_perm('main-contents', 'ADD') %}<button id="courpon-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>{% endif %}
+				{% if check_perm('main-contents', 'DELETE') %}<button id="courpon-trash-btn" class="btn"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+				<form action="courpon/list.html" method="GET">
+					<select name="status" class="form-control—c" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+						<option value="0" {{status==0? ' selected': ''}}>状态</option>
+						<option value="1" {{status==1? ' selected': ''}}>启用</option>
+						<option value="2" {{status==2? ' selected': ''}}>禁用</option>
+					</select>
+					<select name="coupon_type" class="form-control-c" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+                        <option value="0" {{coupon_type==0? ' selected': ''}}>分类</option>
+                        <option value="1" {{coupon_type==1? ' selected': ''}}>课程减免券</option>
+                        <option value="2" {{coupon_type==2? ' selected': ''}}>积分兑换券</option>
+                        <option value="3" {{coupon_type==3? ' selected': ''}}>活动优惠券</option>
+					</select>
+				</form>
+			</div>
+			<div id="courpon-list">
+				{% include 'courpon/list.html' %}
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/bootstrap-datepicker.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/locales/bootstrap-datepicker.zh-CN.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	$('#courpon-body').on('click', '#courpon-add-btn', function() {
+		App.Box.open('courpon/form.html');
+	}).on('click', '#courpon-trash-btn', function() {
+		var slted = $('#courpon-list input[name="courpon"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'courpon/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'json',
+				success: function() {
+					location.href = App.urlReplace(location.href, 'pn', 1);
+				}
+			});
+		}
+	});
+	$('#courpon-list').on('click', 'a.fa-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('courpon/form.html?id=' + id);
+	});
+
+    $('#courpon-list').on('click', 'a.icon-edit', function() {
+        var row = $(this).closest('tr');
+        var id = row.attr('data-id');
+        App.Box.open('courpon/detail.html?id=' + id);
+    });
+
+});
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% set _Title = '泳圈' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+.tweet-group-cover>img { max-height: 40px; max-width: 80px; }
+.tweet-group-cover>i{ opacity: .2; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>版块管理 <small>泳圈</small></h1>
+	{% include 'local/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>版块管理</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="tweet-group-list">
+			{% include 'local/tweet-group-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#tweet-group-list').on('click', '#tweet-group-add-btn', function() {
+		App.Box.open('local/tweet/group-form.html');
+	}).on('click', '#tweet-group-trash-btn', function() {
+		var slted = $('#tweet-group-list input[name="tgroup"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'local/tweet/group-delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'html',
+				target: '#tweet-group-list'
+			});
+		}
+	}).on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('local/tweet/group-form.html?id=' + id);
+	}).on('click', '#tweet-group-add-recommand-btn, #tweet-group-remove-recommand-btn', function() {
+		var act   = $(this).attr('data-val') == '1';
+		var slted = $('#tweet-group-list input[name="tgroup"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'local/tweet/group-recommand.html',
+				type: 'post',
+				data: {'items[]': items, 'recommand': act? 1: 0},
+				dataType: 'html',
+				target: '#tweet-group-list'
+			});
+		}
+	});
+});
+</script>
+{% endblock %}

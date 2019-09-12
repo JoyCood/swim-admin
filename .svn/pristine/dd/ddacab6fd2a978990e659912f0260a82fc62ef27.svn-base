@@ -1,0 +1,34 @@
+<div class="text-right bar">
+	{% if check_perm('main-contents', 'ADD') %}<button id="society-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>{% endif %}
+	{% if check_perm('main-contents', 'DELETE') %}<button id="society-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#society-trash-btn" /></th>
+			<th width="100">协会名称</th>
+			<th width="80">会徽</th>
+			<th width="150">协会简介</th>
+			<th width="150">协会业务</th>
+			<th width="">协会公告</th>
+			<th width="40">状态</th>
+			<th width="50"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="name" value="{{item._id}}" /></td>
+			<td>{{item.name}}</td>
+			<td>{% if item.avatar_small %}<img src="{{item.avatar_small}}" class="teacher-avatar" />{% endif %}</td>
+			<td>{{item.summary}}</td>
+			<td>{{item.service}}</td>
+			<td>{{item.notice}}</td>
+			<td>{{item.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

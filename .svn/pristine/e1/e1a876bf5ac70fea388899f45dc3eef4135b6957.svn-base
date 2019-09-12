@@ -1,0 +1,19 @@
+{% if comments %}
+	{% for comment in comments %}
+		<div class="tweet-comment" comment-id="{{comment.id}}">
+			<label>{{comment.user.nick}}</label>: 
+			<span>{{comment.content.text}}</span>&nbsp;<span style="color: #ddd;">{{comment.create_time|date('y-m-d H:i')}}</span>
+			<a class="fa fa-reply" title="回复" data-time="{{comment.create_time|date('Y-m-d H:i:s')}}"></a>&nbsp;
+			<a class="fa fa-times" title="删除"></a>
+		</div>
+		{% if comment.content.Replay_Comment_Text %}
+		{% set replay = comment.content.Replay_Comment_Text %}
+		<div class="tweet-comment tweet-reply" comment-id="{{comment.id}}">
+			<label>回复@{{replay.replyUser.nick}}</label>: 
+			<span>{{replay.replyComment.content}}</span>&nbsp;<span style="color: #ddd;">{{replay.replyComment.create_time|date('y-m-d H:i')}}</span>
+			{#<a class="fa fa-reply" title="回复"></a>&nbsp;#}
+			<a class="fa fa-times" title="删除"></a>
+		</div>
+		{% endif %}
+	{% endfor %}
+{% endif %}

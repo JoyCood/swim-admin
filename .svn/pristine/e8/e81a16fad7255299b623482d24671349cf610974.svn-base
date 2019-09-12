@@ -1,0 +1,63 @@
+{% set _Title = title %}
+{% extends '_base.html' %}
+
+{% block css %}
+{% endblock %}
+
+{% block main %}
+	<h1>升级包<small>{{title}}</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>升级包</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="package-list">
+			<div class="text-right">
+				<button id="package-add-btn" class="btn btn-success"><b class="fa fa-upload"></b>上传</button>
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th width="200">版本号</th>
+							<th>升级包地址</th>
+							<th width="90">更新时间</th>
+						</tr>
+					</thead>
+					{% if package %}
+					<tbody>
+						<tr>
+							<td align="left">{{package.version}}</td>
+							<td align="left"><i class="fa fa-file"></i> {{package.src}}</td>
+							<td align="left">{{package.time|date('Y-m-d H:i:s')}}</td>
+						</tr>
+					</tbody>
+					{% endif %}
+				</table>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/SparkMD5-0.0.5/spark-md5.min.js"></script>
+<script type="text/javascript" src="js/3rd/async-1.3.0/dist/async.min.js"></script>
+<script type="text/javascript" src="js/3rd/upyun-upload/lib/upyun-mu.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#package-list').on('click', '#package-add-btn', function() {
+		App.Box.open('upgrade/package/form.html');
+	});
+});
+</script>
+{% endblock %}

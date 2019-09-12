@@ -1,0 +1,215 @@
+{% import "_macro.html" as macro %}
+<form id="news-form" action="news/form.html" target="#news-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>资讯详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="news-form-contet" class="box-content">
+			<div id="news-form-main">
+				<table class="form">
+					<tr>
+						<th width="60">标题：</th>
+						<td colspan="3">
+							<input type="text" name="title" id="news-title" class="form-control" value="{{data.title}}" placeholder="请输入名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>分类：</th>
+						<td colspan="3">
+							<select id="news-category" name="category[]" class="form-control" multiple>
+								{% for cat in cats %}
+								{% set cid = cat._id ~ '' %}
+								<option value="{{cat._id}}:{{cat.name}}"{{cat.selected? ' selected': ''}}>{{cat.name}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>作者：</th>
+						<td>
+							<input type="text" name="author" id="news-author" class="form-control" value="{{data.author}}" placeholder="请输入作者名称" />
+						</td>
+						<th width="60">&nbsp; 日期：</th>
+						<td>
+							<input type="text" name="date" id="news-date" class="form-control" value="{{data.date? data.date|date('Y-m-d H:i:s'): ''}}" placeholder="年-月-日" />
+						</td>
+					</tr>
+					<tr>
+						<th>类型：</th>
+						<td>
+							<select id="news-type" name="type" class="form-control">
+								<option value="native"{{not data.type or data.type=='native'? ' selected': ''}}>原生</option>
+								<option value="link"{{data.type=='link'? ' selected': ''}}>H5</option>
+							</select>
+						</td>
+						<th width="60">&nbsp; 首页：</th>
+						<td>
+							<input type="checkbox" id="news-promotion" name="promotion" value="1"{{ data and data.promotion? ' checked': ''}} />
+							<label for="news-promotion">显示</label>
+						</td>
+					</tr>
+					<tr>
+						<th>专栏：</th>
+						<td>
+							<select name="columnist" class="chosen-select form-control" data-placeholder="请选择专栏">
+								<option></option>
+								{% for columnist in columnist %}
+                                <option value="{{columnist._id}}:{{columnist.name}}" {{columnist.name in data.columnist ? ' selected':''}}>{{columnist.name}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>简介：</th>
+						<td colspan="3">
+							<input type="text" name="summary" id="news-summary" class="form-control" value="{{data.summary}}" />
+						</td>
+					</tr>
+					<tr>
+						<th>媒体类型：</th>
+						<td colspan="3">
+							<select id="news-res-type" class="form-control" name="res_type">
+								<option value="0"{{not data.res_type? ' selected':''}}>普通</option>
+								<option value="1"{{data.res_type b-and 1? ' selected':''}}>图片</option>
+								<option value="2"{{data.res_type b-and 2? ' selected':''}}>视频</option>
+							</select>
+						</td>
+					</tr>
+
+					<tr>
+						<th>图标：</th>
+						<td>
+							{{ macro.thumb('icon', data.icon) }}
+							{{ macro.upload('news-photos', 'icon', 'icon', false) }}
+						</td>
+						<th>&nbsp; 首页图：</th>
+						<td>
+							{{ macro.thumb('cover', data.cover) }}
+							{#{ macro.thumb('cover', data.cover.url, data.cover.w ~ ',' ~ data.cover.h) }#}
+							{{ macro.upload('news-cover', 'cover', '', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>图片：</th>
+						<td colspan="3">
+							{% for photo in data.photos %}
+							{{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+							{% endfor %}
+							{{ macro.upload('news-photos', 'photos[]') }}
+						</td>
+					</tr>
+					<tr id="h5-link" style="display: {{data.type=='link'? 'dtable-row': 'none'}};">
+						<th>链接：</th>
+						<td colspan="3"><input type="text" name="link" id="news-link" class="form-control" value="{{data.link}}" /></td>
+					</tr>
+					<tr id="native-content" style="display: {{data.type!='link'? 'dtable-row': 'none'}};">
+						<th style="vertical-align:top">内容：</th>
+						<td colspan="3" id="news-contents">
+							{% set contents = data.contents %}
+							{% for content in contents %}
+							{% set idx = loop.index0 %}
+							<div class="row">
+								<div class="col-sm-11">
+									<textarea name="content[{{idx}}]" placeholder="请输入内容" class="form-control">{{content.text}}</textarea>
+									<div>
+										{% for m in content.media %}
+										{{ macro.thumb('contentThumbs['~idx~'][]', m.url, m.w ~ ',' ~ m.h) }}
+										{% endfor %}
+										{{ macro.upload('', 'contentThumbs['~idx~'][]') }}
+									</div>
+								</div>
+								<div class="news-actions col-sm-1">
+									<a class="fa fa-times"></a>
+									<a class="fa fa-plus"></a>
+								</div>
+							</div>
+							{% endfor %}
+						</td>
+					</tr>
+				</table>
+			</div>
+			{#<!--
+			<div id="news-form-photos">
+				<div><strong>图片：</strong></div>
+				<div>
+					{% for photo in data.photos %}
+					{{ macro.thumb('photos[]', photo) }}
+					{% endfor %}
+					{{ macro.upload('news-photos', 'photos[]', 'default') }}
+				</div>
+			</div>
+			-->#}
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="news-id" name="id" value="{{id}}" />
+			<button type="submit" id="news-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#news-form').on('init', function() {
+		$('#news-category').chosen();
+
+		var updateContentIdx = function() {
+			$('#news-contents>div.row').each(function(idx) {
+				var row = $(this);
+				row.find('textarea').attr('name', 'content[' + idx + ']');
+				row.find('input[data-name="name"]').attr('name', 'contentThumbs[' + idx + '][]');
+				row.find('input[data-name="size"]').attr('name', 'size_of_contentThumbs[' + idx + '][]');
+				row.find('a.up-btn').attr('app-upload-name', 'contentThumb[' + idx + '][]');
+			});
+		}
+		$('#news-contents').on('click', 'a.fa-times', function() {
+			var row = $(this).closest('div.row');
+			if($('#news-contents>div.row').length > 1) {
+				row.slideUp(100, function() {
+					$(this).remove();
+					updateContentIdx();
+				});
+			} else {
+				row.find('div.thumb').remove();
+				row.find('textarea').val('');
+				row.find('textarea').focus();
+				updateContentIdx();
+			}
+		}).on('click', 'a.fa-plus', function() {
+			var row = $(this).closest('div.row');
+			var clone = row.clone();
+			clone.find('div.thumb').remove();
+			clone.find('textarea').val('');
+			row.after(clone);
+			updateContentIdx();
+			clone.find('textarea').focus();
+		});
+		$('#news-form-contet').mousewheelStopPropagation();
+
+		$(this).on('submit', function() {
+			if($('a.up-loading', this).length > 0) {
+				App.alert('图片正在上传，请等待图片上传完成。');
+			} else if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+
+		$('#news-type').on('change', function() {
+			if(this.value == 'link') {
+				$('#h5-link').css('display', 'table-row');
+				$('#native-content').css('display', 'none');
+			} else {
+				$('#h5-link').css('display', 'none');
+				$('#native-content').css('display', 'table-row');
+			}
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

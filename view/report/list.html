@@ -1,0 +1,59 @@
+<div class="text-right bar">
+	{% set editAllowed = check_perm('main-contents', 'EDIT') %}
+	{% if editAllowed %}
+	<button id="report-add-btn"   class="report-btn btn disabled" statu="1"><b class="fa fa-ban"></b>关闭</button>
+	<button id="report-trash-btn" class="report-btn btn disabled" statu="2"><b class="fa fa-close"></b>删除处理</button>
+	<button id="report-trash-btn" class="report-btn btn disabled" statu="4"><b class="fa fa-circle-thin"></b>透明处理</button>
+	{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="button.report-btn" /></th>
+			<th width="70">标记</th>
+			<th width="90">举报人</th>
+			<th width="90">举报时间</th>
+			<th>举报内容</th>
+			<th width="70">举报次数</th>
+			<th width="90">处理</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		{% set statu = item.statu %}
+		<tr data-id="{{item._id}}" class="{{statu? 'statu_' ~ statu: 'statu_0'}}">
+			<td><input type="checkbox" name="report" value="{{item._id}}" /></td>
+			<td>
+				<span class="statu statu_0">-</span>
+				<span class="statu statu_1">关闭</span>
+				<span class="statu statu_2">删除处理</span>
+				<span class="statu statu_4">透明处理</span>
+			</td>
+			<td>{{item.owner? item.owner: '匿名'}}</td>
+			<td>{{item.create_time? item.create_time|date('Y-m-d H:i:s'): '-'}}</td>
+			<td>
+				{% set objId = item.obj_id %}
+				{{data.list[objId].content.text}}
+				{% if item.type == 'tweet' %}
+					{% if data.list[objId].content.photos %}
+						<div>
+						{% for photo in data.list[objId].content.photos %}
+						<img src="{{photo.min}}" class="report-img" />
+						{% endfor %}
+						</div>
+					{% endif %}
+				{% endif %}
+			</td>
+			<td align="right">{{item.total_counter|number_format(0)}}</td>
+			<td>
+				{% if item.modified_on %}
+					{{item.modified_by}}<br />
+					{{item.modified_on|date('Y-m-d H:i:s')}}
+				{% else %}-
+				{% endif %}
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

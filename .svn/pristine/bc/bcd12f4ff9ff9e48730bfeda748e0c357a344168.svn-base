@@ -1,0 +1,11 @@
+exception 'ErrorException' with message 'Undefined index: _id' in /usr/local/nginx/html/admin/tweet.php:139
+Stack trace:
+#0 /usr/local/nginx/html/admin/tweet.php(139): Slim\Slim::handleErrors(8, 'Undefined index...', '/usr/local/ngin...', 139, Array)
+#1 [internal function]: {closure}()
+#2 /usr/local/nginx/html/admin/lib/Slim/Route.php(462): call_user_func_array(Object(Closure), Array)
+#3 /usr/local/nginx/html/admin/lib/Slim/Slim.php(1326): Slim\Route->dispatch()
+#4 /usr/local/nginx/html/admin/lib/Slim/Middleware/Flash.php(85): Slim\Slim->call()
+#5 /usr/local/nginx/html/admin/lib/Slim/Middleware/MethodOverride.php(92): Slim\Middleware\Flash->call()
+#6 /usr/local/nginx/html/admin/lib/Slim/Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#7 /usr/local/nginx/html/admin/index.php(458): Slim\Slim->run()
+#8 {main}

@@ -1,0 +1,111 @@
+{% import "_macro.html" as macro %}
+<form id="region-form" action="course/region/form.html" target="#region-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>开放场馆{{region._id? ' - ' ~ region._id: ''}}</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td colspan="3">
+							<input type="text" name="name" id="region-name" class="form-control" value="{{region.name}}" placeholder="请输入馆名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>坐标：</th>
+						<td colspan="3">
+							<input type="text" name="coordinates" id="natatorium-coordinates" class="form-control" value="{{region.coords.coordinates|join(',')}}" placeholder='坐标请以","分隔' autocomplete="off" app-pattern="[\d\.]+,[\d\d]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>封面：</th>
+						<td colspan="3">
+							{{ macro.thumb('cover', region.cover) }}
+							{{ macro.upload('region-cover', 'cover', 'icon', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>图片：</th>
+						<td colspan="3">
+							{% for photo in region.photos %}
+							{{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+							{% endfor %}
+							{{ macro.upload('region-photos', 'photos[]', 'default') }}
+						</td>
+					</tr>
+					<tr>
+						<th>城市：</th>
+						<td colspan="3">
+							<select name="city" class="form-control" onchange="$('#region-city-name').val(this.options[this.selectedIndex].text);">
+								<option value="">请选择城市</option>
+								{% for city in cities %}
+								<option value="{{city._id}}"{{city._id==region.city.id? ' selected': ''}}>{{city.name}}</option>
+								{% endfor %}
+							</select>
+							<input type="hidden" name="city_name" id="region-city-name" value="{{region.city.name}}" />
+						</td>
+					</tr>
+					<tr>
+						<th>地址：</th>
+						<td colspan="3">
+							<input type="text" name="address" id="region-address" value="{{region.address}}" class="form-control" placeholder="" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>电话：</th>
+						<td><input type="text" name="phone" id="region-phone" value="{{region.phone}}" class="form-control" autocomplete="off" /></td>
+						<th>&nbsp; 开放时间：</th>
+						<td><input type="text" name="service_time" id="region-service-time" value="{{region.service_time}}" class="form-control" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>价格：</th>
+						<td><input type="text" name="price" id="region-price" value="{{region.price}}" class="form-control" placeholder="价格,如:100.00" autocomplete="off" /></td>
+						<th width="70">&nbsp; 评分：</th>
+						<td><input type="text" name="score" id="region-score" value="{{region.score}}" class="form-control" placeholder="5" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td><input type="text" name="priority" id="region-priority" value="{{region.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<th>&nbsp; 状态：</th>
+						<td>
+							<input type="checkbox" name="status" id="region-status" value="1"{{not region._id or region.status? ' checked': ''}} />
+							<label for="region-status">启用</label>
+						</td>
+					</tr>
+					<tr>
+						<th>备注：</th>
+						<td colspan="3">
+							<input type="text" name="remark" id="region-remark" value="{{region.remark}}" class="form-control" placeholder="" autocomplete="off" />
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{region._id}}" />
+			<button type="submit" id="region-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#region-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

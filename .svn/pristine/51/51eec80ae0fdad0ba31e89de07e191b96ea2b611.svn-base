@@ -1,0 +1,8 @@
+<nav>
+	<!-- <a href="admin/school/{{_Type}}/form.html"><b class="fa fa-plus"></b>新建</a> -->
+    {#
+	<a href="user/user.html"{{_Action=='user'? ' class="slted"': ''}}><b class="fa fa-user"></b>用户</a>
+	&nbsp;
+	<a href="user/group.html"{{_Action=='group'? ' class="slted"': ''}}><b class="fa fa-group"></b>组</a>
+    #}
+</nav>

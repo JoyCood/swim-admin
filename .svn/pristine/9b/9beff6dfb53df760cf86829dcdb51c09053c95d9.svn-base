@@ -1,0 +1,193 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelInterviewMain
+{
+    private $errMsg;
+    private $allowed = array(
+        'title',
+		'author',
+		'date',
+		'summary',
+        'content_type',
+        'tags',
+        'promotion',
+        'link',
+        'icon',
+        'cover',
+		'photos', 
+        'category',
+        'contents',
+        'res_type',
+        'created_on',
+        'created_by',
+        'modified_on',
+        'modified_by',
+        'comments_counter',
+        'video',
+        'video_time'
+    );
+
+    /**
+     * 返回collection
+     *
+     * @author joy.cood
+     *
+     * @return object
+     */
+    public function collection() {
+        return SwimAdmin::db('interview');
+    }
+
+    /**
+     * 添加资讯
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        // $data['cover'] = $data['icon'];
+        $data['created_on'] = time();
+        $data['created_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $data['create_time'] = time();
+        $data['comments_counter'] = 0;
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    /**
+     * 修改资讯
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        // $data['cover'] = $data['icon'];
+        $data['modified_on'] = time();
+        $data['modified_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->update(array('_id' => $id), array('$set' => $data));
+        return $result;
+    }
+
+    /**
+     * 删除资讯
+     *
+     * @author joy.cood
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+
+    /**
+     * 查询资讯
+     *
+     * @author joy.cood
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array()) {
+        $collection = $this->collection();
+        return $collection->find($params)->sort(array('create_time' => -1));
+    }
+
+    /**
+     * 根据id查找
+     *
+     * @author joy.cood
+     *
+     * @param string $id
+     *
+     * @return false | array
+     */
+    public function findOneById($id)
+    {
+        try
+        {
+            $id = new MongoId($id);
+            $matcher = array('_id' => $id);
+            
+            $collection = $this->collection();
+            
+            $item = $collection->findOne($matcher);
+
+            if($item)
+            {
+                $item['id'] = (string)$item['_id'];
+
+                unset($item['_id']);
+
+                return $item;
+            }
+        }
+        catch(MongoException $e)
+        {
+
+        }
+
+        return FALSE;
+    }
+
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params      = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn          = Helper::popValue($params, 'pn', 1);
+        $sort        = Helper::popValue($params, 'sort', '');
+        $tagId       = Helper::popValue($params, 'tagId', '');
+        $contentType = Helper::popValue($params, 'content_type', '');
+        $order       = Helper::popValue($params, 'order', -1);
+        $filters     = array();
+        if($contentType) {
+            if($contentType == 'link') {
+                $filters['content_type'] = 'link';
+            } else {
+                $filters['content_type'] = array('$ne' => 'link');
+            }
+        }
+        if($tagId) {
+            $filters['tags.id'] = $tagId;
+        }
+        if($sort) {
+            $sort = array($sort => intval($order) > 0? 1: -1);
+        } else {
+            $sort = array('promotion' => -1, 'create_time' => -1);
+        }
+        return SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            $sort
+        );
+    }
+}

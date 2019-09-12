@@ -1,0 +1,332 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+//订单列表
+$app->get('/list.html', function() use($app) {
+    $order         = SwimAdmin::model('course.order');
+    $query         = $app->request->get('query');
+    $orderStatus   = $app->request->get('order_status');
+    $trainStatus   = $app->request->get('train_status');
+    $processStatus = $app->request->get('process_status');
+    $data          = $order->pagination();
+
+    $app->view()->addGlobal('_MOD', 'local');
+	$app->render('order/index.html', array(
+        'data'           => $data,
+        'order_status'   => $orderStatus,
+        'train_status'   => $trainStatus,
+        'process_status' => $processStatus,
+        'query'          => $query
+	));
+});
+
+//订单详情
+$app->get('/detail.html', function() use($app){
+   $id     = $app->request()->get('id');
+   $Order  = SwimAdmin::model('course.order');
+   $Course = SwimAdmin::model('course.main');
+   $order  = $Order->findOneByOrderId($id);
+   try{
+       $course = $Course->findOneById($order['course_id']);
+    } catch(Exception $e) {
+        $course = array();
+    }
+    if($app->request->isAjax()) {
+        $app->render('order/detail-form.html', array(
+            'order' => $order
+        ));
+    } else {
+       $app->view()->addGlobal('_MOD', 'cousre');
+       $app->render('order/detail.html', array(
+            'order'   => $order,
+            'course' => $course
+       ));
+    }
+});
+
+//订单祥情
+$app->get('/detail', function() use($app){
+   $id    = $app->request()->get('id');
+   $order = SwimAdmin::model('course.order');
+
+   $data = $order->findOneByOrderId($id);
+});
+
+$app->get('/code.html', function() use($app) {
+    $id = $app->request->get('id');
+    $app->render('order/code-form.html', array(
+        'orderId' => $id
+    ));
+});
+$app->get('/teacher.html', function() use($app) {
+    $Teacher = SwimAdmin::model('teacher.main');
+    $filters = $_GET;
+    $data    = $Teacher->pagination('order/teacher.html?'. http_build_query($filters), null, 6);
+
+    $id   = $app->request->get('id');
+    $from = $app->request->get('from');
+    $app->render('order/teacher-'. ($from == 'ajax'? 'list': 'form'). '.html', array(
+        'orderId' => $id,
+        'data'    => $data
+    ));
+});
+
+//输入验证码激活订单
+$app->post('/active', function() use($app){
+    $Order   = SwimAdmin::model('course.order');
+    $orderId = $app->request->post('orderId');
+    $code    = intval($app->request->post('code'));
+    $list    = array();
+    if(empty($code)) {
+        SwimAdmin::error('核消号不能为空。');
+    }
+    if(empty($orderId)) {
+        $cursor = $Order->findOneByCode($code);
+        if($cursor->count() > 1) {
+            foreach($cursor as $row) {
+                $list[] = $row['order_id'];
+            }
+        } else {
+            foreach($cursor as $row) {
+                $orderId = (string)$row['order_id'];
+                break;
+            }
+        }
+    }
+    if($orderId) {
+        $res = (boolean)$Order->beginTrain($orderId, $code);
+        if(!$res) {
+            SwimAdmin::error('核消号不正确或订单不能核消。<br />核消号：'. $code. '<br />订单号：'. $orderId);
+        }
+    } else if(empty($list)) {
+        SwimAdmin::error('未找到相应的订单，请确定核消号是否正确。');
+    }
+
+    $data = $Order->pagination($app->request()->post('__url'));
+    $app->render('order/list.html', array(
+        'data'     => $data,
+        'orderIds' => $list
+    ));
+});
+
+//分配教练
+$app->post('/allocation', function() use($app){
+    $order     = SwimAdmin::model('course.order');
+    $teacher   = SwimAdmin::model('teacher.main');
+    $orderId   = $app->request->post('orderId');
+    $teacherId = $app->request->post('teacherId');
+
+    $orderData   = $order->findOneByOrderId($orderId);
+    $teacherData = $teacher->findOneById($teacherId);
+    if(!$orderData) {
+        SwimAdmin::error('订单不存在。');
+    } else {
+        if(
+            $orderData['order_status'] != ModelCourseOrder::PAY_STATUS_SUCESS ||
+            $orderData['train_status'] != ModelCourseOrder::TRAIN_STATUS_PROCESSING ||
+            $orderData['seller_process_status'] != ModelCourseOrder::SELLER_PROCESS_STATUS_NORMAL
+        ) {
+            SwimAdmin::error('无法关联教练，订单状态：未付款、退款或已开始授课。');
+        }
+    }
+    if(!$teacherData) {
+        SwimAdmin::error('教练不存在。');
+    } else {
+        if(
+            $teacherData['type'] != 1 ||
+            $teacherData['tel']  == '' ||
+            $teacherData['nick'] == ''
+        ) {
+            SwimAdmin::error('无法关联教练，教练信息不全：联系电话或昵称为空。');
+        }
+    }
+
+    $rs    = $order->teacherAllocation($orderId, $teacherId);
+    if($rs) {
+        $data = $order->pagination($app->request()->post('__url'));
+        $app->render('order/list.html', array(
+            'data' => $data
+        ));
+    } else {
+        SwimAdmin::error('分配教练失败。');
+    }
+});
+
+//培训结束，毕业了
+$app->get('/finish.html', function() use($app) {
+    $Order = SwimAdmin::model('course.order');
+    $id    = $app->request->get('id');
+    $order = $Order->findOneByOrderId($id);
+    $app->render('order/finish-form.html', array(
+        'order'    => $order,
+        'finished' => $order['train_status'] == ModelCourseOrder::TRAIN_STATUS_FINISH
+    ));
+});
+$app->post('/finish', function() use($app){
+    $Order   = SwimAdmin::model('course.order');
+    $orderId = $app->request()->post('orderId');
+    $order   = $Order->findOneByOrderId($orderId);
+    if(empty($order)) {
+        SwimAdmin::error('订单不存在或已经被删除。');
+    } else {
+        if($order['order_status'] != ModelCourseOrder::PAY_STATUS_SUCESS) {
+            SwimAdmin::error('订单未付款，不能确认完成。');
+        } else if($order['train_status'] != ModelCourseOrder::TRAIN_STATUS_START) {
+            SwimAdmin::error('订单未开始授课，不能确认完成。');
+        } else if($order['seller_process_status'] != ModelCourseOrder::SELLER_PROCESS_STATUS_NORMAL) {
+            SwimAdmin::error('退款状态中，不能确认完成。');
+        } else if($order['buyer_process_status'] != ModelCourseOrder::BUYER_PROCESS_STATUS_PAY_SUCESS) {
+            SwimAdmin::error('退款状态中，不能确认完成。');
+        } else if(empty($order['teacher_id'])) {
+            SwimAdmin::error('未绑定教练，不能确认完成。');
+        } else if(empty($order['code']) || empty($order['active_time'])) {
+            SwimAdmin::error('未核消，不能确认完成。');
+        } else if(isset($order['finish_time']) && $order['finish_time']) {
+            SwimAdmin::error('订单已经完成，不能确认完成。');
+        }
+    }
+
+    $res = $Order->finishTrain($orderId);
+    if(!$res) {
+        SwimAdmin::error('确认完成失败。');
+    } else {
+        $data = $Order->pagination($app->request()->post('__url'));
+        $app->render('order/list.html', array(
+            'data' => $data
+        ));
+    }
+});
+
+//微信退款
+$app->get('/refund.html', function() use($app) {
+    $Order = SwimAdmin::model('course.order');
+    $id    = $app->request->get('id');
+    $order = $Order->findOneByOrderId($id);
+    $app->render('order/refund-form.html', array(
+        'order' => $order
+    ));
+});
+
+$app->post('/weixin/refund', function() use($app){
+    include_once('lib/wxpay/WxPay.Api.php');
+    $Order     = SwimAdmin::model('course.order');
+    $orderId   = trim($app->request()->post('orderId'));   //订单号
+    //$orderId = '20160314150212936261731';
+    $refundFee = trim($app->request()->post('refundFee')) * 100; //退款金额
+
+    $order = $Order->findOneByOrderId($orderId);
+    if(empty($order)) {
+        SwimAdmin::error('订单不存在或已经被删除。');
+    }
+    if($order['buyer_process_status'] != ModelCourseOrder::BUYER_PROCESS_STATUS_ASK_REFUND) {
+        SwimAdmin::error('不是申请退款状态，无法完成退款确认。');
+    } else if($order['seller_process_status'] != ModelCourseOrder::SELLER_PROCESS_STATUS_PROCESSING) {
+        SwimAdmin::error('不是退款处理中状态，无法完成退款确认。');
+    }
+
+    $num  = Helper::mkrand();
+    $time = date('YmdHis');
+    $outRefundNo = $time . $num;
+
+    $input = new WxPayRefund();
+    $input->SetOut_trade_no($orderId);
+    $input->SetTotal_fee(intval($order['total_fee'] * 100)); //订单总金额  单位为分
+    $input->SetRefund_fee($refundFee); //退款金额   单位为分
+    $input->SetOut_refund_no($outRefundNo);
+    $input->SetOp_user_id(Config::$payment['weixin_mch_id']);
+    $result = WxPayApi::refund($input); 
+    
+    if($result['return_code']=='SUCCESS')
+    {
+        $wxPayDataBase = new WxPayResults();
+        $wxPayDataBase->FromArray($result);
+        $sign = $wxPayDataBase->SetSign(); 
+
+        if($sign==$result['sign'])
+        {
+            // 退款金额=退款金额/100 (元) 单位转换
+            $res = $Order->updateRefundStatus($result['out_trade_no'], $result['out_refund_no'], $result['refund_fee']/100, 'weixin');
+            if($res) {
+                $data = $Order->pagination($app->request()->post('__url'));
+                $app->render('order/list.html', array(
+                    'data' => $data
+                ));
+            } else {
+                SwimAdmin::error('退款确认失败。');
+            }
+        }
+        else
+        {
+        	//签名错误
+            SwimAdmin::error('退款确认失败, 签名错误。');
+        }
+    } else {
+        $error = @$result['return_msg'];
+        SwimAdmin::error('退款确认错误: '. ($error? $error: '未知错误'));
+    }
+});
+
+$app->post('/alipay/refund', function() use($app){
+    include_once('lib/alipay/alipay_submit.class.php');
+    $Order     = SwimAdmin::model('course.order');
+    $orderId   = trim($app->request()->post('orderId'));
+    $refundFee = trim($app->request()->post('refundFee')) * 1;
+    $reason    = trim($app->request()->post('reason'));
+
+    $order = $Order->findOneByOrderId($orderId);
+    if(empty($order)) {
+        echo '订单不存在或已经被删除。'; exit;
+    }
+    if($order['buyer_process_status'] != ModelCourseOrder::BUYER_PROCESS_STATUS_ASK_REFUND) {
+        echo '不是申请退款状态，无法完成退款确认。'; exit;
+    } else if($order['seller_process_status'] != ModelCourseOrder::SELLER_PROCESS_STATUS_PROCESSING) {
+        echo '不是退款处理中状态，无法完成退款确认。'; exit;
+    } else if(!isset($order['pay_result']) || !isset($order['pay_result']['trade_no']) || empty($order['pay_result']['trade_no'])) {
+        echo 'trade no 为空，无法完成退款确认。'; exit;
+    }
+    $tradeNo = $order['pay_result']['trade_no'];
+
+    //模拟数据
+    /*$tradeNo   = '2016030521001004460264738879';
+    $refundFee = 0.01;
+    $reason    = '正常退款'*/
+
+    $batch_no    = date('YmdHis', time()) . Helper::mkrand();
+    $batch_num   = '1';
+    $detail_data = "{$tradeNo}^{$refundFee}^{$reason}";
+
+    $parameter = array(
+        "service"        => 'refund_fastpay_by_platform_pwd',
+        "partner"        => Config::$payment['alipay_partner'],
+        "notify_url"     => Config::$payment['alipay_refund_notify_url'],
+        "seller_user_id" => Config::$payment['alipay_partner'],
+        "refund_date"    => date("Y-m-d H:i:s",time()),
+        "batch_no"       => $batch_no,
+        "batch_num"      => $batch_num,
+        "detail_data"    => $detail_data,
+        "_input_charset" => strtolower(Config::$payment['alipay_input_charset']),
+        "sign_type"      => strtoupper(Config::$payment['alipay_sign_type'])
+    );
+
+    $alipayConfig = array(
+        'partner'             => Config::$payment['alipay_partner'],
+        'seller_id'           => Config::$payment['alipay_seller_id'],
+        'private_key_path'    => Config::$payment['alipay_private_key_path'],
+        'ali_public_key_path' => Config::$payment['alipay_public_key_path'],
+        'sign_type'           => strtoupper(Config::$payment['alipay_sign_type']),
+        'input_charset'       => strtolower(Config::$payment['alipay_input_charset']),
+        'cacert'              => Config::$payment['alipay_cacert_path'],
+        'transport'           => Config::$payment['alipay_transport']
+    );
+
+    //建立请求
+    $alipaySubmit = new AlipaySubmit($alipayConfig);
+    $html_text = $alipaySubmit->buildRequestForm($parameter,"get", "确认");
+    echo $html_text;
+
+    /**
+    $data = $Order->pagination($app->request()->post('__url'));
+    $app->render('order/list.html', array(
+        'data' => $data
+    ));
+    **/
+});

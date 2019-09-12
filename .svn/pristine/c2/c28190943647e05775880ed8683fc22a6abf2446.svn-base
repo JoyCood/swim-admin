@@ -1,0 +1,396 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelTeacherMain
+{
+	private $errMsg;
+	private $allowed = array(
+        'member_id',        //
+        'price',            // 人均价格
+        'rates',            // 评分
+        'cert',             // 认证
+        'district',         // 地区
+        'score',
+        'photos',
+        // 'expenses',
+        'coords',
+        'service_time',     // 教学时间
+        'teacher_address',  // 教学地址
+        'tel',              //座机
+        'remark',
+        'create_time',
+        'created_by',
+        'modified_on',
+        'modified_by'
+    );
+
+    private $member = array(
+        'id'              => null,  //用户id
+        'nick'            => '',    //昵称
+        'sex'             => '保密', //性别
+        'age'             => 0,     //年龄
+        'height'          => 0,     //身高
+        'weight'          => 0,     //体重
+        'birthday'        => 0,     //出生日期
+        'bmr'             => 0,     //基础代谢率
+        'pwd'             => '',    //密码
+        'phone'           => '',    //手机号
+        'mail'            => '',    //邮箱
+        'sig'             => '',    //个性签名
+        'hometown'        => '',    //故乡
+        'location'        => '',    //现居地址
+        'avatar_small'    => '',    //小头像
+        'avatar_mid'      => '',    //中头像
+        'avatar_big'      => '',    //大头像
+        'type'            => 0,     //帐户类型(0普通用户, 1教练...)
+        'level'           => 1,     //等级
+        'vip'             => 0,     //会员
+        'reg_time'        => null,  //注册时间
+        'last_login'      => null,  //最后登录时间
+        'statu'           => 0,     //帐号状态
+        'sns'             => array(
+            'qq'       => null,
+            'weibo'    => null,
+            'wechat'   => null,
+            'renren'   => null,
+            'facebook' => null,
+            'twitter'  => null),
+        'secret'       => '',     //通信密匙
+        'device_id'    => '',     //设备id    
+    );
+
+	public function collection() {
+		return SwimAdmin::db('location_teacher');
+	}
+
+	/**
+     * 添加教练
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $member = SwimAdmin::model('member.main');
+        $data['avatar_small']           = isset($data['avatar_small'])? $data['avatar_small']: '';
+        $this->member['nick']           = $data['nick'];
+        $this->member['sex']            = $data['sex'];
+        $this->member['phone']          = $data['phone'];
+        $this->member['avatar_small']   = $data['avatar_small'];
+        $this->member['avatar_mid']     = str_replace('/small-', '/mid-', $data['avatar_small']);
+        $this->member['avatar_big']     = str_replace('/small-', '/big-', $data['avatar_small']);
+        $this->member['type']           = 1;
+        $this->member['reg_time']       = time(); 
+        $this->member['last_login']     = time();
+
+        $member->collection()->insert($this->member);
+
+        $this->member['id'] = (string)$this->member['_id'];
+
+        unset(
+            $this->member['_id'], 
+            $this->member['pwd'], 
+            $this->member['secret']
+        );
+
+        $data['member_id']  = $this->member['id'];
+        $data['score']      = Helper::uint($data['rates']);
+        $data['create_time']= $data['create_time']? $data['create_time']: time();
+        $data['created_by'] = $_SESSION[S_USER];
+        if(isset($data['coordinates'])) {
+            $coords = explode(',', $data['coordinates']);
+            $data['coords'] = array(
+                'type' => 'Point',
+                'coordinates' => array(
+                    trim($coords[0]) * 1,
+                    trim($coords[1]) * 1
+                )
+            );
+            unset($data['coordinates']);
+        }
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->insert($data);
+
+        if(isset($data['_id']))
+        {
+            $data['id']   = (string)$data['_id'];
+            $data['nick'] = $this->member['nick'];
+
+            $this->addElasticSearch($data);
+        }
+        return $result;
+    }
+
+    /**
+     * 把数据添加到搜索引擎
+     *
+     * @param $item  array
+     *
+     * @return bool
+     */
+    public function addElasticSearch($item) {
+        $params = array();
+        $params['index'] = 'swim';
+        $params['type']  = 'teacher';
+        $params['id']    = $item['id'];
+
+        $params['body'] = array(
+            'member_id' => $item['member_id'],
+            'nick'      => $item['nick'],
+            'coords'    => $item['coords']['coordinates'],
+            'district'  => $item['district'],
+            'score'     => $item['score'],
+            'teacher_address' => $item['teacher_address']
+        );
+
+        return SwimAdmin::elastic()->index($params);
+    }
+
+    /**
+     * 修改教练
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $member = SwimAdmin::model('member.main');
+        $rs = $this->findOneById($id);
+        if($rs) {
+            $mid = $rs['member_id'];
+            $memberData = array(
+                'nick' => $data['nick'],
+                'sex' => $data['sex'],
+                'phone' => $data['phone'],
+                // 'avatar_small' => $data['avatar_small'],
+                // 'avatar_mid' => $data['avatar_small'],
+                // 'avatar_big' => $data['avatar_small'],
+                'type' => 1
+            );
+            if($rs['avatar_small'] != $data['avatar_small']) {
+                $memberData['avatar_small'] = $data['avatar_small'];
+                $memberData['avatar_mid']   = str_replace('/small-', '/mid-', $data['avatar_small']);
+                $memberData['avatar_big']   = str_replace('/small-', '/big-', $data['avatar_small']);
+            }
+            $member->update($memberData, $mid);
+
+            $data['create_time'] = $data['create_time']? $data['create_time']: time();
+            $data['modified_on'] = time();
+            $data['modified_by'] = $_SESSION[S_USER];
+            if(isset($data['coordinates'])) {
+                $coords = explode(',', $data['coordinates']);
+                $data['coords'] = array(
+                    'type' => 'Point',
+                    'coordinates' => array(
+                        trim($coords[0]) * 1,
+                        trim($coords[1]) * 1
+                    )
+                );
+                unset($data['coordinates']);
+            }
+
+            $data = Helper::allowed($data, $this->allowed);
+            $result = $collection->update(array('_id' => new MongoId($id)), array('$set' => $data));
+            
+            $data['nick']  = $memberData['nick'];
+            $data['score'] = Helper::uint($data['rates']);
+
+            $this->updateElasticSearch($data, $id);
+            return $result;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 更新搜索引擎中的数据
+     *
+     * @param $data array
+     * @param $id   string
+     *
+     * @return unknow
+     */
+    public function updateElasticSearch($data, $id)
+    {
+        $params = array();
+        $params['index'] = 'swim';
+        $params['type']  = 'teacher';
+        $params['id']    = (string)$id;
+        
+        $params['body']['doc'] = array(
+            'nick'      => $data['nick'],
+            'coords'    => $data['coords']['coordinates'],
+            'district'  => $data['nick'],//$data['district'],
+            'score'     => $data['score'],
+            'teacher_address' => $data['teacher_address']
+        );
+        return SwimAdmin::elastic()->update($params);        
+    }    
+
+    /**
+     * 删除教练
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+
+        $this->deleteElasticSearch();
+        
+        return $result;
+    }
+
+     /**
+     * 删除搜索引擎中的教练数据
+     *
+     * @param $ids array
+     *
+     * @return void
+     */
+    public function deleteElasticSearch($ids)
+    {
+        $params = array();
+        $params['index'] = 'swim';
+        $params['type']  = 'teacher';
+
+        foreach($ids as $id)
+        {
+            $params['id'] = (string)$id;
+
+            SwimAdmin::elastic()->delete($params);
+        }
+    }
+
+	/**
+     * 查询教练
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array(), $projection=array()) {
+		$data       = array();
+        $member     = SwimAdmin::model('member.main');
+		$collection = $this->collection();
+		$rs         = $collection->find($params);
+		$mids       = array();
+		foreach($rs as $row) { 
+			$id               = (string)$row['_id'];
+			$mid              = isset($row['member_id'])? (string)$row['member_id']: null;
+			$mids[]           = new MongoId($mid);
+			$row['id']        = $id;
+			$row['member_id'] = $mid;
+			$data[$mid]       = $row;
+		}
+		$rs = $member->find(array('_id' => array('$in' => $mids)));
+		foreach($rs as $row) {
+			$mid = (string)$row['_id'];
+			unset($row['_id']);
+			unset($row['id']);
+			if(isset($data[$mid])) {
+				$data[$mid] = array_merge($data[$mid], $row);
+			}
+		}
+        return $data;
+    }
+
+
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null, $limit = null) {
+        $member  = SwimAdmin::model('member.main');
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'create_time');
+        $order   = Helper::popValue($params, 'order', -1);
+        $filters = array();
+
+        $district = Helper::popValue($params, 'district', '');
+        if($district) {
+            $filters['district'] = new MongoRegex('/'.$district. '/');
+        }
+        $name = Helper::popValue($params, 'name', '');
+        if($name) {
+            $rs = $member->find(array(
+                'type' => 1,
+                'nick' => new MongoRegex('/'. $name. '/')
+            ));
+            $mids = array();
+            foreach($rs as $m) {
+                $mids[] = (string)$m['_id'];
+            }
+            $filters['member_id'] = array('$in' => $mids);
+        }
+
+        $data    = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1),
+            $limit
+        );
+        $mids = array();
+        $list = array();
+        foreach($data['items'] as $row) {
+            $id               = (string)$row['_id'];
+            $mid              = isset($row['member_id'])? (string)$row['member_id']: null;
+            $mids[]           = new MongoId($mid);
+            $row['id']        = $id;
+            $row['member_id'] = $mid;
+            $list[$mid]       = $row;
+        }
+        $rs = $member->find(array('_id' => array('$in' => $mids)));
+        foreach($rs as $row) {
+            $mid = (string)$row['_id'];
+            unset($row['_id']);
+            unset($row['id']);
+            if(isset($list[$mid])) {
+                $list[$mid] = array_merge($list[$mid], $row);
+            }
+        }
+        $data['items'] = $list;
+
+        return $data;
+    }
+
+    public function findOneById($id) {
+        $collection = $this->collection();
+        $member = SwimAdmin::model('member.main');
+        $data = $collection->findOne(array('_id' => new MongoId($id)));
+        
+        if($data) {
+            $rs = $member->collection()->findOne(array(
+                '_id' => new MongoId($data['member_id'])
+            ));
+
+            if(!$rs)
+            {
+                $rs = $this->member;
+                $rs['_id'] = new MongoId($data['member_id']);
+            }
+            
+            $data = array_merge($data, (array)$rs);
+
+            return $data;
+        }
+
+        return FALSE;
+    }
+}

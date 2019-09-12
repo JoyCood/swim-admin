@@ -1,0 +1,36 @@
+<div class="text-right bar">
+	<a href="lbs/club-form.html" class="btn btn-success"><b class="fa fa-plus"></b>新建</a>
+	{% if check_perm('main-contents', 'DELETE') %}<button id="club-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#club-trash-btn" /></th>
+			<th width="100">协会名称</th>
+			<th width="80">会徽</th>
+			<th width="80">城市</th>
+			<th width="90">最后更新</th>
+			<th width="40">状态</th>
+			<th width="50"></th>
+			<th width="50"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data %}
+		<tr data-id="{{item._id}}">
+			<td width="30"><input type="checkbox" name="name" value="{{item._id}}" /></td>
+			<td width="100">{{item.name}}</td>
+			<td width="80px"><img src="{{item.icon}}" style="max-width:50px;"/></td>
+			{% for ident in item.idents %}
+			<td width="80px">{{ident.city_name}}</td>
+			{% endfor %}
+			<td>{{item.modified_on? item.modified_on|date('Y-m-d H:i:s'): item.create_time|date('Y-m-d H:i:s')}}</td>
+			<td>{{item.status|status}}</td>
+			<td class="table-action">
+				<a href="lbs/club-form.html?id={{item._id}}" class="fa fa-list-alt" app-bubble="false"></a>
+			</td>
+			<td><a href="lbs/club-notice.html?id={{item._id}}"  app-bubble="false">公告</a></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

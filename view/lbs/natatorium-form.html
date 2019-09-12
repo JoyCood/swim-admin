@@ -1,0 +1,159 @@
+{% import "_macro.html" as macro %}
+<form id="natatorium-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="lbs/natatorium/form.html" target="#natatorium-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>游泳馆资料{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="natatorium-form-contet" class="box-content">
+			<div id="natatorium-form-main">
+				<table class="form">
+					<tr>
+						<th></th>
+						<td>
+							<input type="checkbox" id="natatorium-status" name="hall" value="1"{{data.hall? ' checked': ''}} />
+							<label for="natatorium-status">泳厅</label>
+						</td>
+					</tr>
+                        <tr>
+                            <th>校区：</th>
+                            <td colspan="3">
+                                <select id="course-region" class="form-control" name="region">
+                                    <option value=""></option>
+                                    {% for region in regions %} {% set rid = region._id ~ '' %}
+                                    <option value="{{rid}}::{{region.name}}" {{slted[rid] is defined? ' selected': ''}}>{{region.name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+					<tr>
+						<th width="90">名称：</th>
+						<td>
+							<input type="text" name="title" id="natatorium-name" class="form-control" value="{{data.title}}" placeholder="请输入游泳馆名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>坐标：</th>
+						<td>
+							<input type="text" name="coordinates" id="natatorium-coordinates" class="form-control" value="{{data.coords.coordinates|join(',')}}" placeholder='坐标请以","分隔' autocomplete="off" app-pattern="[\d\.]+,[\d\d]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>图标：</th>
+						<td>
+							{{ macro.thumb('icon', data.icon) }}
+							{{ macro.upload('natatorium-icon', 'icon', 'icon', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>星级：</th>
+						<td>
+							<select class="form-control" id="natatorium-rates" name="rates">
+								{% set rates = data? data.rates: 5 %}
+								{% for i in range(0,10) %}
+								<option value="{{i}}"{{rates==i? ' selected': ''}}>{{i}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>价格：</th>
+						<td>
+							<input type="text" id="natatorium-price" name="price" class="form-control" value="{{data.price}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>地区：</th>
+						<td>
+							<input type="text" id="natatorium-district" name="district" class="form-control" value="{{data.district}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>电话：</th>
+						<td>
+							<input type="text" id="natatorium-tel" name="tel" class="form-control" value="{{data.tel}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>开放时间：</th>
+						<td>
+							<input type="text" id="natatorium-time" name="open_time" class="form-control" value="{{data.open_time}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>地址：</th>
+						<td>
+							<textarea id="natatorium-address" name="address" class="form-control" placeholder="游泳馆地址" app-required="on" autocomplete="off">{{data.address}}</textarea>
+						</td>
+					</tr>
+					<tr>
+						<th>备注：</th>
+						<td>
+							<textarea id="natatorium-remark" name="remark" class="form-control" placeholder="游泳馆备注" app-required="on" autocomplete="off">{{data.remark}}</textarea>
+						</td>
+					</tr>
+				</table>
+				<table class="form">
+					<tr>
+						<th width="90">去过的人数：</th>
+						<td>
+							<input type="text" id="natatorium-guest-counter" name="guest_counter" class="form-control" value="{{data.guest_counter}}" autocomplete="off" />
+						</td>
+						<th width="90"> &nbsp; 想去的人数：</th>
+						<td>
+							<input type="text" id="natatorium-willer-counter" name="willer_counter" class="form-control" value="{{data.willer_counter}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>收藏的人数：</th>
+						<td>
+							<input type="text" id="natatorium-favorites" name="favorites" class="form-control" value="{{data.favorites}}" autocomplete="off" />
+						</td>
+						<td colspan="2"></td>
+					</tr>
+					<tr>
+						<th>创建时间：</th>
+						<td colspan="3">
+							<input type="text" id="natatorium-create-time" name="create_time" class="form-control" value="{{data.create_time?data.create_time|date('Y-m-d H:i:s'):''}}" placeholder="年-月-日 时:分:秒(留空即为当前时间)" autocomplete="off" />
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div id="natatorium-form-aside">
+				<p>图片：</p>
+				<div id="natatorium-image-list">
+					{% if(data.photos) %}
+						{% for photo in data.photos %}
+							{{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+						{% endfor %}
+					{% endif %}
+					{{ macro.upload('', 'photos[]') }}
+				</div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="natatorium-id" name="id" value="{{id}}" />
+			<button type="submit" id="natatorium-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#natatorium-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+		$('#natatorium-form-contet').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

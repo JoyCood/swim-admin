@@ -1,0 +1,52 @@
+{% import "_macro.html" as macro %}
+<form id="member-tags-form" action="member/tags-form.html" target="#member-tags-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>马甲详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="member-tags-form-contet" class="box-content">
+			<div id="member-tags-form-main" style="width: 500px; padding-right: 20px; overflow: hidden;">
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-2">名称：</label>
+						<div class="col-sm-10">
+							<input type="text" name="title" id="tgroup-title" class="form-control" value="{{data.title}}" placeholder="请输入马甲名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-status" class="control-label col-sm-2">状态：</label>
+						<div class="col-sm-10">
+							<input type="checkbox" id="tgroup-status" name="statu" value="1"{{not data or data.statu? ' checked': ''}} />
+							<label for="tgroup-status">启用</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="member-tags-form-foot" class="box-footer">
+			<input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<button type="submit" id="tgroup-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+
+<script>
+$(function() {
+	$('#member-tags-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+ 	});
+});
+</script>

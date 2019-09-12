@@ -1,0 +1,64 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#course-trash-btn" /></th>
+			<th width="60">名称</th>
+			<th width="60">分类</th>
+			<th width="120">使用说明</th>
+			<th width="60">金额</th>
+			<th width="60">领取人数</th>
+			<th width="60">领取限制/库存</th>
+			<th width="90">有效期</th>
+			<th width="90">状态</th>
+			<th width="33">操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="courpon" value="{{item._id}}" /></td>
+			<td>{{item.title}}</td>
+            <td>
+                {% if item.coupon_type == 1 %}
+                课程减免券
+                {% endif %}
+                {% if item.coupon_type == 2 %}
+                积分兑换券
+                {% endif %}
+                {% if item.coupon_type == 3 %}
+                活动优惠券
+                {% endif %}
+            </td>
+			<td>{{item.contents}}</td>
+			<td>{{item.coupon_val|number_format(2)}}</td>
+			<td>{{item.get_coupon_nums}}</td>
+            <td>
+                {% if item.restriction == 0 %}
+                不限制
+                {% endif %}
+                {% if item.restriction == 1 %}
+                限张数：({{item.restrict_value}})张
+                {% endif %}
+                {% if item.restriction == 2 %}
+                限次数：({{item.restrict_nums}})次
+                {% endif %}
+                /{{item.coupon_stock}}
+            </td>
+			<td>{{item.expire_time? item.expire_time|date('Y-m-d H:i:s'): item.expire_time|date('Y-m-d H:i:s')}}</td>
+            <td>
+                {% if item.status == 1 %}
+                启用
+                {% endif %}
+                {% if item.status == 2 %}
+                禁用
+                {% endif %}
+            </td>
+			<td class="table-action">
+				<a class="fa fa-edit" app-bubble="false"></a>
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

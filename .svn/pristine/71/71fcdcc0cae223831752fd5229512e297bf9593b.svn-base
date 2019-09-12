@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, maximum-scale=1, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="msapplication-tap-highlight" content="no" />
+<meta name="format-detection" content="telephone=no" />
+<base href="{{_BaseURL}}" />
+<link type="text/css" href="css/3rd/bootstrap.min.css?ver={{_Config.resVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/3rd/jquery.toastmessage.css?ver={{_Config.resVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/admin/global.css?ver={{_Config.resVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/admin/layout.css?ver={{_Config.resVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/admin/style.css?ver={{_Config.resVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/font-awesome-4.1.0/font-awesome.min.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+{% block css %}{% endblock %}
+<script type="text/javascript" src="js/3rd/jquery-1.11.1.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/mousewheelStopPropagation.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/jquery.toastmessage.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/bootstrap.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/admin/app.js?ver={{_Config.resVersion}}"></script>
+<script type="text/javascript" src="js/admin/ext.js?ver={{_Config.resVersion}}"></script>
+<script type="text/javascript" src="js/admin/admin.js?ver={{_Config.resVersion}}"></script>
+{% block javascript %}{% endblock %}
+<title>{{_Title}} - {{_Config.title}} - 管理台</title>
+</head>
+
+<body>
+<header id="main-header">
+	<a id="main-logo" href="index.html"><img id="logo-img" src="image/logo.png" title="{{_Config.title}}" /></a>
+	<div id="main-nav">
+	{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'discover'? ' class="current"': ''}}>
+			<a href="javascript:;">首页<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>首页</strong>
+					<a href="adv/index.html">头图</a>
+				</nav>
+				<nav>
+					<strong>教与学</strong>
+					<a href="school/teaching.html">游泳教学</a>
+					<a href="school/teaching/video-group/index.html">视频组</a>
+					<a href="school/training/category.html">分类管理</a>
+				</nav>
+				<nav>
+					<strong>看点</strong>
+					<a href="home/interview/list.html">趣看点</a>
+                    <a href="home/interview/tags.html">标签管理</a>
+				</nav>
+				<nav>
+					<strong>文章</strong>
+					<a href="news/list.html">原创</a>
+					<a href="news/category.html">分类管理</a>
+					<a href="news/columnist.html">专栏管理</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'City'? ' class="current"': ''}}>
+			<a href="javascript:;">同城<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>城市管理</strong>
+					<a href="course/area.html">开放城市</a>
+					<a href="course/region.html">开放校区</a>
+				</nav>
+				<nav>
+					<strong>约泳</strong>
+					<a {#href=""#}>约泳</a>
+				</nav>
+				<nav>
+					<strong>课程</strong>
+					<a href="course/list.html">课程</a>
+					<a href="course/category.html">分类管理</a>
+				</nav>
+				<nav>
+					<strong>活动</strong>
+					<a href="home/match/list.html">活动</a>
+					<a href="home/match/category-list.html">分类管理</a>
+				</nav>
+				<nav>
+					<strong>附近</strong>
+					<a href="lbs/natatorium.html">场馆</a>
+					<a href="lbs/teacher.html">教练</a>
+				</nav>
+				<nav>
+					<strong>协会</strong>
+					<a href="lbs/club.html">协会</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'lbs'? ' class="current"': ''}}>
+			<a href="javascript:;">泳圈<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>内容管理</strong>
+					<a href="tweet/index.html">泳圈</a>
+					<a href="report/index.html">举报</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'adv'? ' class="current"': ''}}>
+			<a href="javascript:;">商城<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>商城管理</strong>
+					<a id="main-nav-mall" href="javascript:;">商城跳转</a>
+					<a href="goods/merchant.html">商户管理</a>
+					<a href="https://wap.koudaitong.com/v2/feature/huieprb">有赞后台</a>
+				</nav>
+				<nav>
+					<strong>牛装备</strong>
+					<a href="goods/list.html">牛装备</a>
+					<a href="goods/category.html">分类管理</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'member'? ' class="current"': ''}}>
+			<a href="javascript:;">用户<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>用户管理</strong>
+					<a href="member/index.html">全部用户</a>
+					<a href="member/index.html?type=0">注册用户</a>
+					<a href="member/index.html?type=2">马甲用户</a>
+					<a href="member/tags.html">用户标签</a>
+				</nav>
+				<nav>
+					<strong>会员管理</strong>
+					<a href="member/ident.html">认证</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'match'? ' class="current"': ''}}>
+			<a href="javascript:;">赛事<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>赛事管理</strong>
+					<a href="home/match/match.html">成绩录入</a>
+					<a href="home/match/match_category.html">赛事列表</a>
+				</nav>
+				<nav>
+					<strong>赛事工具</strong>
+					<a href="">待定</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		{% if check_perm('orders', 'READ')%}
+		<nav{{_MOD=='local'? ' class="current"': ''}}>
+          <a href="javascript:;">培训订单<i class="caret"></i></a>
+		  <div>
+            <nav>
+				<a href="order/list.html">订单管理</a>
+			</nav>
+		  </div>
+		</nav>
+		{% endif %}
+		{% if check_perm('main-contents', 'READ')%}
+		<nav{{_MOD == 'system'? ' class="current"': ''}}>
+			<a href="javascript:;">消息<i class="caret"></i></a>
+			<div>
+				<nav>
+					<strong>用户消息</strong>
+					<a href="feedback/index.html">用户反馈</a>
+					<a {#href=""#}>客服</a>
+				</nav>
+				<nav>
+					<strong>系统消息</strong>
+					<a {#href=""#}>系统消息发布</a>
+				</nav>
+			</div>
+		</nav>
+		{% endif %}
+		<nav {{_MOD == 'admin'? ' class="current"': ''}} id="main-nav-profile">
+			<a href="javascript:;">账号管理<i class="caret"></i></a>
+			<div>
+				<nav>
+					<a id="main-nav-pass" href="javascript:;">修改密码</a>
+					<a href="logout.html">注销</a>
+					{% if check_perm('users', 'READ')%}<a href="user/user.html">子账号管理</a>{% endif %}
+					{% if check_perm('main-contents', 'READ')%}<a href="upgrade/package.html">升级包上传</a>{% endif %}
+				</nav>
+			</div>
+		</nav>
+	</div>
+</header>
+
+<section id="main-section">
+{% block main %}
+{% endblock %}
+</section>
+
+<div id="app-loading">
+	<div id="app-loading-icon">
+		<i class="fa fa-cog fa-spin"></i>
+	</div>
+</div>
+
+<!-- 公用的上传表单 -->
+<form id="app-upload-form" method="POST" action="upload.html?v=2" target="app-upload-frame" enctype="multipart/form-data">
+	<input type="file" id="app-upload-file" name="upload[]" multiple />
+	<input type="hidden" id="app-upload-type" name="type" />
+	<input type="hidden" id="app-upload-name" name="name" />
+	<iframe id="app-upload-frame" name="app-upload-frame" src="blank.html"></iframe>
+</form>
+
+<form id="app-multipart-upload" action="">
+	<input type="file" id="file">
+</form>
+
+{% block footer %}{% endblock %}
+
+<script src="js/3rd/SparkMD5-0.0.5/spark-md5.js"></script>
+<script src="js/3rd/async-1.3.0/lib/async.js"></script>
+<script src="js/3rd/upyun-upload/lib/upyun-mu.js?ver={{_Config.res3rdVersion}}&n=1"></script>
+<script>
+var UPYun = {
+	upload: function(callback) {
+		UPYun.callback = callback || $.noop;
+		$('#file').trigger('click');
+	}
+}
+$('#file').on('change', function() {
+	$(this.form).trigger('submit');
+});
+$('#app-multipart-upload').on('submit', function() {
+	App.Loading.show();
+	var file     = document.getElementById('file');
+	var ext      = '.' + file.files[0].name.split('.').pop();
+	var date     = new Date();
+	var m        = date.getMonth() + 1;
+	var d        = date.getDate();
+	var filename = [date.getFullYear(), m < 10? '0' + m: m, d < 10? '0' + d: d, '/'].join('');
+	filename += SparkMD5.hash(Math.random() + '' + date.getTime() + file.files[0].name);
+	filename = '/upload/' + filename + ext;
+	var opts = {
+		'bucket'    : '{{_Storage.image.bucket}}',
+		'expiration': parseInt((new Date().getTime() + 3600000) / 1000),
+	}
+	// App.ajax({
+	// 	url: '/upyun-sign',
+	// 	data: opts,
+	// 	type: 'post',
+	// 	dataType: 'json',
+	// 	success: function(response) {
+			// opts.signature = response.signature;
+
+			var options  = {};
+			var instance = new Sand(opts);
+			instance.setOptions(options);
+			instance.upload(filename);
+	// 	}
+	// });
+	return false;
+});
+document.addEventListener('uploaded', function(e) {
+	e.detail.host = "{{_Storage.image.host}}";
+	UPYun.callback(e.detail);
+	App.Loading.hide();
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	// 主菜单事件
+	$('#main-header').on('mouseenter', '#main-nav>nav', function() {
+		$('#main-nav>nav.actived').removeClass('actived');
+		$(this).addClass('actived');
+	}).on('mouseleave', '#main-nav>nav', function() {
+		if(!$('#main-nav').hasClass('actived')) {
+			$('#main-nav>nav.actived').removeClass('actived');
+		}
+	}).on('click', '#main-nav>nav', function(e) {
+		$('#main-nav').addClass('actived');
+		setTimeout(function() {
+			$(document).off('click.mnav').one('click.mnav', function() {
+				$('#main-nav').removeClass('actived');
+				$('#main-nav>nav.actived').removeClass('actived');
+				$(document).off('click.mnav');
+			});
+		}, 20);
+		e.stopPropagation();
+	}).on('click', '#main-nav-pass', function() {
+		App.Box.open('user/password.html');
+	}).on('click', '#main-nav-mall', function() {
+		App.Box.open('goods/mall-form.html');
+	});
+
+	// 通用事件
+	$('#main-section').on('click', '.table', function(e) {
+		var target	= e.target;
+		if(target.getAttribute('app-bubble') != 'false') {
+			if(target.type != 'checkbox') {
+				var td;
+				if(target.tagName != 'TD') {
+					td = $(target).closest('td');
+				} else {
+					td = $(target);
+				}
+				var parent = td.parent().parent();
+				if(parent.prop('tagName') == 'TBODY') {
+					var chkbox = td.find('input[type="checkbox"]');
+					var checked = !chkbox.prop('checked');
+					chkbox.prop('checked', checked);
+				}
+			} else {
+				var tr = $(target).closest('tr');
+				var parent = tr.parent();
+				var checked = target.checked;
+			}
+			if(parent.prop('tagName') == 'THEAD') {
+				var boxes = parent.next('TBODY').find('input[type="checkbox"]');
+				var chkbox = parent.find('input[type="checkbox"]');
+				boxes.prop('checked', checked);
+			} else {
+				var boxes = parent.find('input[type="checkbox"]');
+				var thead = parent.prev('THEAD');
+				chkbox = thead.find('input[type="checkbox"]');
+				checked = boxes.filter(':checked').length;
+				chkbox.prop('checked', boxes.length == checked);
+			}
+			var rel = $(chkbox.attr('rel'));
+			if(checked) {
+				rel.each(function() {
+					var el = $(this);
+					el.addClass('btn-' + (el.attr('btn-style') || 'danger'))
+					  .removeClass('disabled');
+				});
+			} else {
+				rel.each(function() {
+					var el = $(this);
+					el.removeClass('btn-' + (el.attr('btn-style') || 'danger'))
+					  .addClass('disabled');
+				});
+			}
+		}
+	}).on('click', 'div.close-bread', function() {
+		// 关闭面包屑
+		$(this).closest('div.breadcrumbs').animate({opacity: 0}, 200, function() {
+			$(this).remove();
+		});
+	});
+
+	// 上传文件事件绑定
+	$('#app-upload-file').on('change', function() {
+		var ua = navigator.userAgent;
+		var item = $('#app-upload-file').data('item');
+		item.addClass('up-loading');
+		$('#app-upload-file').attr('app-state', '1');
+		$('#app-upload-form').submit();
+	});
+	document.getElementById('app-upload-frame').onload = function() {
+			var doc = this.contentWindow.document;
+			var content = $('div#upload', doc.body);
+			var item = $('#app-upload-file').data('item');
+			var fileItem = $('#app-upload-file');
+			var empty = true;
+			if(content.length == 1) {
+				item.before(content.html());
+				item.trigger('preview');
+				empty = false;
+//			} else {
+//				App.alert('上传失败。');
+			}
+			if(!fileItem.attr('multiple')) {
+				var thumbs = item.parent().find('div.thumb');
+				if(thumbs.length > 1) {
+					thumbs.eq(0).remove();
+				}
+			}
+			fileItem.removeData('item').removeAttr('app-state');
+			item && item.removeClass('up-loading');
+			if(!empty) {
+				doc.location.href = 'blank.html';
+			}
+			$('#app-upload-file').val('');
+//			alert(2)
+	}
+	$(document.body).on('click', 'a.up-btn', function() {
+		var item = $(this);
+		var multiple = item.attr('app-upload-multiple');
+		var fileItem = $('#app-upload-file');
+		if(!fileItem.attr('app-state')) {
+			$('#app-upload-type').val(item.attr('app-upload-type') || 'default');
+			$('#app-upload-name').val(item.attr('app-upload-name') || '');
+			if(multiple) {
+				fileItem.attr('multiple', 'multiple');
+			} else {
+				fileItem.removeAttr('multiple');
+			}
+			fileItem.data('item', item).trigger('click');
+		}
+	}).on('click', 'div.thumb>a', function() {
+		$(this).parent().fadeOut(200, function() {
+			var o = $(this);
+			o.data('file', null);
+			o.remove();
+		});
+	}).on('click', 'div.thumb>img', function() {
+		var thumb = $('#app-thumb-box');
+		if(!thumb.length) {
+			thumb = $('<div id="app-thumb-box"><div style="height: 80%; width: 80%; margin: 10% auto 0; background-size: contain; background-position: center; background-repeat: no-repeat;position:relative;overflow:hidden;"><span style="position:absolute;top:50%;left:50%;"><img src="" style="height:500px;position:relative;left:-50%;margin-top:-250px;display:block;"/></span></div></div>');
+			thumb.css({
+				'position' : 'fixed',
+				'left'     : 0,
+				'right'    : 0,
+				'height'   : '100%',
+				'top'      : '-10000px',
+				'opacity'  : 0,
+				'z-index'  : 991,
+				'background-color': 'rgba(66, 66, 66, .75)'
+			});
+			thumb.on('click', function() {
+				thumb.animate({
+					top: '-10000px',
+					opacity: 0
+				}, 200);
+			});
+			thumb.appendTo(document.body);
+		}
+		thumb.children('div').children('span').children('img').attr("src",this.src);
+		thumb.animate({
+			'top'     : 0,
+			'opacity' : 1
+		}, 200);
+	})
+	// 上传文件事件绑定 结束
+
+	App.Loading.hide();
+
+	$(document).on('click', 'a[data-action]', function() {
+		var action = $(this).attr('data-action');
+		switch(action) {
+			case 'push':
+				var row = $(this).closest('tr');
+				var id  = row.attr('data-id');
+				var txt = row.find('span.push-text').text() || '';
+				var mod = $(this).attr('data-mod');
+				App.PushBox.open(id, mod, txt);
+				break;
+		}
+	});
+});
+</script>
+{% block js %}{% endblock %}
+</body>
+</html>

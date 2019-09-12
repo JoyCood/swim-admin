@@ -1,0 +1,38 @@
+<div class="text-right">
+	<button id="natatorium-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>
+	<button id="natatorium-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#natatorium-trash-btn" /></th>
+			<th width="90">名称</th>
+			<th width="60">地区</th>
+			<th>地址</th>
+			<th width="120">坐标</th>
+			<th width="120">开放时间</th>
+			<th width="120">价钱</th>
+			<th width="90">创建时间</th>
+			<th width="66"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="natatorium" value="{{item._id}}" /></td>
+			<td><span class="push-text">{{item.title}}</span></td>
+			<td>{{item.district}}</td>
+			<td>{{item.address}}</td>
+			<td>{{item.coords.coordinates|join(',')}}</td>
+			<td>{{item.open_time}}</td>
+			<td>{{item.price}}</td>
+			<td>{{item.create_time? item.create_time|date('Y-m-d H:i:s'): '-'}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+				<a href="javascript:;" class="fa fa-arrow-circle-o-up" data-action="push" data-mod="natatorium" title="推送" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

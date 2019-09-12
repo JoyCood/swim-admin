@@ -1,0 +1,338 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelTweetMain
+{
+    const MAX_PHOTO_NUM = 8;
+    const ES_MAP = 'tweet';
+
+    private $allowed = array(
+        'title',
+        'type',
+        'content',
+        'create_time',
+        'views_counter',
+        'likes_counter',
+        'comments_counter',
+        'hot',
+        'recommand',
+        'top',
+        'group_id',
+		'group_title',
+		'topic',
+        'statu',
+        'user_id',
+        'create_time'
+    );
+
+    /**
+     *
+     * @author joy.cood
+     *
+     * @return object
+     */
+    public function collection() {
+        return SwimAdmin::db('tweet');
+    }
+
+
+    /**
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->insert($data);
+
+        if(isset($result['_id']))
+        {
+            $this->freshTweetCounter($data['user_id']);
+        }
+
+        return $data;
+    }
+
+    /**
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->update(array('_id' => $id), array('$set' => $data));
+        return $result;
+    }
+
+    /**
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+		$ids = (array)$ids;
+		$ids2 = $ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+		));
+		
+		SwimAdmin::db('tweet_recommand')->remove(array(
+			'tweet_id'=>array('$in'=>$ids2)
+		));
+
+        return $result;
+    }
+
+    public function freshCommentCounter($tweetId, $n = 1) {
+	    $num = $n > 0 ? -1 : 0;  
+		$collection = $this->collection();
+      
+        $data = array(
+            '$inc' => array(
+                'comments_counter' => $n
+            )
+        );
+        return $collection->update(array(
+			'_id' => new MongoId($tweetId),
+			'comments_counter'=>array('$gt'=>$num)
+        ), $data);
+    }
+
+    /**
+     * 更新发文数量
+     * 
+     * @author joy.cood
+     *
+     * @param $userId  string
+     * @param $n       int
+     * @return bool
+     */
+    public function freshTweetCounter($userId, $n=1) {
+        $member = SwimAdmin::model('member.main');
+
+        try
+        {
+            $num= $n > 0 ? -1 : 0; 
+			$matcher = array(
+				'_id' => new MongoId($userId), 
+				'tweets_counter' => array('$gt' => $num)
+			);
+            $update = array('$inc' => array('tweets_counter' => $step));
+
+            $res = $member->collection()->update($matcher, $update);
+
+            return $res['nModified']>0;
+        }
+        catch(MongoException $e)
+        {
+            return FALSE;
+        }
+    }
+
+    /**
+     *
+     * @author joy.cood
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array()) {
+        $collection = $this->collection();
+        return $collection->find($params)->sort(array('create_time' => -1));
+    }
+
+    /**
+     * 根据id查找
+     *
+     * @author joy.cood
+     *
+     * @param string $id
+     *
+     * @return false | array
+     */
+    public function findOneById($id)
+    {
+        // try
+        // {
+            $id = new MongoId($id);
+            $matcher = array('_id' => $id);
+
+            $item = $this->collection()->findOne($matcher);
+
+            if($item)
+            {
+                $item['id'] = (string)$item['_id'];
+                unset($item['_id']);
+    
+                $recoCollection    = SwimAdmin::db('tweet_recommand');
+                $recommand         = $recoCollection->findOne(array('tweet_id' => $item['id']));
+                $item['recommand'] = $recommand? $recommand: array();
+
+                return $item;
+            }
+        // }
+        // catch(MongoException $e)
+        // {
+
+        // }
+
+        return FALSE;
+    }    
+
+    public function addRecommand($id, $doc) {
+        $data = $this->findOneById($id);
+        $rs   = false;
+        if($data) {
+            $recoCollection          = SwimAdmin::db('tweet_recommand');
+            $doc['update_time']      = time();
+			$doc['likes_counter']    = $data['likes_counter'];
+			$doc['comments_counter'] = $data['comments_counter'];
+			if($data['recommand']) {
+                $rs = $recoCollection->update(array('tweet_id' => $id), array('$set' => $doc));
+            } else {
+                $doc['tweet_id']    = $id;
+                $doc['create_time'] = time();
+				
+                $rs = $recoCollection->insert($doc);
+            }
+        }
+        return $rs;
+    }
+
+    public function detail($id) {
+        return $this->collection()->findOne(array('_id' => new MongoId($id)));
+    }
+
+    public function insertElasticSearch($doc,$id) {
+		try{
+	        $params = array();
+		    $params['index'] = 'swim';
+		    $params['type']  = self::ES_MAP;
+		    $params['id']    = $id;
+		    $params['body']  = $doc;
+		    return Loader_ElasticSearch::factory()->index($params);
+		}catch(Exception $e){
+	        return FALSE;	
+		}
+	}
+
+	public function updateElasticSearch($data, $id) {
+		try{
+			$params = array();
+			$params['index'] = 'swim';
+			$params['type']  = self::ES_MAP;
+			$params['id']    = $id;
+			$params['body']['doc'] = $data;
+			
+			return Loader_ElasticSearch::factory()->update($params);
+		}catch(Exception $e){
+		    return FALSE;
+		}
+	}
+
+	public function deleteElasticSearch($ids) {
+		try{
+			$ids = (array)$ids;
+			$params = array();
+			$params['index'] = 'swim';
+			$params['type'] = self::ES_MAP;
+
+			foreach($ids as $id) {
+				$params['id'] = (string)$id;
+				Loader_ElasticSearch::factory()->delete($params);
+			}
+		}catch(Exception $e){
+		
+		}
+	}
+
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'create_time');
+        $order   = Helper::popValue($params, 'order', -1);
+        $type    = Helper::popValue($params, 'tweet-type', '');
+        $filters = array();
+
+        $groupId = Helper::popValue($params, 'group-id');
+        if($groupId) {
+            $filters['group_id'] = $groupId;
+		}
+
+        $topicId = Helper::popValue($params, 'topic-id');
+		if($topicId) {
+		    $filters['topic.id'] = $topicId;
+		}
+        $title = Helper::popValue($params, 'title');
+        $str = explode(' ', $title);
+        $num = count($str);
+        $ArrayList = array();
+        for($i=0;$i<$num;++$i){
+            Array_push($ArrayList, array('content.title' => new MongoRegex('/'.$str[$i].'/'),),array('content.text' => new MongoRegex('/'.$str[$i].'/'),));
+        } 
+        if($title!=='') {
+            $filters['$or'] = $ArrayList;
+        }
+        if($type == 'top') {
+            $filters['top'] = 1;
+        } else if($type == 'hot') {
+            $filters['hot'] = 1;
+        } else if($type == 'recommand') {
+            $filters['recommand'] = 1;
+        }
+
+        $tagId = Helper::popValue($params, 'tag-id');
+        if($tagId) {
+            $filters['content.tweet_tag.id'] = $tagId;
+        }
+        $data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1)
+        );
+
+        $tweetIds = array();
+        $tweets   = array();
+        foreach($data['items'] as $item) {
+            $item       = (array)$item;
+            $item['id'] = (string)$item['_id'];
+            $tweetIds[] = $item['id'];
+            $tweets[]   = $item;
+        }
+        $recoCollection = SwimAdmin::db('tweet_recommand');
+        $recommands     = array();
+        $result         = $recoCollection->find(array('tweet_id' => array('$in' => $tweetIds)));
+        foreach($result as $item) {
+            $recommands[$item['tweet_id']] = $item;
+        }
+        foreach($tweets as & $item) {
+            $item['recommand'] = isset($recommands[$item['id']])? $recommands[$item['id']]: array();
+        }
+        $data['items'] = $tweets;
+
+        return $data;
+    }
+}

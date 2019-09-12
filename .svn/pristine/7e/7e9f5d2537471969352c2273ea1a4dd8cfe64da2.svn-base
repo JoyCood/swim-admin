@@ -1,0 +1,66 @@
+{% set _Title = '商城商户管理' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>商户管理 <small>商城</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>商户管理</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="text-right">
+			<button type="button" id="merchant-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建商户</button>
+			<button type="button" id="merchant-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+		</div>
+		<div id="merchant-list">
+			{% include 'goods/merchant-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#merchant-btn').on('click', function() {
+		App.Box.open('goods/merchant/form.html');
+	});
+	$('#merchant-list').on('click', 'a.icon-edit', function() {
+		var id = $(this).closest('tr').attr('merchant-id');
+		App.Box.open('goods/merchant/form.html?id=' + id);
+	});
+	$('#merchant-trash-btn').on('click', function() {
+		if(!$(this).hasClass('disabled')) {
+			var ids = [];
+			$('#merchant-list input[name="merchant"]:checked').each(function() {
+				ids.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'goods/merchant/delete.html',
+				data: {'items[]': ids},
+				target: '#merchant-list',
+				dataType: 'html',
+				type: 'post'
+			});
+		}
+	});
+});
+</script>
+{% endblock %}

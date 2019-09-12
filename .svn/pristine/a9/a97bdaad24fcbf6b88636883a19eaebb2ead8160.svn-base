@@ -1,0 +1,179 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelTechnicalMain
+{
+	private $errMsg;
+	private $allowed = array(
+        'title', 
+        'description',
+        'author',
+        'date',
+        'summary',
+        'cover',
+        'photos',
+        'steps', 
+        'notices',
+        'res_type',
+        'category',
+        'create_time',
+        'created_on',
+        'created_by', 
+        'modified_by',
+        'modified_on',
+        'view_num',
+        'comments_counter',
+        'type'
+    );
+
+    private $enabled = array(
+        'teaching' => '游泳教学', 
+        'training' => '游泳教学'
+    );
+
+    public function getEnabled($app, $module) {
+        if(isset($this->enabled[$module])) {
+            $app->view()->addGlobal('_Type', $module);
+            $app->view()->addGlobal('_Caption', $this->enabled[$module]);
+            $app->view()->addGlobal('_MOD', 'discover');
+            $caption = $this->enabled[$module];
+        } else {
+            $caption = null;
+        }
+        return $caption;
+    }
+
+	public function collection() {
+		return SwimAdmin::db('technical');
+	}
+
+	/**
+     * 添加教练
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data = Helper::allowed($data, $this->allowed);
+        $data['created_on'] = time();
+        $data['create_time'] = time();
+        $data['created_by'] = $_SESSION[S_USER];
+        $data['view_num'] = 0;
+        $data['comments_counter'] = 0;
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    /**
+     * 修改教练
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data = Helper::allowed($data, $this->allowed);
+        $data['modified_on'] = time();
+        $data['modified_by'] = $_SESSION[S_USER];
+        $result = $collection->update(array('_id' => $id), array('$set' => $data));
+        return $result;
+    }
+
+    /**
+     * 删除教练
+     *
+     * @author joy.cood
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+
+	/**
+     * 查询教练
+     *
+     * @author joy.cood
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array()) {
+        $category = SwimAdmin::model('technical.category');
+        $data = $category->find();
+        $cats = array();
+        foreach($data as $cat) {
+            $cats[(string)$cat['_id']] = $cat['name'];
+        }
+
+        $collection = $this->collection();
+        $rs = $collection->find($params)->sort(array('create_time' => -1));
+        $data = array();
+        $idx = 0;
+        foreach($rs as $row) {
+            $data[$idx] = $row;
+			/*
+            $data[$idx]['cats'] = array();
+            foreach($row['category'] as $cid) {
+                $cid = (string)$cid;
+                if(isset($cats[$cid])) {
+                    $data[$idx]['cats'][] = $cats[$cid];
+                }
+            }
+			*/
+            $idx++;
+        }
+		
+
+        return $data;
+    }
+
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'create_time');
+        $order   = Helper::popValue($params, 'order', -1);
+        $cat     = Helper::popValue($params, 'category', '');
+        $filters = array();
+        if($cat) {
+            $filters['category'] = array(
+                '$elemMatch' => array(
+                    'cateId' => $cat
+                )
+            );
+        }
+        return SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1)
+        );
+    }
+}

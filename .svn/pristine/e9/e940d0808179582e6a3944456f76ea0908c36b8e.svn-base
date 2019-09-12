@@ -1,0 +1,80 @@
+{% import "_macro.html" as macro %}
+<form id="merchant-form" action="goods/merchant/form.html" target="#merchant-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>商户信息</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form" style="width: 500px">
+					<tr>
+						<th width="60">商户名：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="merchant-name" class="form-control" value="{{merchant.name}}" placeholder="请输入商户名" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th width="50">商户简介：</th>
+						<td colspan="2">
+							<input type="text" name="intro" id="merchant-intro" class="form-control" value="{{merchant.intro}}" placeholder="请输入商户简介" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+                        <th>商户封面：</th>
+					    <td>
+						    {{ macro.thumb('merchant-cover', merchant.cover) }}
+							{{ macro.upload('merchant-cover', 'merchant-cover', 'default', false) }}
+						</td>	
+					</tr>
+					<tr>
+                          <th>课程：</th>
+						  <td colspan="2">
+                              <select id="merchant-course" name="courses[]" class="form-control" multiple>
+								  {% for course in courses %}
+								  <option value="{{course._id}}:{{course.title}}" {{course.selected ? ' selected': ''}}>{{course.title}}</option>
+								  {% endfor %}
+								  </select>
+						  </td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td width="120"><input type="text" name="priority" id="merchant-priority" value="{{merchant.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="merchant-status" value="1"{{not merchant._id or merchant.status? ' checked': ''}} />
+							<label for="merchant-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{merchant._id}}" />
+			<button type="submit" id="merchant-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#merchant-form').on('init', function() {
+		$('#merchant-course').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

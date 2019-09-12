@@ -1,0 +1,62 @@
+{% set _Title = '优惠券' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#courpon-detail { width: 800px; margin: 20px auto; }
+#courpon-detail table.form { margin-top: 10px; width: auto; }
+#courpon-detail td { padding: 5px 10px; }
+#courpon-detail td.numeric { text-align: right; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>优惠券详情 <small>{{_Title}}</small></h1>
+	{#% include 'courpon/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="courpon/list.html">优惠券</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>优惠券详情</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="courpon-body">
+			<div class="text-right">
+				<button id="courpon-back" class="btn"><b class="fa fa-angle-left"></b> 返回</button>
+			</div>
+			<div id="courpon-detail">
+				{% include 'courpon/courpon-detail.html' %}
+			</div>
+			<div style="text-align: center; padding: 20px;">
+				<a href="javascript: history.back();">返回</a>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#courpon-back').on('click', function() {
+		history.back();
+	});
+});
+</script>
+{% endblock %}
+

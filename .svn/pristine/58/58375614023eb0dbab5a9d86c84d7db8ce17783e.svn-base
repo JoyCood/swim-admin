@@ -1,0 +1,128 @@
+<form id="user-form" action="user/save.html" data-type="json">
+	<div class="box">
+		<div class="box-title">
+			<h3>用户资料</h3>
+		</div>
+		<div id="user-form-contet" class="box-content">
+			<div id="user-form-main" style="width: 800px;">
+				<div style="float: left; width: 300px;">
+					<table class="form">
+						<tr>
+							<th width="60">帐号：*</th>
+							<td>
+								<input type="text" name="username" id="username"{{data.username? ' disabled="disabled"': ''}} class="form-control" value="{{data.username}}" placeholder="请输入帐号" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+							</td>
+						</tr>
+						<tr>
+							<th>密码：*</th>
+							<td>
+								<input type="password" name="password" id="password" class="form-control" value="{{data.password? '************':''}}" placeholder="请输入密码" />
+							</td>
+						</tr>
+						<tr>
+							<th>姓名：</th>
+							<td>
+								<input type="text" name="name" id="user-name" class="form-control" value="{{data.name}}" placeholder="请输入名称" />
+							</td>
+						</tr>
+                        {% if types.options %}
+						<tr>
+							<th>类型：</th>
+							<td>
+							<select id="user-type" name="userType" class="form-control" data-placeholder="请选择用户类型">
+								<option></option>
+                                {% for type, text in types.options %}
+                                <option value="{{type}}"{{data.type==type? ' selected': ''}}>{{text}}</option>
+                                {% endfor %}
+							</select>
+							</td>
+						</tr>
+                        {% endif %}
+                        {#
+						<tr>
+							<th style="vertical-align: top;">用户组：</th>
+							<td>
+								<div style="height: 300px; overflow: auto; border: 1px solid #ccc;">
+									<ul id="group-list">
+										{% for gid, group in groups %}
+										<li style="padding: 1px 0;">
+											<label style="display: block; padding: 2px 6px; {{group.statu? '': 'text-decoration:line-through;color: #666;'}}">
+												<input type="checkbox" value="{{gid}}" name="group[]"{{group.selected? ' checked="checked"': ''}} /> 
+												{{group.name}}&nbsp; 
+											</label>
+										</li>
+										{% endfor %}
+									</ul>
+								</div>
+							</td>
+						</tr>
+                        #}
+						<tr>
+							<th>状态：</th>
+							<td>
+								<input type="checkbox" id="user-active" name="active" value="1"{{data.active? ' checked': ''}} />
+								<label for="user-active">启用</label>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<div style="padding-top: 1px;">
+					<div style="padding: 10px; margin: 0 0 0 310px; border: 1px solid #ccc;">
+						<label>用户权限：</label>
+						<div id="user-permission" style="margin-top: 10px; height: 369px; overflow: auto;">
+							{% set readonly = true %}
+							{% include 'user/permission.html' %}
+						</div>
+					</div>
+				</div>
+				<div style="float: none;"></div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="user-id" name="id" value="{{data._id}}" />
+			{% if check_perm('users', data._id? 'EDIT': 'ADD') %}<button type="submit" id="user-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#user-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				var pass = $('#password').val();
+				var uid  = $('#user-id').val();
+				if(!(uid != '' && pass == '************') && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(pass)) {
+					App.alert('请输入8个字符的密码，其中最少包含1个字母和1个数字。');
+					$('#password').select().focus();
+					return false;
+				}
+				App.ajax({
+					form: this,
+					success: function() {
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+		$('#group-list').on('click', 'input:checkbox', function() {
+			var gids = [];
+			$('input[name="group[]"]:checked').each(function() {
+                App.alert(this.value);
+				gids.push(this.value);
+			});
+			App.ajax({
+				url: 'user/permission.html',
+				data: {groups: gids.join(',')},
+				dataType: 'html',
+				target: '#user-permission'
+			});
+		});
+	}).on('active', function() {
+		
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

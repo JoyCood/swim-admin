@@ -1,0 +1,83 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelMemberAttach
+{
+	private $errMsg;
+	private $allowed = array(
+        'phone'
+    );
+
+	public function collection() {
+		return SwimAdmin::db('location_teacher');
+	}
+
+	/**
+     * 添加教练
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data['create_time'] = time();
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    /**
+     * 修改教练
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data = Helper::allowed($data, $this->allowed);
+        $result = $collection->update(array('_id' => $id), $data);
+        return $result;
+    }
+
+    /**
+     * 删除教练
+     *
+     * @author joy.cood
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+
+	/**
+     * 查询教练
+     *
+     * @author joy.cood
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array()) {
+        $collection = $this->collection();
+        return $collection->find($params)->sort(array('phone' => -1));
+    }
+}

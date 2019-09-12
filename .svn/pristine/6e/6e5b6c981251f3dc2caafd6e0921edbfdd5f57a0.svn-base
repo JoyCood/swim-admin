@@ -1,0 +1,88 @@
+{% import "_macro.html" as macro %}
+<form id="match-member-form" action="home/match/match_form.html" target="#match-member-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>赛事详情</h3>
+		</div>
+		<div id="member-tags-form-contet" class="box-content">
+			<div id="member-tags-form-main" style="width: 400px; padding-right: 30px; overflow: hidden;">
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">赛事：</label>
+						<div class="col-sm-9">
+							<select name="match" id="match-tab"  class="chosen-select form-control" data-placeholder="请选择赛事">
+								{% for list in lists %}
+								<option></option>
+								<option value="{{list
+								.name}}" {{list.name in data.match ? ' selected':''}}>{{list.name}}</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">项目：</label>
+						<div class="col-sm-9">
+							<input type="text" name="project" id="tgroup-project" class="form-control" value="{{data.project}}" placeholder="请输入项目名称" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">组别：</label>
+						<div class="col-sm-9">
+							<input type="text" name="group" id="tgroup-group" class="form-control" value="{{data.group}}" placeholder="请输入组别" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">名次：</label>
+						<div class="col-sm-9">
+							<input type="text" name="rank" id="tgroup-rank" class="form-control" value="{{data.rank}}" placeholder="请输入名次" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">成绩：</label>
+						<div class="col-sm-9">
+							<input type="text" name="mark" id="tgroup-mark" class="form-control" value="{{data.mark}}" placeholder="请输入成绩" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">姓名：</label>
+						<div class="col-sm-9">
+							<input type="text" name="name" id="tgroup-name" class="form-control" value="{{data.name}}" placeholder="请输入姓名" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">参赛编号：</label>
+						<div class="col-sm-9">
+							<input type="text" name="number" id="tgroup-number" class="form-control" value="{{data.number}}" placeholder="请输入参赛编号" autofocus="on" autocomplete="off"   />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="match-member-form-foot" class="box-footer">
+			<input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<button type="submit" id="tgroup-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+
+<script>
+$(function() {
+	$('#match-member-form').on('init', function() {
+		$('#match-tab').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+ 	});
+});
+</script>

@@ -1,0 +1,13 @@
+{% set disable = readonly? ' disabled="disabled"': '' %}
+<dl class="permission">
+{% for key, mod in settings %}
+	<dt><label>{% if not readonly %}<input type="checkbox" /> {% endif %}{{mod.text}}</label></dt>
+	<dd style="padding-left: 24px; margin-bottom: 10px;">
+		{% for val in mod.values %}
+		{% set check = data.privilege[key] b-and val? ' checked': '' %}
+		<label style="line-height: 20px;"><input type="checkbox" name="privilege[{{key}}][]" value="{{val}}"{{check}}{{disable}} /> {{dict[val]}}</label>
+		{% if loop.index is divisibleby(5) %}<br />{% endif %}
+		{% endfor %}
+	</dd>
+{% endfor %}
+</dl>

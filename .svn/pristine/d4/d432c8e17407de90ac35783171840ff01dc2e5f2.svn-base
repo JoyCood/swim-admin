@@ -1,0 +1,176 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+$app->get('/index.html', function() use ($app) {
+    $member = SwimAdmin::model('member.main');
+    $member_tags = SwimAdmin::model('member.tags');
+    $tags   = $member_tags->findAll();
+	$data   = $member->pagination();
+    $app->view()->addGlobal('_MOD', 'fun');
+    $app->view()->addGlobal('_Action', 'index');
+    $app->render('member/index.html', array(
+        'type'  => Helper::getValue($data['params'], 'type', ''),
+        'statu' => Helper::getValue($data['params'], 'statu', ''),
+        'query' => Helper::getValue($data['params'], 'query', ''),
+        'title' => Helper::getValue($data['params'], 'title', ''),
+        'tags'  => $tags,
+        'data'  => $data,
+    ));
+});
+
+$app->get('/tags.html', function() use ($app) {
+    $tags = SwimAdmin::model('member.tags');
+    $app->view()->addGlobal('_MOD', 'fun');
+    $app->view()->addGlobal('_Action', 'tags');
+    $data   = $tags->pagination();
+    $app->render('member/tags.html', array(
+        'data'  => $data,
+    ));
+});
+$app->get('/tags-form.html', function() use ($app) {
+    $id   = trim($app->request->get('id'));
+    $data = array();
+    $tags = SwimAdmin::model('member.tags');
+    if($id) {
+        $data   = $tags->findOneById($id);
+    }
+    $app->render('member/tags-form.html', array(
+        'data' => $data,
+    ));
+});
+$app->post('/tags-form.html', function() use($app) {
+    $id     = trim($app->request->post('id'));
+    $metags = SwimAdmin::model('member.tags');
+    $doc    = array(
+        'title'       => trim($app->request->post('title')),
+        'statu'       => intval($app->request->post('statu'))
+    );
+    if(!$doc['title']) {
+        SwimAdmin::error('请输入马甲名称。');
+    }
+    if(empty($id)) {
+        $metags->insert($doc);
+    } else {
+        $metags->update($doc, $id);
+    }
+    $data = $metags->pagination($app->request->post('__url'));
+  
+    $app->render('member/tags-list.html', array(
+        'data' => $data
+    ));
+});
+// 修改界面
+$app->get('/form.html', function() use ($app) {
+    $id   = $app->request->get('id', '');
+    $data = array();
+    $type = $_GET['type'];
+    $member = SwimAdmin::model('member.main');
+    $member_tags = SwimAdmin::model('member.tags');
+    $tags   = $member_tags->findAll();
+    if($id) {
+        $data   = $member->findOneById($id);
+    }
+    $app->render('member/form.html', array(
+        'id'   => $id,
+        'data' => $data,
+        'tags' => $tags,
+        'type' => $type,
+        'realMember' => $data && $data['type'] == ModelMemberMain::MEMBER_REAL,
+    ));
+});
+
+$app->post('/form.html', function() use ($app) {
+    $member = SwimAdmin::model('member.main');
+    $id     = $app->request->post('id', '');
+    $avatar = trim($app->request->post('avatar_small'));
+    $doc    = array(
+        'nick'      => trim($app->request->post('nick')),
+        'sex'       => trim($app->request->post('sex')),
+        'phone'     => trim($app->request->post('phone')),
+        'mail'      => trim($app->request->post('mail')),
+        'sig'       => trim($app->request->post('sig')),
+        'title'     => trim($app->request->post('title')),
+        'hometown'  => trim($app->request->post('hometown')),
+        'location'  => trim($app->request->post('location')),
+        // 'type'           => 2,
+        'vip'       => intval($app->request->post('vip')),
+        'sns'       => array(),
+        'birthday'  => trim($app->request->post('birthday', null)),
+        'age'       => trim($app->request->post('age', null)),
+        'height'    => trim($app->request->post('height')),
+        'weight'    => trim($app->request->post('weight')),
+        'bmr'       => intval($app->request->post('bmr')),
+        'recommand' => intval($app->request->post('recommand'))
+    );
+    $sns    = $app->request->post('sns', array());
+    foreach($sns as $key => $val) {
+        $sns[$key] = trim($val);
+    }
+    $doc['sns'] = $sns;
+    if(empty($doc['height'])) $doc['height'] = 0;
+    if(empty($doc['weight'])) $doc['weight'] = 0;
+    if(empty($doc['bmr'])) $doc['bmr'] = 0;
+    if(!empty($doc['birthday'])) {
+        $doc['birthday'] = strtotime($doc['birthday']);
+    }
+    if($doc['birthday'] && empty($doc['age'])) {
+        $doc['age'] = max(0, date('Y') - date('Y', $doc['birthday']));
+    }
+
+    $pwd        = $app->request->post('pwd');
+    if($id) {
+        // 修改会员
+        $info = $member->findOneById($id);
+        if($info && $info['avatar_small'] != $avatar) {
+            $doc['avatar_small'] = $avatar;
+            $doc['avatar_mid']   = str_replace('/small-', '/mid-', $avatar);
+            $doc['avatar_big']   = str_replace('/small-', '/big-', $avatar);
+        }
+        if($pwd) {
+            $doc['pwd'] = md5($pwd);
+        }
+        if($info && $info['type'] == ModelMemberMain::MEMBER_REAL) {
+            unset($doc['sns']); // 会员不修改 sns 信息
+            unset($doc['pwd']); // 会员不修改 密码 信息
+        }
+        $member->update($doc, $id);
+    } else {
+        // 新建会员
+        $doc['statu']        = 0;
+        $doc['pwd']          = md5($pwd? $pwd: 'swim123456');
+        $doc['secret']       = md5($doc['phone'].Config::$app['app_key'].time());
+        $doc['reg_time']     = time();
+        $doc['type']         = ModelMemberMain::MEMBER_FAKE;
+        $doc['avatar_small'] = $avatar;
+        $doc['avatar_mid']   = str_replace('/small-', '/mid-', $avatar);
+        $doc['avatar_big']   = str_replace('/small-', '/big-', $avatar);
+        $member->insert($doc);
+    }
+
+    // $data = $member->find(array('type' => 2));
+    $data = $member->pagination($app->request->post('__url'));
+    $app->render('member/list.html', array(
+        'id'         => $id,
+        'data'       => $data
+    ));
+});
+
+// 删除会员
+$app->post('/status.html', function() use ($app) {
+    $member = SwimAdmin::model('member.main');
+    $status = intval($app->request->post('status'));
+    $items  = $app->request->post('items', array());
+    $member->updateStatus($items, $status);
+    $app->view()->renderJSON(array(
+        'result' => true
+    ));
+});
+
+//删除马甲
+$app->post('/tags-delete.html', function() use($app) {
+    $tags = SwimAdmin::model('member.tags');
+    $items  = $app->request->post('items', array());
+    $tags->deleteById($items);
+    $app->render('member/tags-list.html', array(
+        'data' => $tags->pagination($app->request->post('__url'))
+    ));
+});

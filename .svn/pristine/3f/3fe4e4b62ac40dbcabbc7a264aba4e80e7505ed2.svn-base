@@ -1,0 +1,45 @@
+<div class="text-right">
+	<form method="GET" action="home/match/match.html">
+		<div>
+			<select class="form-control" name="match" onchange="this.form.submit();" data-placeholder="请选择分类">
+			    <option value="">请选择赛事</option>
+				{% for list in lists %}
+				<option value="{{list.name}}"{{match ==list.name ? 'selected': ''}}>{{list.name }}</option>
+				{% endfor %}		
+			</select>
+		</div>
+	</form>
+	<button id="match-add-one-btn" class="btn btn-success"><b class="fa fa-plus"></b>新增一栏</button>
+	<button id="match-member-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#match-member-trash-btn" /></th>
+			<th width="80">项目</th>
+			<th width="60">组别</th>
+			<th width="60">名次</th>
+			<th width="40">成绩</th>
+			<th width="60">姓名</th>
+			<th width="80">参赛编号</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}" >
+			<td><input type="checkbox" name="tgroup" value="{{item._id}}" /></td>
+			<td>{{item.project}}</td>
+			<td>{{item.group}}</td>
+			<td>{{item.rank}}</td>
+			<td>{{item.mark}}</td>
+			<td>{{item.name}}</td>
+			<td>{{item.number}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

@@ -1,0 +1,117 @@
+{% import "_macro.html" as macro %}
+<form id="tweet-tag-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="tweet/tag-form.html" target="#tweet-tag-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>标签详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="tweet-group-form-contet" class="box-content">
+			<div id="tweet-group-form-main" style="width: 500px; padding-right: 20px; overflow: hidden;">
+				<div class="form-horizontal">
+					<!--
+					<div class="form-group">
+						<label class="control-label col-sm-2">圈主：</label>
+						<div class="col-sm-10">
+							<select id="tgroup-user-id" name="user_id" class="form-control" data-placeholder="请选择用户" style="width: 100%;">
+								<option></option>
+								{% for user in users %}
+								<option value="{{user._id}}"{{data.leader==user._id ~ ''? ' selected': ''}}>{{user.nick}} ({{user._id}})</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+					-->
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-2">名称：</label>
+						<div class="col-sm-10">
+							<input type="text" name="name" id="tgroup-title" class="form-control" value="{{data.name}}" placeholder="请输入标签名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</div>
+					</div>
+					<!--
+					<div class="form-group">
+						<label for="tgroup-desc" class="control-label col-sm-2">描述：</label>
+						<div class="col-sm-10">
+							<textarea id="tgroup-desc" name="description" class="form-control">{{data.description}}</textarea>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-cover" class="control-label col-sm-2">封面：</label>
+						<div class="col-sm-10">
+							{#{ macro.thumb('cover', data.cover.url, data.cover.w ~ ',' ~ data.cover.h) }#}
+							{{ macro.thumb('cover', data.cover) }}
+							{{ macro.upload('tgroup-cover', 'cover', 'default', false) }}
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-hot" class="control-label col-sm-2">热度：</label>
+						<div class="col-sm-4">
+							<input type="text" name="hot" id="tgroup-hot" class="form-control" value="{{data.hot}}" placeholder="热度" autocomplete="off" />
+						</div>
+						<label for="tgroup-priority" class="control-label col-sm-2">顺序：</label>
+						<div class="col-sm-4">
+							<input type="text" name="priority" id="tgroup-priority" class="form-control" value="{{data.priority}}" placeholder="数值越大越靠前" autocomplete="off" />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-member-num" class="control-label col-sm-2">人数：</label>
+						<div class="col-sm-4">
+							<input type="text" name="member_num" id="tgroup-member-num" class="form-control" value="{{data.member_num}}" placeholder="人数" autocomplete="off" />
+						</div>
+						<label for="tgroup-tweet-num" class="control-label col-sm-2">帖子数：</label>
+						<div class="col-sm-4">
+							<input type="text" name="tweet_num" id="tgroup-tweet-num" class="form-control" value="{{data.tweet_num}}" placeholder="帖子数量" autocomplete="off" />
+						</div>
+					</div>
+					-->
+					<div class="form-group">
+						<label for="tgroup-invite" class="control-label col-sm-2">邀请：</label>
+						<div class="col-sm-10">
+							<input type="checkbox" id="tgroup-invite" name="invite" value="1"{{not data or data.invite? ' checked': ''}} />
+							<label for="tgroup-invite">启用</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-status" class="control-label col-sm-2">状态：</label>
+						<div class="col-sm-10">
+							<input type="checkbox" id="tgroup-status" name="statu" value="1"{{not data or data.statu? ' checked': ''}} />
+							<label for="tgroup-status">启用</label>
+						</div>
+					</div>
+					<!--
+					<div class="form-group">
+						<label for="tgroup-local" class="control-label col-sm-2">同城：</label>
+						<div class="col-sm-10">
+							<input type="checkbox" id="tgroup-local" name="local" value="local"{{data.region? ' checked': ''}} />
+							<label for="tgroup-local">启用</label>
+						</div>
+					</div>
+					-->
+				</div>
+			</div>
+		</div>
+		<div id="tweet-group-form-foot" class="box-footer">
+			<input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<button type="submit" id="tgroup-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+
+<script>
+$(function() {
+	$('#tweet-tag-form').on('init', function() {
+		$(this).on('submit', function() {
+			App.ajax({
+				url      : 'tweet/tag-form.html',
+				data     : $(this).serialize(),
+				dataType : 'html',
+				type     : 'post',
+				target   : '#tweet-tag-list',
+				success: function(response, status, xhr) {
+					App.Box.close();
+				}
+			});
+			return false;
+		});
+	});
+});
+</script>

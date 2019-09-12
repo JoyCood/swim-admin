@@ -1,0 +1,47 @@
+<form id="cancel-form" action="order/cancel-refund" target="#order-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>取消退款</h3>
+		</div>
+		<div class="box-content">
+			<div style="font-size: 14px; color: #369; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+				<input type="checkbox" id="cancel-checkbox" checked value="1" />
+				<label for="finish-checkbox">&nbsp;确定取消退款</label>
+			</div>
+			<div id="cancel-refund-detail" style="width: 600px; height: 380px; overflow: auto;">
+				{% include 'order/order-detail.html' %}
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="orderId" value="{{order.order_id}}" />
+			{% if check_perm('orders', 'COMPLETE') %}<button type="submit" id="cancel-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#cancel-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				var finish = $('#cancel-checkbox').prop('checked');
+				if(finish) {
+					App.ajax({
+						form: this,
+						success: function(rs) {
+							App.Box.close();
+							App.Notific.success('已取消退款。');
+						}
+					});
+				} else {
+					App.Notific.warning('请选中“确定取消退款”。');
+				}
+			}
+			return false;
+		});
+		$('#cancel-refund-detail').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

@@ -1,0 +1,71 @@
+{% set _Title = '泳圈' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>会员管理</small></h1>
+	{% include 'member/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>会员管理</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="member-list">
+			{% include 'member/tags-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#member-list').on('click', '#member-tags-add-btn', function() {
+		App.Box.open('member/tags-form.html');
+	}).on('click', 'input', function() {
+	}).on('click', '#member-tags-trash-btn', function() {
+		var slted = $('#member-list input[name="tgroup"]:checked');
+		console.log(slted);
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'member/tags-delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'html',
+				target: '#member-tags-list',
+				success: function() {
+					location.reload();
+				}
+			});
+		}
+	}).on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('member/tags-form.html?id=' + id);
+	})
+});
+</script>
+{% endblock %}

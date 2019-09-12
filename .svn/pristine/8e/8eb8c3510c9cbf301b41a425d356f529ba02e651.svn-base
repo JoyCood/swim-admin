@@ -1,0 +1,30 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#columnist-trash-btn" /></th>
+			<th width="80">专栏名</th>
+			<th>专栏作者</th>
+			<th width="200">专栏简介</th>
+			<th width="200">作者简介</th>
+			<th width="50">次序</th>
+			<th width="50">状态</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for columnist in columnist %}
+		<tr columnist-id="{{columnist._id}}">
+			<td><input type="checkbox" name="columnist" value="{{columnist._id}}" /></td>
+			<td>{{columnist.name}}</td>
+			<td>{{columnist.auname}}</td>
+			<td>{{columnist.cintro}}</td>
+			<td>{{columnist.aintro}}</td>
+			<td>{{columnist.priority}}</td>
+			<td>{{columnist.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

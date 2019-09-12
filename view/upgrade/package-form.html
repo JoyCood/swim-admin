@@ -1,0 +1,47 @@
+{% import "_macro.html" as macro %}
+<form id="package-form" action="upgrade/package/save.html">
+	<div class="box">
+		<div class="box-title">
+			<h3>升级包</h3>
+		</div>
+		<div id="package-form-contet" class="box-content">
+			<div id="package-form-main">
+				<table class="form">
+					<tr>
+						<th width="60">版本号：</th>
+						<td>
+							<input type="text" name="version" id="package-version" class="form-control" placeholder="请输入版本号" autofocus="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>升级包：</th>
+						<td>{{ macro.upload('package-file', 'package', 'file', false) }}</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<button type="submit" id="package-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#package-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

@@ -1,0 +1,34 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<!-- <th width="30"><input type="checkbox" rel="#news-trash-btn" /></th> -->
+			<th width="60">#ID</th>
+			<th width="60">校区</th>
+			<th>场馆名称</th>
+            <th width="50">教练</th>
+            <th width="120">联系方式</th>
+			<th width="120">操作金额（元）</th>
+			<th width="150">操作时间</th>
+			<th width="120">操作员备注</th>
+			<th width="120">汇款凭证</th>
+			<th width="80">操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr data-id="1">
+			<td>1</td>
+			<td><a href="">1</a></td>
+			<td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+			<td class="table-action">
+				<a href="javascript:;" class="fa fa-bars"></a>
+			</td>
+		</tr>
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

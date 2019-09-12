@@ -1,0 +1,621 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+$app->get('/:module(/index).html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$cat  = SwimAdmin::model('technical.category');
+		$cats = $cat->find(array('status' => 1));
+		$data = $technical->pagination();
+		$app->view()->addGlobal('_Action', 'index');
+		$app->render('school/teaching/index.html', array(
+			'data'      => $data,
+			'cats'      => $cats,
+			'category'  => $app->request->get('category')
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+// 表单页面
+$app->get('/:module/form.html', function($module) use($app) {
+	$technical 	= SwimAdmin::model('technical.main');
+	$catObj 	= SwimAdmin::model('technical.category');
+	$caption 	= $technical->getEnabled($app, $module);
+	if($caption) {
+		$id = $app->request->get('id');
+		$data = array();
+		if($id) {
+			$data = $technical->collection()->findOne(array('_id' => new MongoId($id)));
+		}
+
+		if(!isset($data['steps']) || !$data['steps']) $data['steps'] = array();
+		$sizeOf = sizeof($data['steps']);
+		for($i = $sizeOf; $i<3; $i++) {
+			$data['steps'][] = array();
+		}
+		if(!isset($data['notices']) || !$data['notices']) $data['notices'] = array();
+		$sizeOf = sizeof($data['notices']);
+		for($i = $sizeOf; $i<3; $i++) {
+			$data['notices'][] = '';
+		}
+		
+		$catList = array();
+		if(isset($data['category']) && is_array($data['category'])) {
+			foreach($data['category'] as $cat) {
+				if(is_array($cat)) {
+					$cid = $cat['cateId'];
+					$catList[$cid] = $cat['cate'];
+				}
+			}
+		}
+
+		$rs = $catObj->find(array('status' => 1));
+		$cats = array();
+		foreach($rs as $cat) {
+			$cid = (string)$cat['_id'];
+			$cats[] = array(
+				'cateId' => $cid,
+				'cate' => $cat['name'],
+				'selected' => isset($catList[$cid])
+			);
+		}
+		$app->view()->addGlobal('_Action', 'form');
+		$app->render('school/teaching/form.html', array(
+			'cats' => $cats,
+			'data' => $data
+		));
+	} else {
+		$app->render(404);
+	}
+});
+// 处理表单提交
+$app->post('/:module/form.html', function($module) use($app) {
+	$technical 	= SwimAdmin::model('technical.main');
+	$caption 	= $technical->getEnabled($app, $module);
+	if($caption) {
+		$rs 		= true;
+		$id 		= $app->request->post('id');
+		$title 		= trim($app->request->post('title'));
+		$steps 		= $app->request->post('step', array());
+		$stepThumbs = $app->request->post('stepThumbs', array());
+		$notices 	= $app->request->post('notice', array());
+		$cats 		= $app->request->post('category', array());
+		$date 		= strtotime($app->request->post('date'));
+		$photos     = $app->request->post('photos', array());
+		$type       = trim($app->request->post('type'));
+
+		$doc 		= array(
+			'title' 		=> $title,
+			'description' 	=> trim($app->request->post('desc')),
+			'author' 		=> trim($app->request->post('author')),
+			'summary' 		=> trim($app->request->post('summary')),
+			'type'		    => in_array($type, array('native', 'link'))? $type: 'native',
+			'date' 			=> $date? $date: null,
+			'cover' 		=> trim($app->request->post('cover')),
+			'photos' 		=> array(),
+			'res_type' 		=> intval($app->request->post('res_type')),
+			'category' 		=> array(),
+			'steps' 		=> array(),
+			'notices' 		=> $notices
+		);
+		$sizeOfPhotos = $app->request->post('size_of_photos', array());
+		foreach($photos as $idx => $photo) {
+			$size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+			$doc['photos'][] = array(
+				'url' => $photo,
+				'w'   => intval($size[0]),
+				'h'   => intval($size[1])
+			);
+		}
+		$sizeOfSteps = $app->request->post('size_of_stepThumbs', array());
+		foreach($steps as $idx => $val) {
+			$sizeOfPhotos = isset($sizeOfSteps[$idx])? $sizeOfSteps[$idx]: array();
+			$doc['steps'][$idx] = array(
+				'text'  => $val,
+				'media' => array()
+			);
+			if(isset($stepThumbs[$idx])) {
+				foreach($stepThumbs[$idx] as $n => $val) {
+					$size = explode(',', isset($sizeOfPhotos[$n]) && $sizeOfPhotos[$n]? $sizeOfPhotos[$n]: '');
+					$doc['steps'][$idx]['media'][] = array(
+						'type' => Helper::isVideo($val)? 'video': 'photo',
+						'url'  => $val,
+						'w'    => intval($size[0]),
+						'h'    => intval($size[1])
+					);
+				}
+			}
+		}
+		foreach($cats as $val) {
+			$tmp = explode(':', $val);
+			$cid = array_shift($tmp);
+			// $doc['category'][] = new MongoId($val);
+			$doc['category'][] = array(
+				'cateId' => $cid,
+				'cate'   => join(':', $tmp)
+			);
+		}
+		if(!$title) {
+			SwimAdmin::error('请输入标题。');
+		} else if(!$steps or !$steps[0]) {
+			SwimAdmin::error('请最少输入一个步骤。');
+		}
+
+		if(!$id) {
+			$technical->insert($doc);
+		} else {
+			$technical->update($doc, $id);
+		}
+		$app->view()->renderJSON(array(
+			'result' => $rs
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+// 删除
+$app->post('/:module/delete.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$items 	= $app->request->post('items', array());
+		$technical->deleteById($items);
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+// -----------------------
+// 分类
+$app->get('/:module/category.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$cat 	= SwimAdmin::model('technical.category');
+		$list 	= $cat->find();
+		$types  = $cat->getTypes();
+		$app->view()->addGlobal('_Action', 'category');
+		$app->render('school/teaching/category.html', array(
+			'categoryList'  => $list,
+			'categoryTypes' => $types
+		));
+	} else {
+		$app->render(404);
+	}
+});
+// 分类表单
+$app->get('/:module/category/form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$id 	= $app->request->get('id');
+		$cat 	= SwimAdmin::model('technical.category');
+		$types  = $cat->getTypes();
+		$tabs   = $cat->getTabs();
+		$data 	= array();
+		if($id) {
+			$data = $cat->collection()->findOne(array('_id' => new MongoId($id)));
+			if(isset($data['tab'])) {
+			    foreach($tabs as $key=>$tab) {
+				    $tabs[$key]['selected'] = in_array($tab['title'], $data['tab']);
+				}
+			}
+		}
+		if(!isset($data['type']) || !$data['type']) {
+			$data['type'] = 'other';
+		}
+		$app->render('school/teaching/category-form.html', array(
+			'cat'   => $data,
+			'types' => $types,
+			'tabs'  => $tabs
+		));
+	} else {
+		$app->render(404);
+	}
+});
+// 处理分类表单
+$app->post('/:module/category/form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$id 	= $app->request->post('id', '');
+		$cat 	= SwimAdmin::model('technical.category');
+		$types  = $cat->getTypes();
+		$data 	= array(
+			'name' 		 => trim($app->request->post('name', '')),
+			'priority' 	 => intval($app->request->post('priority')),
+			'cover'      => trim($app->request->post('cover')),
+			'banner'     => array(),
+			'type'		 => trim($app->request->post('type')),
+			'tab'        => $app->request->post('tab'),
+			'difficulty' => intval($app->request->post('difficulty')),
+			'status' 	 => intval($app->request->post('status'))
+		);
+		if(!isset($data['name'])) {
+			SwimAdmin::error('请输入分类名称。');
+		}
+		if(!isset($data['tab']) || !$data['tab']) {
+		    SwimAdmin::error('请选择tab标签。');
+		}
+		if(!$data['type'] or !isset($types[$data['type']])) {
+			$data['type'] = 'other';
+		}
+		if($data['type'] != 'other') {
+			$rs = $cat->collection()->findOne(array('type' => $data['type']));
+			if($rs) {
+				if($rs['_id'] != $id) {
+					SwimAdmin::error('选中的类型已经被使用。');
+				}
+			}
+		}
+
+		$photos      = (array)$app->request->post('banner', array());
+		$sizeOfPhotos = $app->request->post('size_of_banner', array());
+		foreach($photos as $idx => $photo) {
+			$size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+			$data['banner'][] = array(
+				'url' => $photo,
+				'w'   => intval($size[0]),
+				'h'   => intval($size[1])
+			);
+		}
+		if(!$id) {
+			$cat->insert($data);
+		} else {
+			$cat->update($data, $id);
+		}
+		$app->render('school/teaching/category-list.html', array(
+			'categoryList' => $cat->find()
+		));
+	} else {
+		$app->render(404);
+	}
+});
+// 删除分类
+$app->post('/:module/category/delete.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$caption = $technical->getEnabled($app, $module);
+	if($caption) {
+		$cat 	= SwimAdmin::model('technical.category');
+		$items 	= $app->request->post('items', array());
+		$cat->deleteById($items);
+		$app->render('school/teaching/category-list.html', array(
+			'categoryList' => $cat->find()
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+// -----------------------
+// 视频组
+$app->get('/:module/video-group/index.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	$app->view()->addGlobal('_Action', 'video-group');
+	if($caption) {
+		$cat  = SwimAdmin::model('technical.category');
+		$cats = $cat->find(array('status' => 1));
+		$data = $video->pagination();
+		$app->render('school/video-group/index.html', array(
+			'data'      => $data,
+			'cats'      => $cats,
+			'category'  => $app->request->get('category')
+		));
+	} else {
+		$app->render(404);
+	}
+});
+$app->get('/:module/video-group/form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	$app->view()->addGlobal('_Action', 'video-group');
+	if($caption) {
+		$id   = $app->request->get('id');
+		$data = $video->findOneById($id);
+		$categories = array();
+		if(isset($data['category'])) {
+			foreach($data['category'] as $cat) {
+				if(isset($cat['cateId'])) {
+					$categories[$cat['cateId']] = $cat['cate'];
+				}
+			}
+		}
+
+		$cat  = SwimAdmin::model('technical.category');
+		$rs   = $cat->find(array('status' => 1));
+		$cats = array();
+		foreach($rs as $cat) {
+			$cid = (string)$cat['_id'];
+			$cats[] = array(
+				'cateId' => $cid,
+				'cate' => $cat['name'],
+				'selected' => isset($categories[$cid])
+			);
+		}
+		$app->render('school/video-group/form.html', array(
+			'data'   => $data,
+			'cats'   => $cats
+		));
+	} else {
+		$app->render(404);
+	}
+});
+$app->post('/:module/video-group/form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	if($caption) {
+		$id  = trim($app->request->post('id'));
+		$doc = array(
+			'name'		=> trim($app->request->post('name')),
+			'video_time'=> trim($app->request->post('video_time')),
+		    'calory'    => trim($app->request->post('calory')),
+			'priority'  => intval($app->request->post('priority')),
+			'statu'  	=> intval($app->request->post('statu', 0)),
+			'study_num' => intval($app->request->post('study_num', 0)),
+			'category'	=> array()
+		);
+		$cats = (array)$app->request->post('category', array());
+		foreach($cats as $val) {
+			$tmp = explode(':', $val);
+			$cid = array_shift($tmp);
+			$doc['category'][] = array(
+				'cateId' => $cid,
+				'cate'   => join(':', $tmp)
+			);
+		}
+		if($id) {
+			$group = $video->findOneById($id);
+			if($group) {
+				$group         = (array)$group;
+				$doc['videos'] = $group['videos'];
+				$rs = $video->update($doc, $id);
+			}
+		} else {
+			$doc['videos'] = array();
+			$rs = $video->insert($doc);
+		}
+		$app->view()->renderJSON(array(
+			'result' => $rs
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+$app->post('/:module/video-group/delete.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	if($caption) {
+		$items 	= $app->request->post('items', array());
+		$video->deleteById($items);
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	} else {
+		$app->render(404);
+	}
+});
+
+$app->get('/:module/video-group/video-form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$cats      = SwimAdmin::model('technical.category');
+	$caption   = $technical->getEnabled($app, $module);
+	if($caption) {
+		$gid   = $app->request->get('gid');
+		$vid   = $app->request->get('vid');
+		$data  = $video->findOneById($gid);
+		$tabs  = $cats->getTabs(); 
+		$video = array(
+			'id' => $vid,
+			'tab' => array(),
+			'contents' => array(
+				array(
+					'title' => '',
+					'text'  => array('')
+				)
+			)
+		);
+		if($data && isset($data['videos'])) {
+			foreach($data['videos'] as $row) {
+				if($row['id'] == $vid) {
+					$video = $row;
+				}
+			}
+		}
+		if(count($video['contents']) < 1) {
+			$video['contents'][] = array(
+				'title' => '',
+				'text'  => array()
+			);
+		}
+		if(count($video['contents'][0]['text']) < 1) {
+			$video['contents'][0]['text'] = array('');
+		}
+		if($data && isset($video['tab'])) {
+		    foreach($tabs as $key=>$tab) {
+			    $tabs[$key]['selected'] = in_array($tab['title'], $video['tab']);
+			}
+		}
+		$app->render('school/video-group/video-form.html', array(
+			'gid'  => $gid,
+			'data' => $video,
+			'tabs' => $tabs
+		));
+	} else {
+		$app->render(404);
+	}
+});
+// 
+$app->post('/:module/video-group/video-form.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	if($caption) {
+		$gid = trim($app->request->post('gid'));
+		$vid = trim($app->request->post('id'));
+		$doc = array(
+			'id'        => '',
+			'name'      => trim($app->request->post('name')),
+			'priority'  => intval($app->request->post('priority')),
+			'statu'     => intval($app->request->post('statu')),
+			'cover'     => array(),
+			// 'mediaType' => trim($app->request->post('mediaType')) == 'gif'? 'gif': 'video',
+			'media'     => array(),
+			'contents'  => array(),
+			'tab'       => (array)$app->request->post('tab')
+		);
+		$coverSize = explode(',', trim($app->request->post('size_of_cover')));
+		$cover     = array(
+			'url' => trim($app->request->post('cover')),
+			'w'   => intval($coverSize[0]),
+			'h'   => isset($coverSize[1])? intval($coverSize[1]): 0
+		);
+		$doc['cover'] = $cover;
+		$media = array(
+			'type' => strtolower(trim($app->request->post('mediaType'))) == 'gif'? 'gif': 'video',
+			'url'  => trim($app->request->post('media'))
+		);
+		$doc['media'] = $media;
+		// 媒体封面
+		$coverSize = explode(',', trim($app->request->post('size_of_media_cover')));
+		$cover     = array(
+			'url' => trim($app->request->post('media_cover')),
+			'w'   => intval($coverSize[0]),
+			'h'   => isset($coverSize[1])? intval($coverSize[1]): 0
+		);
+		$doc['media_cover'] = $cover;
+		
+		$contents = (array)$app->request->post('contents', array());
+		$rows     = array();
+		if(isset($contents['text']) && is_array($contents['text'])) {
+			foreach($contents['text'] as $idx => $text) {
+				$title = isset($contents['title']) && $contents['title'][$idx]? $contents['title'][$idx]: '';
+				if($title || $text) {
+					$row   = array(
+						'title' => $title,
+						'text'  => array()
+					);
+					if(is_array($text)) {
+						foreach($text as $val) {
+							$row['text'][] = $val;
+						}
+					}
+					array_push($rows, $row);
+				}
+			}
+		}
+		$doc['contents'] = $rows;
+
+		$group = $video->findOneById($gid);
+		if($group) {
+			$videos = isset($group['videos'])? $group['videos']: array();
+			$found  = false;
+			if($vid) {
+				$doc['id']          = $vid;
+				$doc['modified_on'] = time();
+				$doc['modified_by'] = $_SESSION[S_USER];
+				foreach($videos as $idx => $row) {
+					if($row['id'] == $vid) {
+						if(!isset($row['media']['url']) || $row['media']['url'] != $doc['media']['url'] || (!isset($row['media']['w']) || !$row['media']['w'])) {
+							if($doc['media']['type'] == 'gif' && $doc['media']['url']) {
+								$info = getimagesize($doc['media']['url']);
+								if($info) {
+									$doc['media']['w'] = intval($info[0]);
+									$doc['media']['h'] = intval($info[1]);
+								}
+							}
+						} else {
+							$doc['media']['w'] = $row['media']['w'];
+							$doc['media']['h'] = $row['media']['h'];
+						}
+						$videos[$idx] = $doc;
+						$found        = true;
+						break;
+					}
+				}
+			}
+			if(!$found) {
+				$doc['id']          = (string)$video->objectId();
+				$doc['create_time'] = time();
+				$doc['created_by']  = $_SESSION[S_USER];
+				if($doc['media']['type'] == 'gif' && $doc['media']['url']) {
+					$info = getimagesize($doc['media']['url']);
+					if($info) {
+						$doc['media']['w'] = intval($info[0]);
+						$doc['media']['h'] = intval($info[1]);
+					}
+				}
+				$videos[]  = $doc;
+			}
+			$videos = Helper::array_orderby($videos, 'priority', SORT_DESC);
+			$video->update(array(
+				'course_num' => count($videos),
+				'videos'     => $videos
+			), $gid);
+			$group['videos'] = $videos;
+		}
+
+		$app->render('school/video-group/video-list.html', array(
+			'data' => $group
+		));
+	} else {
+		$app->render(404);
+	}
+});
+$app->post('/:module/video-group/video-delete.html', function($module) use($app) {
+	$technical = SwimAdmin::model('technical.main');
+	$video     = SwimAdmin::model('technical.video');
+	$caption   = $technical->getEnabled($app, $module);
+	if($caption) {
+		$gid   = $app->request->post('gid');
+		$vid   = $app->request->post('vid');
+		$data  = $video->findOneById($gid);
+		if($data && isset($data['videos'])) {
+			$videoDoc = array();
+			$index = 0;
+			foreach($data['videos'] as $idx => $row) {
+				if($row['id'] == $vid) {
+					continue;
+				}
+				$videoDoc[$index] = $row;
+				$index++;
+			}
+			$video->update(array(
+				'course_num' => count($videoDoc),
+				'videos'     => $videoDoc
+			), $gid);
+
+			// $found = null;
+			// foreach($data['videos'] as $idx => $row) {
+			// 	if($row['id'] == $vid) {
+			// 		$found = $idx;
+			// 	}
+			// }
+			// if(!is_null($found)) {
+			// 	unset($data['videos'][$found]);
+			// 	$video->update(array(
+			// 		'course_num' => count($data['videos']),
+			// 		'videos'     => $data['videos']
+			// 	), $gid);
+			// }
+		}
+		$app->render('school/video-group/video-list.html', array(
+			'gid'  => $gid,
+			'data' => $data
+		));
+	} else {
+		$app->render(404);
+	}
+});

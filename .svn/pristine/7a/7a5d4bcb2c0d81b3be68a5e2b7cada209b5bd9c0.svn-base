@@ -1,0 +1,1064 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+$app->get('/list.html', function() use ($app) {
+    $course = SwimAdmin::model('course.main');
+    $category = SwimAdmin::model('course.category');
+    $cats = $category->find(array('status' => 1));
+	$query = $app->request->get('category');
+	$isTuangou = $app->request->get('courseType', 0);
+    $data = $course->pagination();
+    $app->view()->addGlobal('_MOD', 'City');
+    $app->render('course/index.html', array(
+        'data'  => $data,
+		'cats'  => $cats,
+		'isTuangou' => $isTuangou,
+        'query' => $query
+    ));
+});
+//  增加评论
+$app->post('/comment.html', function() use($app){
+    SwimAdmin::checkPermission('main-contents', PERM_EDIT);
+    $courseComment = SwimAdmin::model('course.comment');
+    $courseId      = trim($app->request->post('courseId'));
+    $userId        = trim($app->request->post('userId'));
+    $score         = trim($app->request->post('score'));
+    $comment       = trim($app->request->post('comment'));
+    $commentId     = trim($app->request->post('commentId'));
+    $time          = strtotime(trim($app->request->post('time')));
+    $photos        = $app->request->post('comment_photos', array());
+    $sizeOfPhotos  = $app->request->post('size_of_photos', array());
+    $photos2 = array();
+    foreach($photos as $idx => $photo) {
+        $size = explode(',', empty($sizeOfPhotos[$idx])? '': $sizeOfPhotos[$idx]);
+        $photos2[] = array(
+            'url' => $photo,
+            'w'   => empty($size[0])? 0: intval($size[0]),
+            'h'   => empty($size[1])? 0: intval($size[1])
+        ); 
+    }
+    if($courseId && $userId && $comment) {
+        $replyUser = null;
+        $content = array(
+            'text' => $comment,
+            'photos' => $photos2,
+            'text_status' => "1"
+        );
+        if($commentId) {
+            $detail = SwimAdmin::model('course.comment')->getMsg($commentId);
+            if($detail) {
+                $text = isset($detail['content']) && isset($detail['content']['text'])? $detail['content']['text']: '';
+                $user = isset($detail['user'])? $detail['user']: array();
+                $content['Replay_Comment_Text'] = array(
+                    'replyComment' => array(
+                        'content' => $text,
+                        'id'      => isset($detail['id'])? $detail['id']: ''
+                    ),
+                    'replyUser'   => array(
+                        'nick'      => isset($user['nick'])? $user['nick']: '',
+                        'id'    => isset($detail['user_id'])? $detail['user_id']: ''
+                    )
+                );
+                $replyUser = isset($detail['user_id']) ? $detail['user_id'] : null;
+            }
+        }
+        $courseComment->post($userId, $courseId, $content,  $score, '', $time? $time: time());
+        SwimAdmin::model('course.main')->freshCommentCounter($courseId);
+        $course = SwimAdmin::model('course.main')->findOneById($courseId);
+        $msgModel = SwimAdmin::model('msg.main');
+        
+    }
+    $comments     = $courseComment->getComments($courseId);
+    $app->render('course/comment-list.html', array(
+        'comments' => $comments
+    ));
+});
+//  删除评论
+$app->post('/comment-delete.html', function() use($app) {
+    $courseComment = SwimAdmin::model('course.comment');
+    $commentId    = trim($app->request->post('commentId'));
+    $comment      = $courseComment->detail($commentId);
+    $comments     = array();
+    $count        = 0;
+    if($comment) {
+        $courseComment->deleteById($commentId);
+        SwimAdmin::model('course.main')->freshCommentCounter($comment['course_id'], -1);
+    }
+    $comments = $courseComment->getComments($comment['course_id']);
+    $app->render('course/comment-list.html', array(
+        'comments'     => $comments,
+    ));
+});
+
+// 修改界面
+$app->get('/form.html', function() use ($app) {
+    $course = SwimAdmin::model('course.main');
+    $category = SwimAdmin::model('course.category');
+    $area = SwimAdmin::model('course.area');
+    $region = SwimAdmin::model('course.region');
+    $natatorium = SwimAdmin::model('natatorium.main');
+
+    $id = $app->request->get('id', '');
+    $data = array();
+    $cats = $category->find(array('status' => 1));
+    $slted = array(
+        'city'       => array(),
+        'natatorium' => array()
+    );
+
+    if($id) {
+        $data = $course->findOneById($id);
+    }
+    if(!isset($data['contents']) || !$data['contents']) {
+        $data['contents'] = array(
+            array('text' => '', 'media' => array())
+        );
+	}
+	$belongType = array();
+	if(isset($data['type']) && $data['type']>0) {
+	    $belongType[$data['type']] = true;    
+	}
+
+    if(isset($data['space'])) {
+        if($data['space']['service_area']) {
+            foreach($data['space']['service_area'] as $city) {
+                $slted['city'][$city['city_id']] = $city['city_name'];
+            }
+        }
+        if($data['space']['natatorium']) {
+            foreach($data['space']['natatorium'] as $nata) {
+                $slted['natatorium'][$nata['id']] = $nata['name'];
+            }
+        }
+		if($data['space']['region']) {
+		    foreach($data['space']['region'] as $region1) {
+                if(isset($region1['id'])) {
+    			    $slted['region'][$region1['id']] = $region1['name'];
+                }
+			}
+		}
+    }
+    $belongs = array();
+    if(isset($data['belong'])) {
+        foreach($data['belong'] as $belong) {
+            if(isset($belong['cate_id'])) {
+                $belongs[$belong['cate_id']] = $belong['cate_name'];
+            }
+        }
+    }
+    $member = SwimAdmin::model('member.main');
+    $filter['type'] = 2;
+    $users  = $member->find($filter);
+    $courseComment = SwimAdmin::model('course.comment');
+    $comments      = $courseComment->getComments($id);
+    $regions       = $region->find(array('status' => 1));
+    $property = array(array(
+        'name' => '校区',
+        'values' => array(
+        )
+    ));
+    $regionAry = array();
+    foreach($regions as $item) {
+        $cid = (string)$item['_id'];
+        $item['_id'] = $cid;
+        $property[0]['values'][$cid] = $item['name'];
+        $regionAry[] = $item;
+    }
+	$types = array(
+		array('id'=>1, 'name'=>'私教'),
+		array('id'=>2, 'name'=>'普通')
+	);
+    $app->render('course/form.html', array(
+        'id'          => $id,
+        'data'        => $data,
+        'cats'        => $cats,
+        'users'       => $users,
+        'natatoriums' => $natatorium->find(),
+        'cities'      => $area->find(array('statu' => 1)),
+        'regions'     => $regionAry,
+        'slted'       => $slted, 'comments'    => $comments,
+		'belongs'     => $belongs,
+		'types'       => $types,
+		'belongType'  => $belongType,
+		'property'    => array_merge($property, $course->property)
+    ));
+});
+
+$app->post('/form.html', function() use ($app) {
+    $course = SwimAdmin::model('course.main');
+    $id = $app->request->post('id', '');
+    $doc = array(
+        'title'         => trim($app->request->post('title')),
+        'price'         => trim($app->request->post('price')) * 1,
+		'price_subject' => trim($app->request->post('price_subject')),
+		'sale_count'    => trim($app->request->post('sale_count')) * 1,
+        'training_time' => trim($app->request->post('training_time')),
+        'training_step' => trim($app->request->post('training_step')) * 1,
+        'schedule'      => trim($app->request->post('schedule')),
+        'teacher'       => trim($app->request->post('teacher')),
+        'teacher_extra' => trim($app->request->post('teacher_extra')),
+        'teacher_phone' => trim($app->request->post('teacher_phone')),
+        'score'         => trim($app->request->post('score')) * 1,
+        'cover'         => trim($app->request->post('cover')),
+        'cover_big'     => trim($app->request->post('cover_big')),
+        'cover_small'   => trim($app->request->post('cover_small')),
+        'statu'         => trim($app->request->post('status')) * 1,
+		'promotion'     => trim($app->request->post('promotion')) * 1,
+        'priority'      => trim($app->request->post('priority')) * 1,
+        'type'          => trim($app->request->post('type')) * 1,
+		'is_tuangou'    => $app->request->post('tuangou') * 1,
+		'huodong_desc'  => trim($app->request->post('huodong_desc')),
+		'discount_desc' => trim($app->request->post('discount_desc')),
+		'discount_price'=> trim($app->request->post('discount_price')) * 1,
+        'extra'         => array(),
+        'contents'      => array(),
+        'belong'        => array(),
+        'photos'        => array(),
+        'space'         => array(
+            'region'       => array(),
+            'service_area' => array(),
+            'natatorium'   => array()
+        )
+    );
+
+	$tuangou_discount = $app->request->post('groupDiscount', array());
+	$disPrices = array();
+	$doc['tuangou_discount'] = array();
+	foreach($tuangou_discount as $tid=>$val) {
+	    $doc['tuangou_discount'][$tid] = $val * 1;
+		if($doc['tuangou_discount'][$tid]) {
+		    $disPrices[] = $doc['tuangou_discount'][$tid];
+		}
+	}
+
+    $pg = $app->request->post('pg', array());
+	$doc['price_group'] = $pg;
+	$orgPrices = array();
+    foreach($doc['price_group'] as $sid=>$xiaoqu) {
+        foreach($xiaoqu as $zid=>$zhonglei) {
+            foreach($zhonglei as $gid=>$guige) {
+                $doc['price_group'][$sid][$zid][$gid]['value'] *= 1;
+                $doc['price_group'][$sid][$zid][$gid]['stock'] *= 1;  
+				if($doc['price_group'][$sid][$zid][$gid]['value']) {
+                    $orgPrices[] = $doc['price_group'][$sid][$zid][$gid]['value']; 
+			    }
+            } 
+        }
+    }
+	if($disPrices) {
+	    $tp = min($orgPrices) - min($disPrices);
+		if($tp<=0) {
+		    SwimAdmin::error('原价格-优惠价格必须大于0');
+		}
+	}
+
+    $photos = $app->request->post('photos', array());
+    $sizeOfPhotos = $app->request->post('size_of_photos', array());
+    foreach($photos as $idx => $photo) {
+        $size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+        $doc['photos'][] = array(
+            'url' => $photo,
+            'w'   => intval($size[0]),
+            'h'   => intval($size[1])
+        );
+    }
+
+    $extras = explode(';', str_replace('；', ';', trim($app->request->post('extra'))));
+    foreach($extras as $extra) {
+        $extra = trim($extra);
+        if($extra) {
+            $doc['extra'][] = $extra;
+        }
+    }
+    $cats = (array)$app->request->post('category');
+    foreach($cats as $belong) {
+        if($belong) {
+            $exp = explode('::', $belong);
+            $doc['belong'][] = array(
+                'cate_id'   => $exp[0],
+                'cate_name' => $exp[1]
+            );
+        }
+    }
+	$nids = array();
+    $regions = (array)$app->request->post('region');
+    foreach($regions as $region) {
+        $exp = explode('::', $region);
+        $doc['space']['region'][] = array(
+            'id'   => $exp[0],
+            'name' => $exp[1]
+        );
+		$nids[] = $exp[0];
+    }
+	if($nids) {
+	    $filter = array('region.id' => array('$in'=>$nids));
+		$natatoriums = SwimAdmin::model('natatorium.main')->find($filter);
+		foreach($natatoriums as $natatorium) {
+			$doc['space']['natatorium'][] = array(
+				'id' => (string)$natatorium['_id'],
+				'name' => $natatorium['title']
+			);
+		}   
+	}
+    $cities = $app->request->post('service_area');
+    if($cities) {
+        foreach((array)$cities as $city) {
+            $city = trim($city);
+            if($city) {
+                $exp = explode('::', $city);
+                $doc['space']['service_area'][] = array(
+                    'city_id'   => $exp[0],
+                    'city_name' => $exp[1]
+                );
+            }
+        }
+    }
+	/*
+    $natatoriums = $app->request->post('natatorium');
+    if($natatoriums) {
+        foreach((array)$natatoriums as $natatorium) {
+            $natatorium = trim($natatorium);
+            if($natatorium) {
+                $exp = explode('::', $natatorium);
+                $doc['space']['natatorium'][] = array(
+                    'id'   => $exp[0],
+                    'name' => $exp[1]
+                );
+            }
+        }
+    }
+	 */
+    $contents = array();
+    $emptyContents = true;
+    $texts = $app->request->post('content', array());
+    $photos = $app->request->post('contentThumbs', array());
+    $sizeOfSteps = $app->request->post('size_of_contentThumbs', array());
+    foreach($texts as $idx => $txt) {
+        $txt = trim($txt);
+        if($txt && $emptyContents) {
+            $emptyContents = false;
+        }
+        $content = array(
+            'text'  => $txt,
+            'media' => array()
+        );
+        if(isset($photos[$idx]) && $photos[$idx]) {
+            $sizeOfPhotos = isset($sizeOfSteps[$idx])? $sizeOfSteps[$idx]: array();
+            foreach($photos[$idx] as $n => $url) {
+                $size = explode(',', isset($sizeOfPhotos[$n]) && $sizeOfPhotos[$n]? $sizeOfPhotos[$n]: '');
+                $content['media'][] = array(
+                    'type' => 'photo',
+                    'url'  => $url,
+                    'w'    => intval($size[0]),
+                    'h'    => intval($size[1])
+                );
+            }
+        }
+        $contents[] = $content;
+    }
+    $doc['contents'] = $contents;
+
+    if(!$doc['title']) {
+        SwimAdmin::error('请输入标题。');
+    }
+    if($doc['training_step']<=0) {
+        SwimAdmin::error('请输入课时，课时须大于0。');
+    }
+    if($emptyContents) {
+        SwimAdmin::error('请输入内容');
+    }
+    if(!$id) {
+        SwimAdmin::checkPermission('main-contents', PERM_ADD);
+        $course->insert($doc);
+    } else {
+        SwimAdmin::checkPermission('main-contents', PERM_EDIT);
+        $course->update($doc, $id);
+		SwimAdmin::model('course.order')->update(
+			array('course.id'=>$id), 
+		    array('training_step'=>$doc['training_step'])
+		);
+    }
+
+    $app->render('course/list.html', array(
+        'id'   => $id,
+        'data' => $course->pagination($app->request->post('__url'))
+    ));
+});
+
+// 发起拼团界面
+$app->get('/pintuan-form.html', function() use ($app) {
+    $course = SwimAdmin::model('course.main');
+    $category = SwimAdmin::model('course.category');
+    $area = SwimAdmin::model('course.area');
+    $region = SwimAdmin::model('course.region');
+    $natatorium = SwimAdmin::model('natatorium.main');
+
+    $id = $app->request->get('id', '');
+    $data = array();
+    $cats = $category->find(array('status' => 1));
+    $slted = array(
+        'city'       => array(),
+        'natatorium' => array()
+    );
+
+    if($id) {
+		$data = $course->findOneById($id);
+		if(empty($data['is_tuangou'])) {
+		    SwimAdmin::error('该课程不支持团购');
+		}
+    }
+    if(!isset($data['contents']) || !$data['contents']) {
+        $data['contents'] = array(
+            array('text' => '', 'media' => array())
+        );
+	}
+	$belongType = array();
+	if(isset($data['type']) && $data['type']>0) {
+	    $belongType[$data['type']] = true;    
+	}
+
+    if(isset($data['space'])) {
+        if($data['space']['service_area']) {
+            foreach($data['space']['service_area'] as $city) {
+                $slted['city'][$city['city_id']] = $city['city_name'];
+            }
+        }
+        if($data['space']['natatorium']) {
+            foreach($data['space']['natatorium'] as $nata) {
+                $slted['natatorium'][$nata['id']] = $nata['name'];
+            }
+        }
+		if($data['space']['region']) {
+		    foreach($data['space']['region'] as $region1) {
+                if(isset($region1['id'])) {
+    			    $slted['region'][$region1['id']] = $region1['name'];
+                }
+			}
+		}
+    }
+    $belongs = array();
+    if(isset($data['belong'])) {
+        foreach($data['belong'] as $belong) {
+            if(isset($belong['cate_id'])) {
+                $belongs[$belong['cate_id']] = $belong['cate_name'];
+            }
+        }
+    }
+    $member = SwimAdmin::model('member.main');
+    $filter['type'] = 2;
+    $users  = $member->find($filter);
+    $courseComment = SwimAdmin::model('course.comment');
+    $comments      = $courseComment->getComments($id);
+    $regions       = $region->find(array('status' => 1));
+    $property = array(array(
+        'name' => '校区',
+        'values' => array(
+        )
+    ));
+    $regionAry = array();
+    foreach($regions as $item) {
+        $cid = (string)$item['_id'];
+        $item['_id'] = $cid;
+        $property[0]['values'][$cid] = $item['name'];
+        $regionAry[] = $item;
+    }
+	$types = array(
+		array('id'=>1, 'name'=>'私教'),
+		array('id'=>2, 'name'=>'普通')
+	);
+    $app->render('course/pintuan-form.html', array(
+        'id'          => $id,
+        'data'        => $data,
+        'cats'        => $cats,
+        'users'       => $users,
+        'natatoriums' => $natatorium->find(),
+        'cities'      => $area->find(array('statu' => 1)),
+        'regions'     => $regionAry,
+        'slted'       => $slted, 'comments'    => $comments,
+		'belongs'     => $belongs,
+		'types'       => $types,
+		'belongType'  => $belongType,
+		'property'    => array_merge($property, $course->property)
+    ));
+});
+
+$app->post('/pintuan-form.html', function() use($app) {
+	$id = $app->request->post('id');
+	$userId = $app->request->post('user');
+	$people = $app->request->post('guige');
+
+	$natatorium = $app->request->post('natatorium');
+	if(!$natatorium) {
+	    SwimAdmin::error('请选择场馆');
+	}
+	list($natatorium_id, $natatorium) = explode('::', $natatorium);
+	
+	$property = $app->request->post('property');
+	if(!$property) {
+	    SwimAdmin::error('请选择一个价格组合');
+	}
+	list($xiaoqu, $zhonglei, $guige) = explode('-', $property);
+
+	$Course = SwimAdmin::model('course.main');
+	$user = SwimAdmin::model('member.main')->findOneById($userId);
+	$course = $Course->detail($id);
+	$property = $Course->property;
+	
+	$other = array(
+	    'xiaoqu' => $xiaoqu,
+		'xiaoquTitle' => $course['price_group_values'][$xiaoqu]['name'],
+		'natatorium' => $course['space']['natatorium'][0]['name'],
+		'natatorium_id' => $course['space']['natatorium'][0]['id'],
+		'guige' => $guige,
+		'guigeTitle' => $course['price_group_values'][$xiaoqu]['values'][$zhonglei]['values'][$guige]['name'],
+		'require' => $people,
+		'phone' => $user['phone'],
+		'name'  => $user['nick']
+	);
+	$course2 = array(
+		"title" => $course['title'],
+		"price" => $course['price'],
+
+		"price_subject" => $course['price_subject'],
+		"training_time" => $course['training_time'],
+		"schedule" => $course['schedule'],
+		"teacher" => $course['teacher'],
+		"teacher_extra" => $course['teacher_extra'],
+		"teacher_phone" => $course['teacher_phone'],
+		"score" => $course['score'],
+		"cover" => $course['cover'],
+		"statu" => $course['statu'],
+		"extra" => $course['extra'],
+		"contents" => $course['contents'],
+		"belong" => $course['belong'],
+		"space" => array(
+			"region" => array(array(
+				"id" => $other['xiaoqu'],
+				"name" => $other['xiaoquTitle']
+			)),
+			"service_area" => $course['space']['service_area'],
+			"natatorium" => array(array(
+				"id" => $other['natatorium_id'],	
+				"name" => $other['natatorium']
+			)),
+		),
+		"create_on" => time(),
+		"create_by" => $userId,
+		"create_time" => time(),
+		"modified_on" => time(),
+		"modified_by" => $userId,
+		"comments_counter" => isset($course['comments_counter'])? $course['comments_counter']: 0,
+		"photos" => $course['photos'],
+		"priority" => $course['priority'],
+		"cover_big" => $course['cover_big'],
+		"cover_small" => $course['cover_small'],
+		"sale_count" => $course['sale_count'],
+		"price_group" => $course['price_group'],
+		"type" => $course['type'],
+		"promotion" => $course['promotion'],
+		"training_step" => $course['training_step'],
+		'is_tuangou' => 1,
+		'huodong_desc' => $course['huodong_desc'],
+		'discount_desc' => $course['discount_desc'],
+		'discount_price' => $course['discount_price'],
+		'final_discount_price' => 0,
+		'pay_status' => 1,
+		'tuangou_status' => 1,
+		'tuangou_people' => $property[2]['require'][$other['require']],
+		'tuangou_require' => $other['require'],
+		'tuangou_discount' => $course['tuangou_discount'],
+		'tuangou_people_counter' => 1,
+		'source' => $id,
+		'tuangou_start' => time(),
+		'tuangou_expire' => time() + (48*3600)
+	);
+    SwimAdmin::model('course.main')->collection()->insert($course2);
+	$course2['id'] = (string)$course2['_id'];
+	$course2['discount_type'] = '团购优惠';
+	$course2['final_discount_price']= $course['tuangou_discount'][$other['require']];
+	unset($course2['_id']);
+
+	$num  = Helper::mkrand();
+	$time = date('YmdHis');
+	$orderId = $time . $num;
+
+	$order = array(
+		'user_id'               => $userId,
+		'course_id'             => $course2['id'],
+		'order_id'              => $orderId,
+		'channel'               => 'app',
+		'price'                 => $course['price'],
+		'total_fee'             => $course['price_group_values'][$xiaoqu]['values'][$zhonglei]['values'][$guige]['value'],
+		'quantity'              => 1,
+		'discount'              => 0,
+		'demanded'              => $other,
+		'order_status'          => 1,
+		'train_status'          => 0,
+		'buyer_process_status'  => 1,
+		'seller_process_status' => 0,
+		'order_expired_time'    => time() + (30 * 60), //30分钟有效期
+		'order_available_time'  => time()+ (90 * 24 * 60 * 60), //课程过期时间
+		'pay_time'              => time(),
+		'comment_status'        => 0, 
+		'platform'              => 'backend',
+		'ask_refund_time'       => 0, //请求退款时间
+		'refund_no'             => 0, //退款单号
+		'refund_time'           => 0, //退款时间
+		'refund_fee'            => 0, //退款金额
+		'code'                  => Helper::mkrand(), //验证码
+		'teacher_id'            => 0,
+		'teacher_name'          => 0,
+		'teacher_phone'         => 0, 
+		'type'                  => 'course', //订单类型  
+		'active_time'           => 0, //订单激活时间       
+		'create_time'           => time(),
+		'modified_time'         => 0,  //订单修改时间
+		'allocation_time'       => 0,  //分配教练的时间
+		'finish_time'           => 0,  //毕业时间
+		'operator'              => '',
+		'pay_result'            => 0,
+		'refund_result'         => 0,
+		'course'                => $course2,
+		'import'                => 0,
+	);
+	SwimAdmin::model('course.order')->insert($order);
+    $app->render('course/list.html', array(
+        'id'   => $id,
+        'data' => $Course->pagination($app->request->post('__url'))
+    ));
+});
+
+
+// 参与拼团界面
+$app->get('/join-pintuan-form.html', function() use ($app) {
+    $course = SwimAdmin::model('course.main');
+    $category = SwimAdmin::model('course.category');
+    $area = SwimAdmin::model('course.area');
+    $region = SwimAdmin::model('course.region');
+    $natatorium = SwimAdmin::model('natatorium.main');
+
+    $id = $app->request->get('id', '');
+    $data = array();
+    $cats = $category->find(array('status' => 1));
+    $slted = array(
+        'city'       => array(),
+        'natatorium' => array()
+    );
+
+    if($id) {
+        $data = $course->findOneById($id);
+    }
+    if(!isset($data['contents']) || !$data['contents']) {
+        $data['contents'] = array(
+            array('text' => '', 'media' => array())
+        );
+	}
+	$belongType = array();
+	if(isset($data['type']) && $data['type']>0) {
+	    $belongType[$data['type']] = true;    
+	}
+
+    if(isset($data['space'])) {
+        if($data['space']['service_area']) {
+            foreach($data['space']['service_area'] as $city) {
+                $slted['city'][$city['city_id']] = $city['city_name'];
+            }
+        }
+        if($data['space']['natatorium']) {
+            foreach($data['space']['natatorium'] as $nata) {
+                $slted['natatorium'][$nata['id']] = $nata['name'];
+            }
+        }
+		if($data['space']['region']) {
+		    foreach($data['space']['region'] as $region1) {
+                if(isset($region1['id'])) {
+    			    $slted['region'][$region1['id']] = $region1['name'];
+                }
+			}
+		}
+    }
+    $belongs = array();
+    if(isset($data['belong'])) {
+        foreach($data['belong'] as $belong) {
+            if(isset($belong['cate_id'])) {
+                $belongs[$belong['cate_id']] = $belong['cate_name'];
+            }
+        }
+    }
+    $member = SwimAdmin::model('member.main');
+    $filter['type'] = 2;
+    $users  = $member->find($filter);
+    $courseComment = SwimAdmin::model('course.comment');
+    $comments      = $courseComment->getComments($id);
+    $regions       = $region->find(array('status' => 1));
+    $property = array(array(
+        'name' => '校区',
+        'values' => array(
+        )
+    ));
+    $regionAry = array();
+    foreach($regions as $item) {
+        $cid = (string)$item['_id'];
+        $item['_id'] = $cid;
+        $property[0]['values'][$cid] = $item['name'];
+        $regionAry[] = $item;
+    }
+	$types = array(
+		array('id'=>1, 'name'=>'私教'),
+		array('id'=>2, 'name'=>'普通')
+	);
+    $app->render('course/join-pintuan-form.html', array(
+        'id'          => $id,
+        'data'        => $data,
+        'cats'        => $cats,
+        'users'       => $users,
+        'natatoriums' => $natatorium->find(),
+        'cities'      => $area->find(array('statu' => 1)),
+        'regions'     => $regionAry,
+        'slted'       => $slted, 'comments'    => $comments,
+		'belongs'     => $belongs,
+		'types'       => $types,
+		'belongType'  => $belongType,
+		'property'    => array_merge($property, $course->property)
+    ));
+});
+
+//加入拼团
+$app->post('/join-pintuan-form.html', function() use($app){
+	$id = $app->request->post('id');
+	$userId = $app->request->post('user');
+	$people = $app->request->post('guige');
+	$property = $app->request->post('property');
+	if(!$property) {
+	    SwimAdmin::error('请选择一个价格组合');
+	}
+	list($xiaoqu, $zhonglei, $guige) = explode('-', $property);
+
+    $Course = SwimAdmin::model('course.main');
+	$user = SwimAdmin::model('member.main')->findOneById($userId);
+	$course = $Course->detail($id);
+	if(isset($course['is_tuangou']) && $course['is_tuangou'] == 1 && $course['tuangou_people_counter']>=$course['tuangou_people']) {
+	    SwimAdmin::error('团购人数已满员');
+	}
+	$property = $Course->property;
+	
+	$course['id'] = (string)$course['_id'];
+	unset($course['_id']);
+
+	$other = array(
+	    'xiaoqu' => $xiaoqu,
+		'xiaoquTitle' => $course['price_group_values'][$xiaoqu]['name'],
+		'natatorium' => $course['space']['natatorium'][0]['name'],
+		'natatorium_id' => $course['space']['natatorium'][0]['id'],
+		'guige' => $guige,
+		'guigeTitle' => $course['price_group_values'][$xiaoqu]['values'][$zhonglei]['values'][$guige]['name'],
+		'require' => $people,
+		'phone' => $user['phone'],
+		'name'  => $user['nick']
+	);
+	$num  = Helper::mkrand();
+	$time = date('YmdHis');
+	$orderId = $time . $num;
+	$price_group_values = $course['price_group_values'];
+	unset($course['price_group_values']);
+
+	$order = array(
+		'user_id'               => $userId,
+		'course_id'             => $course['id'],
+		'order_id'              => $orderId,
+		'channel'               => 'app',
+		'price'                 => $course['price'],
+		'total_fee'             => $price_group_values[$xiaoqu]['values'][$zhonglei]['values'][$guige]['value'],
+		'quantity'              => 1,
+		'discount'              => 0,
+		'demanded'              => $other,
+		'order_status'          => 1,
+		'train_status'          => 0,
+		'buyer_process_status'  => 1,
+		'seller_process_status' => 0,
+		'order_expired_time'    => time() + (30 * 60), //30分钟有效期
+		'order_available_time'  => time()+ (90 * 24 * 60 * 60), //课程过期时间
+		'pay_time'              => time(),
+		'comment_status'        => 0, 
+		'platform'              => 'backend',
+		'ask_refund_time'       => 0, //请求退款时间
+		'refund_no'             => 0, //退款单号
+		'refund_time'           => 0, //退款时间
+		'refund_fee'            => 0, //退款金额
+		'code'                  => Helper::mkrand(), //验证码
+		'teacher_id'            => 0,
+		'teacher_name'          => 0,
+		'teacher_phone'         => 0, 
+		'type'                  => 'course', //订单类型  
+		'active_time'           => 0, //订单激活时间       
+		'create_time'           => time(),
+		'modified_time'         => 0,  //订单修改时间
+		'allocation_time'       => 0,  //分配教练的时间
+		'finish_time'           => 0,  //毕业时间
+		'operator'              => '',
+		'pay_result'            => 0,
+		'refund_result'         => 0,
+		'course'                => $course,
+		'import'                => 0,
+	);
+	SwimAdmin::model('course.order')->insert($order);
+	$filter = array('course.id' => $course['id']);
+	$update = array(
+	    '$inc' => array(
+		    'course.tuangou_people_counter' => 1
+		)   
+	);
+	SwimAdmin::model('course.order')->collection()->update($filter, $update, array('multiple' => true));
+	$filter = array('_id' => new MongoId($id));
+	$update = array(
+		'$inc' => array(
+			'tuangou_people_counter' => 1
+		)
+	);
+
+    SwimAdmin::model('course.main')->collection()->update($filter, $update);
+
+    $app->render('course/list.html', array(
+        'id'   => $id,
+        'data' => $Course->pagination($app->request->post('__url'))
+    ));
+});
+
+// 删除
+$app->post('/delete.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_DELETE);
+    $course = SwimAdmin::model('course.main');
+    $items = $app->request->post('items', array());
+    $course->deleteById($items);
+    $app->view()->renderJSON(array('result' => true));
+});
+
+// 分类管理
+$app->get('/category.html', function() use ($app) {
+    $cat = SwimAdmin::model('course.category');
+    $list = $cat->find();
+    $app->view()->addGlobal('_MOD', 'City');
+    $app->render('course/category.html', array(
+        'categoryList' => $list
+    ));
+});
+// 分类表单
+$app->get('/category/form.html', function() use ($app) {
+    $id = $app->request->get('id');
+    $cat = SwimAdmin::model('course.category');
+    $area = SwimAdmin::model('course.area'); $cities = $area->find(array('statu' => 1)); $data = array();
+    if($id) {
+        $data = $cat->collection()->findOne(array('_id' => new MongoId($id)));
+    }
+    $app->render('course/category-form.html', array(
+        'cat'    => $data,
+        'cities' => $cities
+    ));
+});
+// 处理分类表单
+$app->post('/category/form.html', function() use ($app) {
+    $id = $app->request->post('id', '');
+    $cat = SwimAdmin::model('course.category');
+    $data = array(
+        'cover'       => trim($app->request->post('cover', '')),
+        'cover_big'   => trim($app->request->post('cover_big', '')),
+        'cover_small' => trim($app->request->post('cover_small', '')),
+        'name'        => trim($app->request->post('name', '')),
+        'subtitle'    => trim($app->request->post('subtitle', '')),
+        'city'        => array(),
+        'price'       => trim($app->request->post('price')) * 1,
+        'priority'    => intval($app->request->post('priority')),
+        'list_type'   => intval($app->request->post('list_type')) == 2? 2: 1,
+        'status'      => intval($app->request->post('status')),
+        'promotion'   => intval($app->request->post('promotion')),
+        'sort'        => trim($app->request->post('sort')),
+        'order'       => intval($app->request->post('order')),
+        'photos'      => array()
+    );
+
+    $photos = $app->request->post('photos', array());
+    $sizeOfPhotos = $app->request->post('size_of_photos', array());
+    foreach($photos as $idx => $photo) {
+        $size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+        $data['photos'][] = array(
+            'url' => $photo,
+            'w'   => intval($size[0]),
+            'h'   => intval($size[1])
+        );
+    }
+
+    $cityId = trim($app->request->post('city'));
+    if($cityId) {
+        $data['city'] = array(
+            'id'   => $cityId,
+            'name' => trim($app->request->post('city_name'))
+        );
+    }
+    if(!$data['sort']) $data['sort'] = 'create_time';
+    if($data['order'] != -1) $data['order'] = 1;
+    if(!$data['name']) {
+        SwimAdmin::error('请输入分类名称。');
+    }
+    if(!$id) {
+        SwimAdmin::checkPermission('main-contents', PERM_ADD);
+        $cat->insert($data);
+    } else {
+        SwimAdmin::checkPermission('main-contents', PERM_EDIT);
+        $cat->update($data, $id);
+    }
+    $app->render('course/category-list.html', array(
+        'categoryList' => $cat->find()
+    ));
+});
+// 删除分类
+$app->post('/category/delete.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_DELETE);
+    $cat = SwimAdmin::model('course.category');
+    $items = $app->request->post('items', array());
+    $cat->deleteById($items);
+    $app->render('course/category-list.html', array(
+        'categoryList' => $cat->find()
+    ));
+});
+
+// 服务城市
+$app->get('/area.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_READ);
+    $area = SwimAdmin::model('course.area');
+    $list = $area->find();
+    $app->view()->addGlobal('_MOD', 'City');
+    $app->render('course/area.html', array(
+        'areaList' => $list
+    ));
+});
+$app->get('/area/form.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_READ);
+    $id = $app->request->get('id');
+    $data = array();
+    $area = SwimAdmin::model('course.area');
+    if($id) {
+        $data = $area->collection()->findOne(array('_id' => new MongoId($id)));
+    }
+    $app->render('course/area-form.html', array(
+        'area' => $data
+    ));
+});
+// 处理服务城市表单
+$app->post('/area/form.html', function() use ($app) {
+    $id = $app->request->post('id', '');
+    $area = SwimAdmin::model('course.area');
+    $data = array(
+        'city'     => trim($app->request->post('name', '')),
+        'priority' => intval($app->request->post('priority')),
+        'statu'    => intval($app->request->post('status'))
+    );
+    if(!$data['city']) {
+        SwimAdmin::error('请输入分类名称。');
+    }
+    if(!$id) {
+        SwimAdmin::checkPermission('main-contents', PERM_ADD);
+        $area->insert($data);
+    } else {
+        SwimAdmin::checkPermission('main-contents', PERM_EDIT);
+        $area->update($data, $id);
+    }
+    $app->render('course/area-list.html', array(
+        'areaList' => $area->find()
+    ));
+});
+// 删除服务城市
+$app->post('/area/delete.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_DELETE);
+    $area = SwimAdmin::model('course.area');
+    $items = $app->request->post('items', array());
+    $area->deleteById($items);
+    $app->render('course/area-list.html', array(
+        'areaList' => $area->find()
+    ));
+});
+
+// 场馆管理
+$app->get('/region.html', function() use ($app) {
+    $region = SwimAdmin::model('course.region');
+    $list = $region->find();
+    $app->view()->addGlobal('_MOD', 'City');
+    $app->render('course/region.html', array(
+        'regionList' => $list
+    ));
+});
+// 场馆表单
+$app->get('/region/form.html', function() use ($app) {
+    $id = $app->request->get('id');
+    $cat = SwimAdmin::model('course.region');
+    $area = SwimAdmin::model('course.area');
+    $cities = $area->find(array('status' => 1));
+    $data = array();
+    if($id) {
+        $data = $cat->collection()->findOne(array('_id' => new MongoId($id)));
+    }
+    $app->render('course/region-form.html', array(
+        'region' => $data,
+        'cities' => $cities
+    ));
+});
+// 处理场馆表单
+$app->post('/region/form.html', function() use ($app) {
+    $id = $app->request->post('id', '');
+    $region = SwimAdmin::model('course.region');
+    $doc = array(
+        'pc_cover'        => trim($app->request->post('pc_cover', '')),
+        'cover'        => trim($app->request->post('cover', '')),
+        'name'         => trim($app->request->post('name', '')),
+        'city'         => array(),
+        'photos'       => array(),
+        'coordinates'  => trim($app->request->post('coordinates', '')),
+        'address'      => trim($app->request->post('address')),
+        'phone'        => trim($app->request->post('phone')),
+        'service_time' => trim($app->request->post('service_time')),
+        'price'        => trim($app->request->post('price')) * 1,
+        'score'        => trim($app->request->post('score')) * 1,
+        'priority'     => intval($app->request->post('priority')),
+        'status'       => intval($app->request->post('status')),
+        'remark'       => trim($app->request->post('remark'))
+    );
+    $cityId = trim($app->request->post('city'));
+    if($cityId) {
+        $doc['city'] = array(
+            'id'   => $cityId,
+            'name' => trim($app->request->post('city_name'))
+        );
+    }
+    if(!$doc['name']) {
+        SwimAdmin::error('请输入分类名称。');
+    }
+    $photos = $app->request->post('photos', array());
+    $sizeOfPhotos = $app->request->post('size_of_photos', array());
+    foreach($photos as $idx => $photo) {
+        $size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+        $doc['photos'][] = array(
+            'url' => $photo,
+            'w'   => intval($size[0]),
+            'h'   => intval($size[1])
+        );
+    }
+    if(!$id) {
+        SwimAdmin::checkPermission('main-contents', PERM_ADD);
+        $region->insert($doc);
+    } else {
+        SwimAdmin::checkPermission('main-contents', PERM_EDIT);
+        $region->update($doc, $id);
+    }
+    $list = $region->find();
+    $app->render('course/region-list.html', array(
+        'regionList' => $list
+    ));
+});
+// 删除场馆
+$app->post('/region/delete.html', function() use ($app) {
+    SwimAdmin::checkPermission('main-contents', PERM_DELETE);
+    $region = SwimAdmin::model('course.region');
+    $items = $app->request->post('items', array());
+    $region->deleteById($items);
+    $app->render('course/region-list.html', array(
+        'regionList' => $region->find()
+    ));
+});

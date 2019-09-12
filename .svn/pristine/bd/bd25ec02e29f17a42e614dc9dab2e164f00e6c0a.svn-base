@@ -1,0 +1,151 @@
+{% set _Title = '泳圈' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<link type="text/css" href="css/3rd/plugins/datepicker/datepicker.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#tweet-form { width: 880px; }
+#tweet-form-contet { height: 460px; overflow: auto; }
+/*#tweet-form-contet>div { display: inline-block; vertical-align: top; }*/
+#tweet-form-main { width: 500px; display: inline-block; vertical-align: top; }
+#tweet-form-foot { width: 500px; }
+#tweet-form-comments {
+	position: absolute; top: 60px; right: 25px; bottom: 10px;
+	width: 320px; z-index: 1;
+	overflow: auto;
+}
+#tweet-form-comments>div { margin: 0 5px; }
+#tweet-contents textarea { height: 80px; resize: none; }
+.tweet-icon { max-height: 60px; max-width: 60px; }
+.tweet-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.tweet-actions { text-align: left; }
+.tweet-actions>a.fa { padding: 3px; }
+#tweet-form h3 {
+	padding: 5px 0; 
+}
+#tweet-comment { margin: 5px 0 10px; }
+.tweet-comment { padding: 3px 0; }
+.tweet-comment.active { background-color: #369; }
+.tweet-comment:hover { background-color: #ffc; }
+.tweet-comment>label { color: #369; font-weight: bold; }
+#tweet-comment-content { margin-top: 5px; height: 100px; }
+.tweet-reply { padding-left: 20px; }
+
+#tweet-form-reply { 
+	position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9;
+	background-color: rgba(55, 55, 55, .75);
+	visibility: hidden;
+	transform: translate(-100%, -100%);
+}
+#tweet-form-reply>div {
+	position: absolute; top: 50%; left: 50%;
+	width: 300px;
+	padding: 10px;
+	transform: translate(-75%, -50%);
+	background-color: #fff;
+	box-shadow: 0 0 3px #000;
+}
+#tweet-form-reply>div>div {
+	min-height: 240px;
+}
+#tweet-reply-title { 
+	font-weight: bold; padding-bottom: 3px; color: #fff; background-color: #DF7514; 
+	padding: 3px 10px;
+}
+.reply #tweet-reply-title { background-color: #369; }
+#tweet-comment-text { padding: 5px; margin: 3px 0; }
+#tweet-list h5 { font-size: 14px; color: #000; padding: 0 0 5px 0; }
+#tweet-list h6 { font-size: 10px; color: #ccc; padding: 0 0 5px 0; }
+#tweet-list h6+span { display: block; color: #666; max-height: 100px; overflow: hidden; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>文章列表 <small>泳圈</small></h1>
+	{% include 'tweet/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>文章列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="tweet-list">
+			{% include 'tweet/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/bootstrap-datepicker.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/locales/bootstrap-datepicker.zh-CN.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('.datepicker').datepicker({
+        language: 'zh-CN',
+        format: 'yyyy-mm-dd'
+    });
+
+	$('#tweet-list').on('click', '#tweet-add-btn', function() {
+		App.Box.open('tweet/form.html');
+	}).on('click', '#tweet-trash-btn', function() {
+		var slted = $('#tweet-list input[name="tweet"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'tweet/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+			dataType: 'html',
+				target: '#tweet-list'
+			});
+		}
+	});
+	$('#tweet-list').on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('tweet/form.html?id=' + id);
+	}).on('click', 'label[data-action="top"]', function() {
+		var row    = $(this).closest('tr');
+		var id     = row.attr('data-id');
+		var chkbox = $(this).prev('input:checkbox');
+		App.Box.open('tweet/intop-form.html?id=' + id);
+		// App.ajax({
+		// 	url: 'tweet/recommand.html',
+		// 	type: 'post',
+		// 	data: {'tweetId': id},
+		// 	dataType: 'json',
+		// 	success: function(data) {
+		// 		chkbox.prop(data.recommand? true: false);
+	// 		App.Notific.success((data.recommand? '添加': '取消') + '推荐成功。');
+		// 	}
+		// });
+		return false;
+	});
+
+
+});
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelCourponMain
+{
+    private $errMsg;
+    private $allowed = array(
+        'title',                    //优惠券名称
+        'coupon_val',               //优惠金额
+        'coupon_type',              //优惠券分类   1课程减免券 2积分优惠券 3活动优惠券
+        'coupon_total',             //优惠券总数量
+        'failure_remind',           //失效提醒   默认为0不提醒1提醒（到期前3天进行系统消息提醒）
+        'contents',                 //优惠券使用说明
+        'effect_time',              //生效时间
+        'expire_time',              //失效时间
+        'is_condition',             //使用限制  1有条件 0无条件
+        'condition_value',          //满减条件之满多少元
+        'is_all',                   //是否指定全部商品   1是0否   默认是全部商品 为1
+        'target_type',              //类型    1培训  2商城    1
+        'target_category',          //分类    相应类型下的商品分类
+        'goods_ids',                //选定的商品ID集合
+        'restriction',              //领取限制      0不限制   1限制张数  2限制次数
+        'restrict_value',            //张数
+        'restrict_nums',            //次数
+        'get_expire_time',          //领取失效时间
+        'status',                   //优惠券状态   1启用   2禁用
+        'created_on',               //创建时间
+        'modified_on',              //更新时间
+        'modified_by',
+        'created_by',
+        'get_coupon_nums',            //领取人数              默认为0
+        'coupon_stock',               //库存剩余
+        'cover',
+    );
+
+
+    public function collection() {
+        return SwimAdmin::db('courpon');
+    }
+
+  /**
+     * 添加
+     *
+     * @param $data array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data['created_on'] = time();
+        $data['created_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $data['create_time'] = time();
+        $result = $collection->insert($data);
+        $redis_client = SwimAdmin::predis();
+        $redis_client->set('coupon_'.$data['_id'],$data['coupon_total']);
+        return $result;
+    }
+
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data['modified_on'] = time();
+        $data['modified_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $redis_client = SwimAdmin::predis();
+        $redis_client->set('coupon_'.$id,$data['coupon_stock']);
+
+        return $collection->update(array('_id' => $id), array('$set' => $data));
+    }
+
+    /**
+     * 删除
+     *
+     * @param $ids array
+     *
+     * @return array
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+            $redis_client = SwimAdmin::predis();
+            $redis_client->del('coupon_'.$ids[$idx]);
+        }
+
+        $collection = $this->collection();
+        return $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+    }
+
+    /**
+     * 查询
+     *
+     * @param $filter array
+     *
+     * @return array
+     */
+      public function find($filter=array()) {
+        $collection = $this->collection();
+
+        return $collection->find($filter)->sort(array('create_time'=>-1));
+    }
+
+    public function findAll() 
+    {
+        $groups = array();
+        $query  = array();
+        $cursor = $this->collection()->find($query);
+        $cursor->sort(array('create_time' => -1));
+        foreach($cursor as $row) {
+            $row['_id'] = (string)$row['_id'];
+            $groups[]   = $row;
+        }
+        return $groups;
+    }
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'up_time');
+        $order   = Helper::popValue($params, 'order', -1);
+        $filters = array();
+        if(isset($params['status']) && ($params['status'] != '0' && $params['status'] != '')) {
+            $filters['status'] = intval($params['status']);
+        }
+
+        if(isset($params['coupon_type']) && ($params['coupon_type'] != '0' && $params['coupon_type'] != '')) {
+            $filters['coupon_type'] = intval($params['coupon_type']);
+        }
+//        print_r($filters);exit;
+
+        return SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1, 'create_time' => -1)
+        );
+    }
+    /**
+     * 查询一个
+     *
+     * @param $filter array
+     * 
+     * @return array | null
+     */
+    public function findOne($filter=array()) {
+        $collection = $this->collection();
+        return $collection->findOne($filter);
+    }
+
+
+    public function findOneById($id, $fields = array())
+    {
+        try
+        {
+            $matcher = array(
+                '_id' => new MongoId($id)
+            );
+
+            $fields = is_array($fields) ? $fields : array();
+
+            return $this->collection()->findOne($matcher, $fields);
+        }
+        catch(MongoException $e)
+        {
+            return FALSE;
+        }
+    }
+}

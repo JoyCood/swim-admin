@@ -1,0 +1,66 @@
+{% set _Title = '同城' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>协会 <small>协会</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>协会</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="club-list">
+			{% include 'lbs/club-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('#club-list').on('click', '#club-add-btn', function() { 
+    console.log(123);   	
+    	App.Box.open('lbs/club-form.html');
+    }).on('click', 'a.icon-edit', function() {
+		var id = $(this).closest('tr').attr('data-id');
+		App.Box.open('lbs/club-form.html?id=' + id);
+	}).on('click', '#club-trash-btn', function() { 
+		if(!$(this).hasClass('disabled')) {
+			var ids = [];
+			$('#club-list input[name="name"]:checked').each(function() {
+				ids.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'lbs/club-delete.html',
+				data: {'items[]': ids},
+				target: '#club-list',
+				dataType: 'html',
+				type: 'post',
+				success: function() {
+						location.reload();
+					}
+			});
+		}
+	});
+});
+</script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+{% endblock %}

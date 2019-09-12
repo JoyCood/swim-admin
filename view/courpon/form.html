@@ -1,0 +1,358 @@
+{% import "_macro.html" as macro %}
+<form id="courpon-form" action="courpon/form.html" target="#courpon-list" method="post">
+<div class="box">
+    <div class="box-title">
+        <h3>{{data._id? ' 编辑': '新建'}}优惠券</h3>
+    </div>
+    <div id="courpon-form-contet" class="box-content">
+        <div>
+            <div id="courpon-form-main">
+                <div class="title" style="margin-bottom: 15px">
+                <label>名称：</label>
+                    <input type="text" name="title" value="{{data.title}}">
+                    <label>优惠金额：</label>
+                    <input type="text" name="coupon_val" value="{{data.coupon_val}}" style="width: 50px;">
+                    <label>分类：</label>
+                    <select name="coupon_type">
+                        <option value="1" {{data.coupon_type==1? ' selected': ''}}>课程减免券</option>
+                        <option value="2" {{data.coupon_type==2? ' selected': ''}}>积分兑换券</option>
+                        <option value="3" {{data.coupon_type==3? ' selected': ''}}>活动优惠券</option>
+                    </select>
+                </div>
+
+                <div class="title" style="margin-bottom: 15px">
+                    <label>总数量：</label>
+                    <input type="text" name="coupon_total" value="{{data.coupon_total}}" {{data.coupon_total? ' readonly': ''}}>
+
+                    <label>失效提醒：</label>
+                    <input id="failure_remind" type="radio" name="failure_remind" value="0" {{data.failure_remind==0? ' checked': ''}}><label>不提醒</label>
+                    <input id="failure_remind_2" type="radio" name="failure_remind" value="1" {{data.failure_remind==1? ' checked': ''}}><label>到期前3天进行系统消息提醒</label>
+
+                    {% if data.coupon_total %}
+
+                    <label style="font-weight:bold">&nbsp;&nbsp;&nbsp;添加库存：</label>
+                    <input type="text" name="add_stock" value="0">
+                    {% endif %}
+                </div>
+
+                <div class="title" style="margin-bottom: 15px">
+                    <label>生效时间：</label>
+                    <input type="text" class="datepicker" name="effect_time" value="{{data.date? data.date|date('Y-m-d'): ''}}">
+                    <label>使用限制：</label>
+                    <input id="is_condition_1" type="radio" name="is_condition" value="0" {{data.is_condition==0? ' checked': ''}}><label>不限制</label>
+                    <input id="is_condition" type="radio" name="is_condition" value="1" {{data.is_condition==1? ' checked': ''}}><label>满<input type="text" name="condition_value" value="{{data.condition_value}}" style="width: 50px;">元可使用</label>
+
+                </div>
+
+                <div class="title" style="margin-bottom: 15px">
+                    <label>失效时间：</label>
+                    <input type="text" class="datepicker" name="expire_time" value="{{data.expire_date? data.expire_date|date('Y-m-d'): ''}}">
+                    <label>使用说明：</label>
+                    <input type="text" name="contents" value="{{data.contents}}">
+
+                </div>
+
+                <div class="title" style="margin-bottom: 15px">
+                    <label>可使用商品：</label>
+                    <input id="is_all_1" type="radio" name="is_all" value="1" {{data.is_all==1? ' checked': ''}}><label for="yes1">全部商品</label>
+                    <input id="is_all_2" type="radio" name="is_all" value="0" {{data.is_all==0? ' checked': ''}}><label for="yes1">指定商品</label>
+                    <select name="target_type" id="target_type">
+                        <option value="0">请选择类型</option>
+                        {% for coltype in coltypes %}
+                        <option value="{{coltype['id']}}" {{data.target_type==coltype['id']? ' selected': ''}}>{{coltype['title']}}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="target_category" id="target_category">
+                        <option value="0">请选择分类</option>
+                    </select>
+                    <select id="goods_ids" name="goods_ids[]" class="form-control" multiple>
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="radio_input" style="margin-bottom: 15px">
+                    <label>领取限制：</label>
+                    <input id="restriction" type="radio" name="restriction" value="0" {{data.restriction==0? ' checked': ''}}><label for="yes1">不限</label>
+                    <input id="no1" type="radio" name="restriction" value="1" {{data.restriction==1? ' checked': ''}}><label for="no1">限张数 <input type="text" name="restrict_value" value="{{data.restrict_value}}" style="width: 50px;"></label>
+                    <input id="no2" type="radio" name="restriction" value="2" {{data.restriction==2? ' checked': ''}}><label for="no2">限次数 <input type="text" name="restrict_nums" value="{{data.restrict_nums}}" style="width: 50px;"></label>
+                </div>
+
+                <div class="radio_input" style="margin-bottom: 15px">
+                    <label>领取失效时间：</label>
+                    <select name="get_expire_time">
+                        <option value="1" {{data.get_expire_time==1? ' selected': ''}}>永久</option>
+                        <option value="2" {{data.get_expire_time==2? ' selected': ''}}>三天</option>
+                        <option value="3" {{data.get_expire_time==3? ' selected': ''}}>七天</option>
+                        <option value="4" {{data.get_expire_time==4? ' selected': ''}}>三十天</option>
+                        <option value="5" {{data.get_expire_time==5? ' selected': ''}}>一分钟</option>
+                    </select>
+                </div>
+                <div class="radio_input" style="margin-bottom: 25px">
+                    <label>优惠券状态：</label>
+                    <input id="yes1" type="radio" name="status" value="1" {{data.status==1? ' checked': ''}}><label for="yes1">启用</label>
+                    <input id="yes2" type="radio" name="status" value="2" {{data.status==2? ' checked': ''}}><label for="yes2">禁用：</label>
+                </div>
+                <div class="title" style="margin-bottom: 15px">
+                    <label>封面图：</label>
+                    <dd>
+                        {{ macro.thumb('cover', data.cover) }} {{ macro.upload('course-cover', 'cover', '', false) }}
+                    </dd>
+                </div>
+            </div>
+        </div>
+        <div class="box-footer">
+            <input type="hidden" id="courpon-id" name="id" value="{{id}}" />
+            <input type="hidden" id="coupon_stock" name="coupon_stock" value="{{data.coupon_stock}}" />
+            <button type="submit" id="courpon-submit" class="btn btn-primary">确定</button>
+            <button type="button" class="btn" app-state="cancel">取消</button>
+        </div>
+    </div>
+</div>
+</div>
+</form>
+<script>
+    var person = '';
+
+    $(function() {
+        get_chose();
+        $('.datepicker').datepicker({
+            language: 'zh-CN',
+            format: 'yyyy-mm-dd'
+        });
+        $('#courpon-form').on('init', function() {
+            $('#goods_ids').chosen();
+            $(this).on('submit', function() {
+               if(App.checkValidity(this)) {
+                    App.ajax({
+                        form: this,
+                        success: function() {
+                            App.Box.close();
+                        }
+                    });
+                }
+                return false;
+            });
+        }).on('close', function(event, box, state) {
+
+        });
+
+        var ctypes = $("#target_type").val();
+        $.ajax({
+            type: "POST",
+            async: false,
+            data: {
+                id:ctypes
+            },
+            dataType:'json',
+            url:'courpon/category'
+        }).done(function (datas) {
+            if(datas.code==0){
+                $("#target_category").html('');
+                var temps = datas.data;
+                var NewLine = "\n";
+                var temp = '';
+                for(var i in temps){
+                    var now = temps[i];
+                    var target_cate = "{{data.target_category}}";
+                    if(now._id.$id == target_cate){
+                        temp +="<option value='"+now._id.$id+"' selected>" + NewLine;
+                    }else{
+                        temp +="<option value='"+now._id.$id+"'>" + NewLine;
+                    }
+                    temp += ""+now.name+"" + NewLine;
+                    temp +="</option>" + NewLine;
+                }
+                if(temp){
+                    $("#target_category").html(temp);
+                }else{
+                    $("#target_category").html('<option value="0">请选择分类</option>');
+                }
+
+            }else{
+
+            }
+
+            get_course_two();
+        });
+
+        function get_course_two(){
+            coltypes = $("#target_category").val();
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: {
+                    id:coltypes
+                },
+                dataType:'json',
+                url:'courpon/courses'
+            }).done(function (datas) {
+                if(datas.code==0){
+                    $("#goods_ids").html('');
+                    var temps = datas.data;
+                    var NewLine = "\n";
+                    var temp = '';
+
+                    for(var i in temps){
+                        var now = temps[i];
+                        var course_id = now._id.$id;
+                        var is_selected = false;
+                        for(var j in person){
+                           if(j==course_id){
+                               is_selected = true;
+                               break;
+                           }else{
+                               continue;
+                           }
+                        }
+
+                        if(is_selected){
+                            temp +="<option value='"+now._id.$id+','+now.title+"' selected>" + NewLine;
+                        }else{
+                            temp +="<option value='"+now._id.$id+','+now.title+"'>" + NewLine;
+                        }
+                        temp += ""+now.title+"" + NewLine;
+                        temp +="</option>" + NewLine;
+                    }
+                    if(temp){
+                        $("#goods_ids").append(temp);
+                    }
+
+                }else{
+
+                }
+            });
+        }
+
+        $("#target_type").change(function(){
+            ctypes = $(this).val();
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: {
+                    id:ctypes
+                },
+                dataType:'json',
+                url:'courpon/category'
+            }).done(function (datas) {
+                if(datas.code==0){
+                    $("#target_category").html('');
+                    var temps = datas.data;
+                    var NewLine = "\n";
+                    var temp = '';
+                    for(var i in temps){
+                        var now = temps[i];
+                        temp +="<option value='"+now._id.$id+"'>" + NewLine;
+                        temp += ""+now.name+"" + NewLine;
+                        temp +="</option>" + NewLine;
+                    }
+                    if(temp){
+                        $("#target_category").html(temp);
+                    }else{
+                        $("#target_category").html('<option value="0">请选择分类</option>');
+                    }
+
+                }else{
+
+                }
+
+                get_course();
+            });
+        });
+
+
+
+
+
+        function get_chose(){
+            var g_id = $("#courpon-id").val();
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: {
+                    id:g_id
+                },
+                dataType:'json',
+                url:'courpon/get_chose'
+            }).done(function (datas) {
+                if(datas.code==0){
+                    person = datas.data;
+                }else{
+
+                }
+            });
+        }
+
+        var coltypes = '';
+
+        function get_course(){
+            coltypes = $("#target_category").val();
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: {
+                    id:coltypes
+                },
+                dataType:'json',
+                url:'courpon/courses'
+            }).done(function (datas) {
+                if(datas.code==0){
+                    $("#goods_ids").html('');
+                    var temps = datas.data;
+                    var NewLine = "\n";
+                    var temp = '';
+                    for(var i in temps){
+                        var now = temps[i];
+                        temp +="<option value='"+now._id.$id+','+now.title+"'>" + NewLine;
+                        temp += ""+now.title+"" + NewLine;
+                        temp +="</option>" + NewLine;
+                    }
+                    if(temp){
+                        $("#goods_ids").append(temp);
+                    }
+
+                }else{
+
+                }
+                $("#goods_ids").trigger('chosen:updated');
+                $('#goods_ids').chosen();
+
+            });
+        }
+
+
+
+        $("#target_category").change(function(){
+            coltypes = $(this).val();
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: {
+                    id:coltypes
+                },
+                dataType:'json',
+                url:'courpon/courses'
+            }).done(function (datas) {
+                if(datas.code==0){
+                    $("#goods_ids").html('');
+                    var temps = datas.data;
+                    var NewLine = "\n";
+                    var temp = '';
+                    for(var i in temps){
+                        var now = temps[i];
+                        temp +="<option value='"+now._id.$id+','+now.title+"'>" + NewLine;
+                        temp += ""+now.title+"" + NewLine;
+                        temp +="</option>" + NewLine;
+                    }
+                    if(temp){
+                        $("#goods_ids").html(temp);
+                    }
+
+                }else{
+
+                }
+                $("#goods_ids").trigger('chosen:updated');
+                $('#goods_ids').chosen();
+
+            });
+        });
+    });
+</script>

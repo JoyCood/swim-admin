@@ -1,0 +1,127 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelClubService
+{
+    private $errMsg;
+    private $allowed = array(
+        'title',
+        'price',
+        'price_subject',
+        'training_time',
+        'schedule',
+        'teacher',
+        'teacher_extra',
+        'teacher_phone',
+        'score',
+        'cover',
+        'cover_big',
+        'cover_small',
+        'photos',
+        'statu',
+        'extra',
+        'contents',
+        'space',
+        'priority',
+        'created_on',
+        'created_by',
+        'modified_on',
+        'modified_by',
+        'comments_counter',
+        'club_id',
+    );
+    public function collection() {
+        return SwimAdmin::db('club_service');
+    }
+
+   /**
+     * 添加协会
+     *
+     * @param $data array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data['created_on'] = time();
+        $data['created_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $data['create_time'] = time();
+        $data['comments_counter'] = 0;
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data = Helper::allowed($data, $this->allowed);
+
+        return $collection->update(array('_id' => $id), $data);
+    }
+
+    /**
+     * 删除协会
+     *
+     * @param $ids array
+     *
+     * @return array
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+
+        $collection = $this->collection();
+        return $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+    }
+
+    /**
+     * 查询协会
+     *
+     * @param $filter array
+     *
+     * @return array
+     */
+    public function find($filter=array()) {
+        $collection = $this->collection();
+
+        return $collection->find($filter)->sort(array('create_time'=>-1));
+    }
+    public function findOneById($id) {
+        $groups = array();
+        $query  = array('club_id' => $id);
+        $cursor = $this->collection()->find($query);
+        $cursor->sort(array('priority' => -1, 'create_time' => -1));
+        foreach($cursor as $row) {
+            $row['_id'] = (string)$row['_id'];
+            $groups[]   = $row;
+        }
+        return $groups;
+    }
+     public function findAll() 
+    {
+        $groups = array();
+        $query  = array();
+        $cursor = $this->collection()->find($query);
+        $cursor->sort(array('priority' => -1, 'create_time' => -1));
+        foreach($cursor as $row) {
+            $row['_id'] = (string)$row['_id'];
+            $groups[]   = $row;
+        }
+        return $groups;
+    }
+    /**
+     * 查询一个协会
+     *
+     * @param $filter array
+     * 
+     * @return array | null
+     */
+    public function findOne($filter=array()) {
+        $collection = $this->collection();
+        return $collection->findOne($filter);
+    }
+}

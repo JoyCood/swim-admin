@@ -1,0 +1,198 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+// 附近游泳馆
+$app->get('/natatorium.html', function() use($app) {
+	$natatorium = SwimAdmin::model('natatorium.main');
+	$data = $natatorium->pagination();
+
+	$app->view()->addGlobal('_MOD', 'lbs');
+	$app->view()->addGlobal('_Action', 'index');
+
+	$app->render('lbs/natatorium-index.html', array(
+		'data' => $data
+	));
+});
+
+// 导入游泳馆信息界面
+$app->get('/natatorium/import.html', function() use($app) {
+	$app->view()->addGlobal('_MOD', 'lbs');
+	$app->view()->addGlobal('_Action', 'import');
+	$app->render('lbs/natatorium-import.html');
+});
+
+// 导入游泳馆信息处理
+$app->post('/natatorium/import.html', function() use($app) {
+	$upfile = isset($_FILES['upfile'])? $_FILES['upfile']: null;
+	// 判断文件是否有效
+	if($upfile && !$upfile['error'] && strpos($upfile['type'], 'text') === 0) {
+		// 读取文件内容
+		$contents = preg_split('/[\r|\n|\r\n]/', file_get_contents($upfile['tmp_name']));
+		$data = array();
+		foreach($contents as $row) {
+			$item = explode(',', $row);
+			if($item) {
+				$title = trim($item[0]);
+				if($title) {
+					// 游泳馆信息
+					$data[] = array(
+						// 标题
+						'title' 	=> $title,
+						// 坐标
+						'coords' 	=> array(
+							'type' 			=> 'Point',
+							'coordinates' 	=> array(
+								isset($item[1])? $item[1] * 1: null,
+								isset($item[2])? $item[2] * 1: null
+							)
+						),
+						// 星级默认为5
+						'rates' 	=> 5,
+						// 地址
+						'tel' 		=> isset($item[3])? trim($item[3]): '',
+						'district' 	=> isset($item[4])? trim($item[4]): '',
+						'address' 	=> isset($item[5])? trim($item[5]): '',
+						// 营业时间
+						'open_time' => isset($item[6])? trim($item[6]): null,
+						// 价格
+						'price' 	=> isset($item[7])? trim($item[7]): null
+					);
+				}
+			}
+		}
+		if($data) {
+			try {
+				// 写入DB
+				$natatorium = SwimAdmin::model('natatorium.main');
+				// $natatorium = SwimAdmin::db('natatorium');
+				foreach($data as $item) {
+					$natatorium->insert($item);
+				}
+			} catch(Exception $e) {
+				$app->log->error($e);
+				$app->view()->renderJSON(array(
+					'result' => false,
+					'error' => '导入失败，请检查坐标或文件格式是否正确。'
+				));
+				return;
+			}
+		}
+		$app->view()->renderJSON(array(
+			'result' 	=> true,
+			'num'		=> count($data) // 返回导入总数
+		));
+	} else {
+		$app->view()->renderJSON(array(
+			'result' => false,
+			'error' => '您上传了一个无法识别的文件。'
+		));
+	}
+});
+
+// 修改游泳馆信息界面
+$app->get('/natatorium/form.html', function() use($app) {
+	$id = $app->request->get('id', '');
+	$data = array();
+	if($id) {
+		$natatorium = SwimAdmin::model('natatorium.main');
+		$data = $natatorium->collection()->findOne(array('_id' => new MongoId($id)));
+	}
+
+	$app->render('lbs/natatorium-form.html', array(
+		'id' => $id,
+		'data' => $data
+	));
+});
+// 修改游泳馆信息
+$app->post('/natatorium/form.html', function() use($app) {
+	$id             = $app->request->post('id', '');
+	$natatorium     = SwimAdmin::model('natatorium.main');
+	$data 		    = $app->request->post();
+	$photos         = $app->request->post('photos', array());
+	$sizeOfPhotos   = $app->request->post('size_of_photos', array());
+	$data['photos'] = array();
+	foreach($photos as $idx => $photo) {
+		$size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+		$data['photos'][] = array(
+			'url' => $photo,
+			'w'   => intval($size[0]),
+			'h'   => intval($size[1])
+		);
+	}
+	unset($data['size_of_photos']);
+	$data['create_time'] = isset($data['create_time'])? strtotime($data['create_time']): '';
+
+	if(!$id) {
+		$natatorium->insert($data);
+	} else {
+		$id = $app->request->post('id');
+		$natatorium->update($data, $id);
+	}
+	$data = $natatorium->pagination($app->request->post('__url', ''));
+	$app->render('lbs/natatorium-list.html', array(
+		'data' => $data
+	));
+});
+
+// 删除游泳馆信息
+$app->post('/natatorium/delete.html', function() use($app) {
+	$natatorium = SwimAdmin::model('natatorium.main');
+	$items = $app->request->post('items');
+	$natatorium->deleteById($items);
+	$app->view()->renderJSON(array('result' => true));
+});
+
+
+
+// 附近的教练
+$app->get('/teacher.html', function() use($app) {
+	$teacher = SwimAdmin::model('teacher.main');
+	$data = $teacher->pagination();
+	// $data = $teacher->find(Helper::parseQueryString($_SERVER['QUERY_STRING']));
+
+	$app->view()->addGlobal('_MOD', 'lbs');
+	$app->view()->addGlobal('_Action', 'index');
+
+	$app->render('lbs/teacher-index.html', array(
+		'data' => $data
+	));
+});
+// 修改教练信息界面
+$app->get('/teacher/form.html', function() use($app) {
+	$id = $app->request->get('id', '');
+	$data = array();
+	if($id) {
+		$teacher = SwimAdmin::model('teacher.main');
+		$data = $teacher->findOneById($id);
+	}
+	$app->render('lbs/teacher-form.html', array(
+		'id' => $id,
+		'data' => $data
+	));
+});
+// 修改教练信息
+$app->post('/teacher/form.html', function() use($app) {
+	$id = $app->request->post('id', '');
+	$teacher = SwimAdmin::model('teacher.main');
+	$data 	 = $app->request->post();
+	$data['cert'] 		 = isset($data['cert']) && $data['cert']? 1: 0;
+	$data['create_time'] = isset($data['create_time'])? strtotime($data['create_time']): '';
+	if(!$id) {
+		$teacher->insert($data);
+	} else {
+		$id = $app->request->post('id');
+		$teacher->update($data, $id);
+	}
+	$data = $teacher->pagination($app->request->post('_url', ''));
+	$app->render('lbs/teacher-list.html', array(
+		'data' => $data
+	));
+});
+
+// 删除教练信息
+$app->post('/teacher/delete.html', function() use($app) {
+	$teacher = SwimAdmin::model('teacher.main');
+	$items = $app->request->post('items');
+	$teacher->deleteById($items);
+	$data = $teacher->find(Helper::parseQueryString($app->request->post('_url', '')));
+	$app->view()->renderJSON(array('result' => true));
+});

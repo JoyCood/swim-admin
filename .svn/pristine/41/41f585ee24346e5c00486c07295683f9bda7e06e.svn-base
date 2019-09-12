@@ -1,0 +1,175 @@
+{% import "_macro.html" as macro %}
+<form id="club-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="lbs/club-form.html" target="#club-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>协会资料</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="80">协会名称：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="club-name" class="form-control" value="{{club.name}}" placeholder="请输入协会名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+                        <th>关联城市：</th>
+                        <td colspan="3">
+                            <select id="club-service-area" name="service_area[]" class="form-control" multiple>
+                                {% for city in cities %} {% set cid = city._id ~ '' %}
+                                <option value="{{cid}}::{{city.city}}" {{slted.city[cid] is defined? ' selected': ''}}>{{city.city}}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>社会服务：</th>
+						<td>
+							<select name="service" id="club-service"  class="form-control" data-placeholder="社会服务" multiple>
+							    <option></option>
+								{% for service in service %}
+								<option value="{{service
+								.name}}" {{service.name in club.service ? ' selected':''}}>{{service.name}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+                        <th>会徽：</th>
+					    <td>
+						    {{ macro.thumb('club-icon', club.icon) }}
+							{{ macro.upload('club-icon', 'club-icon', 'default', false) }}
+						</td>	
+					</tr>
+					<tr>
+                        <th>协会简介：</th>
+						<td>
+                            <input type="text" name="summary" class="form-control" value="{{club.summary}}" placeholder="请输入协会简介"  autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th style="vertical-align:top">内容：</th>
+						<td colspan="3" id="video-contents">
+							{% set contents = club.contents %}
+							{% for content in contents %}
+							{% set idx = loop.index0 %}
+								<div class="form-group video-text-row">
+									<div class="col-sm-11" style="padding: 0">
+										<input name="contents[title][{{idx}}]" placeholder="请输入副标题" class="form-control" value="{{content.title}}" autocomplete="off" />
+									</div>
+									<div class="col-sm-1" style="padding: 0">
+										<br />&nbsp;&nbsp;
+										<a class="fa fa-times"></a>
+										&nbsp;&nbsp;
+										<a class="fa fa-plus"></a>
+									</div>
+									{% for val in content.text %}
+									<div class="video-text">
+										<div class="col-sm-11" style="padding: 0;margin-top: 10px;">
+											<textarea name="contents[text][{{idx}}][]" placeholder="请输入内容" class="form-control video-text fl">{{val}}</textarea>
+										</div>
+										<div class="col-sm-1" style="padding: 0">
+											<br />&nbsp;&nbsp;
+											<a class="fa fa-times" txt="1"></a>
+											&nbsp;&nbsp;
+										<a class="fa fa-plus" txt="1"></a>
+										</div>
+									</div>
+									{% endfor %}
+									<div class="cb"></div>
+								</div>
+							{% endfor %}
+						</td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="category-status" value="1"{{not club._id or club.status? ' checked': ''}} />
+							<label for="club-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{club._id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#club-form').on('init', function() {
+		$('#club-service-area,#club-service').chosen();
+	var updateContentIdx = function() {
+			$('#video-contents>div.video-text-row').each(function(idx) {
+				var row = $(this);
+				row.find('textarea').attr('name', 'contents[text][' + idx + '][]');
+				row.find('input').attr('name', 'contents[title][' + idx + ']');
+			});
+		}
+		$('#video-contents').on('click', 'a.fa-times', function() {
+			if(!$(this).attr('txt')) {
+				var row = $(this).closest('div.video-text-row');
+				if($('#video-contents>div.video-text-row ').length > 1) {
+					row.slideUp(100, function() {
+						$(this).remove();
+						updateContentIdx();
+					});
+				} else {
+					row.find('textarea').val('');
+					row.find('input').focus();
+					updateContentIdx();
+				}
+			} else {
+				var parent = $(this).closest('div.video-text-row');
+				var rows   = parent.find('div.video-text');
+				if(rows.length > 1) {
+					$(this).closest('div.video-text').remove();
+				} else {
+					rows.find('textarea').val('').focus();
+				}
+			}
+		}).on('click', 'a.fa-plus', function() {
+			if(!$(this).attr('txt')) {
+				var row = $(this).closest('div.video-text-row');
+				var clone = row.clone();
+				clone.find('div.video-text').each(function(idx) {
+					if(idx > 0) {
+						$(this).remove();
+					}
+				});
+				clone.find('textarea').val('');
+				clone.find('input').val('');
+				row.after(clone);
+				updateContentIdx();
+				clone.find('input').focus();
+			} else {
+				var row = $(this).closest('div.video-text');
+				var clone = row.clone();
+				clone.find('textarea').val('');
+				row.after(clone);
+				clone.find('textarea').focus();
+			}
+		});
+
+
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

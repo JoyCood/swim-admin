@@ -1,0 +1,252 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelMsgMain
+{
+	const  ACTION_SEND_MSG       = 1; //发送小纸条
+	const  ACTION_REPLY_MSG      = 2; //回复小纸条
+	const  ACTION_TWEET_COMMENT  = 3; //评论泳圈动态
+	const  ACTION_TWEET_LIKE     = 4; //赞泳圈动态
+	const  ACTION_COMMENT_REPLY  = 5; //评论被回复
+	const  ACTION_NEW_FANS       = 6; //被关注
+	const  ACTION_SYSTEM_MSG     = 7; //系统消息
+    
+	//对应模块要显示的提醒数
+	const BELONG_SWIMER  = 1;
+	const BELONG_COMMENT = 2;
+	const BELONG_HOME    = 3;
+
+	//系统消息类型
+	const SYS_MSG_TYPE_NORMAL  = 0;
+	const SYS_MSG_TYPE_WELCOME = 1;
+
+	private $belong_allowed = array(
+	    self::BELONG_SWIMER,
+		self::BELONG_COMMENT,
+		self::BELONG_HOME
+	);
+
+    private $handler = array(
+		self::ACTION_SEND_MSG      => 'note.main',
+		self::ACTION_COMMENT_REPLY => 'tweet.comment',
+		self::ACTION_REPLY_MSG     => 'note.main',
+		self::ACTION_TWEET_COMMENT => 'tweet.comment',
+		self::ACTION_NEW_FANS      => 'friend.main',
+		self::ACTION_SYSTEM_MSG    => 'broadcast.main',
+		self::ACTION_TWEET_LIKE    => 'tweet.like'
+    );
+
+	private $errMsg = null;
+
+	public function collection() {
+	    return SwimAdmin::db('message');
+	}
+
+	/**
+	 * 发消息
+	 *
+	 * @author joy
+	 *
+	 * @param $sender    string
+	 * @param $receptor  string
+	 * @param $objId     string
+	 * @param $action    int
+	 * @param $belong    int
+	 *
+	 * @return bool
+	 */
+    public function send($sender, $receptor, $objId, $action, $belong)
+	{
+		$action_allowed = array_keys($this->handler);
+
+        if(!in_array($action, $action_allowed))
+        {
+            return FALSE;
+        }
+
+		if(!in_array($belong, $this->belong_allowed))
+		{
+		    return FALSE;
+		}
+        
+        $doc = array(
+            'acceptor'    => $receptor,
+			'sender'      => $sender,
+			'object_id'   => $objId,
+			'action'      => $action,
+			'belong'      => $belong,
+			'has_read'    => 0,
+			'statu'       => 0,
+			'create_time' => time()
+        );        
+        
+		$res = $this->collection()->insert($doc);
+
+		if(isset($res['ok']) AND $res['ok']>0)
+		{
+		    $this->freshMsgCounter($receptor, $belong);
+
+			return TRUE;
+	    }	
+
+		return FALSE;
+	}
+    
+    /**
+	 * 更新消息数量
+	 *
+	 * @author joy
+	 *
+	 * @param $receptor string
+	 * @param $belong   int 
+	 * @param $step     int
+	 *
+	 * @return bool
+	 */
+	public function freshMsgCounter($receptor, $belong, $step=1)
+	{
+		if(!in_array($belong, $this->belong_allowed))
+		{
+		    return FALSE;
+		}
+
+		$num = $step > 0 ? 0 : 1;
+	    	
+		$matcher = array(
+		    'acceptor' => $receptor,
+			'belong'   => $belong,
+			'total'    => array('$gte'=>$num)
+		);
+		$update = array(
+			'$set'=> array(
+			    'acceptor' => $receptor,
+				'belong'   => $belong
+			),
+			'$inc' => array(
+				'total' => $step
+			)
+		);
+		$option = array('upsert'=> TRUE);
+	    return SwimAdmin::db('msg_counter')->update($matcher, $update, $option);
+	}
+
+	/**
+	 * 消息检查
+	 *
+	 * @author joy
+	 * 
+	 * @param $userId  string
+	 * @param $secret  string
+	 * @param $filter  array
+	 *
+	 * @return array|FALSE
+	 */
+	public function msgCheck($userId, $secret, $filter=array(),$projection=array())
+	{
+	    $secret2 = Helper::model('member.main')->getSecret($userId);
+
+		if($secret != $secret2 OR !$secret2)
+		{
+		    $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+
+			return FALSE;
+		}
+
+		$cursor = SwimAdmin::db('msg_counter')->find($filter);
+		$msgCounter = array();
+
+		foreach($cursor as $item)
+		{
+		    unset($item['_id']);
+
+			$msgCounter[] = $item;
+		}
+
+		return $msgCounter;
+	}
+
+	/**
+	 * 获取消息列表
+	 *
+	 * @author joy
+	 *
+	 * @param $userId string
+	 * @param $secret string
+	 * @param $filter array
+	 * @param $offset timestamp
+	 * @param $limit  int
+	 *
+	 * @return array|FALSE
+	 */
+	public function msgList($userId, $secret, $filter, $limit=10)
+	{
+	    $secret2 = Helper::model('member.main')->getSecret($userId);
+	    if($secret != $secret2 OR !$secret2)
+		{
+		    $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+		    return FALSE;
+		}
+
+	    $limit  = Helper::uint($limit);
+	    $limit  = $limit ? min(20, $limit) : 10;
+	    $sort = array('create_time' => -1);
+		
+		$cursor  = $this->collection()->find($filter)->sort($sort)->limit($limit); 
+		$messages = $this->getObject($cursor);
+
+		return $messages;
+	}
+
+	public function updateMsgCounter($filter, $update)
+	{
+		if(!in_array($filter['belong'],$this->belong_allowed))
+		{
+		    return FALSE;
+		}
+
+	    SwimAdmin::db('msg_counter')->update($filter, $update);
+	}
+
+	/**
+	 * 获取消息祥情
+	 *
+	 * @author joy
+	 *
+	 * @param $cursor object
+	 *
+	 * @return array
+	 */
+	private function getObject($cursor)
+	{
+		$message = array();
+
+        foreach($cursor as $item)
+		{
+			$mod = $this->handler[$item['action']];
+			$object = Helper::model($mod)->getMsg($item);
+            
+		    if($object)
+			{
+				$item['id'] = (string)$item['_id'];
+
+			    unset($item['_id']);
+
+				$item['object'] = $object;
+              
+			    $message[] = $item;
+			}
+		}	
+        
+		return $message;
+	}
+
+	public function setError($msg)
+	{
+	    $this->errMsg = $msg;
+	}
+
+	public function getError()
+	{
+	    return $this->errMsg;
+	}
+
+}

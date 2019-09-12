@@ -1,0 +1,66 @@
+{% set _Title = title %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link href="css/admin/user.css" type="text/css" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>{{title}} <small>用户管理</small></h1>
+	{% include 'user/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>用户管理</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="user-list">
+			{% include 'user/user-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#user-list').on('click', '#user-add-btn', function() {
+		App.Box.open('user/form.html');
+	}).on('click', '#user-trash-btn', function() {
+		var slted = $('#user-list input[name="user"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'user/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'json',
+				success: function() {
+					location.reload();
+				}
+			});
+		}
+	}).on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('user/form.html?id=' + id);
+	});
+});
+</script>
+{% endblock %}

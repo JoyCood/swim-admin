@@ -1,0 +1,79 @@
+{% set _Title = '牛装备' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#goods-form { width: 600px; }
+#goods-form-contet { height: 500px; overflow: auto; }
+#goods-form-contet>div { display: inline-block; vertical-align: top; }
+#goods-form-main { width: 550px; }
+#goods-contents textarea { height: 90px; resize: none; }
+.goods-icon { max-height: 60px; max-width: 60px; }
+.goods-actions { text-align: left; }
+.goods-actions>a.fa { padding: 3px; }
+.goods-cat-icon { max-width: 80px; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>装备列表 <small>牛装备</small></h1>
+	{% include 'goods/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>装备列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="goods-list">
+			{% include 'goods/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#goods-list').on('click', '#goods-add-btn', function() {
+		App.Box.open('goods/form.html');
+	}).on('click', '#goods-trash-btn', function() {
+		var slted = $('#goods-list input[name="goods"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'goods/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'json',
+				success: function() {
+					location.href = App.urlReplace(location.href, 'pn', 1);
+				}
+			});
+		}
+	});
+	$('#goods-list').on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('goods/form.html?id=' + id);
+	});
+});
+</script>
+{% endblock %}

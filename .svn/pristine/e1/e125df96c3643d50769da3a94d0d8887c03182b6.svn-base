@@ -1,0 +1,31 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#club-trash-btn" /></th>
+			<th width="100">服务名称</th>
+			<th width="80">图标</th>
+			<th width="80">价格</th>
+			<th width="80">顺序</th>
+			<th width="90">最后更新</th>
+			<th width="50">状态</th>
+			<th width="50"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in club_service %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="name" value="{{item._id}}" /></td>
+			<td>{{item.title}}</td>
+			<td width="80px"><img src="{{item.icon}}" style="max-width:50px;"/></td>
+			<td>{{item.price}}</td>
+			<td>{{item.priority}}</td>
+			<td>{{item.modified_on? item.modified_on|date('Y-m-d H:i:s'): item.create_time|date('Y-m-d H:i:s')}}</td>
+			<td>{{item.statu|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false" vid="{{item._id}}"></a>
+				<a class="fa fa-times delete-service" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

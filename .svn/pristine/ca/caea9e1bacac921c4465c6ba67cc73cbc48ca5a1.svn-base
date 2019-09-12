@@ -1,0 +1,191 @@
+{% import "_macro.html" as macro %}
+<form id="member-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="member/form.html" target="#member-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>{{data.type == 2? '马甲': '会员'}}资料{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="member-form-contet" class="box-content">
+			<div id="member-form-main">
+				<div id="member-form-left">
+					<table class="form">
+						<tr>
+							<th width="60">名称：</th>
+							<td>
+								<input type="text" name="nick" id="member-name" class="form-control" value="{{data.nick}}" placeholder="请输入会员名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+							</td>
+						</tr>
+						<tr>
+							<th>密码：</th>
+							<td>
+								<input type="password" name="pwd" id="member-pwd" class="form-control" placeholder="{{not data.pwd? '请输入密码': '******'}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>电话：</th>
+							<td>
+								<input type="text" name="phone" id="member-phone" class="form-control" value="{{data.phone}}" placeholder='请输入移动电话号码' autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>邮箱：</th>
+							<td>
+								<input type="text" name="mail" id="member-email" class="form-control" value="{{data.mail}}" placeholder='请输入邮箱' autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>性别：</th>
+							<td>
+								<select name="sex" class="form-control">
+									<option value=""></option>
+									<option value="男"{{data.sex=='男'? ' selected':''}}>男</option>
+									<option value="女"{{data.sex=='女'? ' selected':''}}>女</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th>出生日期：</th>
+							<td><input type="text" class="form-control" id="member-birthday" value="{{data.birthday? data.birthday|date('Y-m-d'): ''}}" name="birthday" placeholder="年-月-日" autocomplete="off" /></td>
+						</tr>
+						<tr>
+							<th>年龄：</th>
+							<td><input type="text" class="form-control" name="age" value="{{data.age?data.age:''}}" placeholder="不填时将根据出生日期自动计算" autocomplete="off" /></td>
+						</tr>
+						<tr>
+							<th>体重：</th>
+							<td><input type="text" class="form-control" name="weight" value="{{data.weight}}" autocomplete="off" /></td>
+						</tr>
+						<tr>
+							<th>身高：</th>
+							<td><input type="text" class="form-control" name="height" value="{{data.height}}" autocomplete="off" /></td>
+						</tr>
+						<tr>
+							<th>基础<br />代谢率：</th>
+							<td><input type="text" class="form-control" name="bmr" value="{{data.bmr}}" autocomplete="off" /></td>
+						</tr>
+					</table>
+				</div>
+				<div id="member-form-right">
+					<table class="form">
+						<tr>
+							<th width="60">头像：</th>
+							<td>
+								{{ macro.thumb('avatar_small', data.avatar_small) }}
+								{{ macro.upload('member-avatar', 'avatar_small', 'avatar', false) }}
+							</td>
+						</tr>
+						<tr>
+							<th>地区：</th>
+							<td>
+								<input type="text" name="location" id="member-location" class="form-control" value="{{data.location}}" autocomplete="off" />
+							</td>
+						</tr>
+						{% if not realMember %}
+						<tr>
+							<th>QQ：</th>
+							<td>
+								<input type="text" name="sns[qq]" id="member-qq" class="form-control" value="{{data.sns.qq}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>微信：</th>
+							<td>
+								<input type="text" name="sns[wechat]" id="member-wechat" class="form-control" value="{{data.sns.wechat}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>微博：</th>
+							<td>
+								<input type="text" name="sns[weibo]" id="member-weibo" class="form-control" value="{{data.sns.weibo}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>Facebook：</th>
+							<td>
+								<input type="text" name="sns[facebook]" id="member-facebook" class="form-control" value="{{data.sns.facebook}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+							<th>Twitter：</th>
+							<td>
+								<input type="text" name="sns[twitter]" id="member-twitter" class="form-control" value="{{data.sns.twitter}}" autocomplete="off" />
+							</td>
+						</tr>
+						{% endif %}
+						<tr>
+							<th>签名：</th>
+							<td>
+								<input type="text" name="sig" id="member-sig" class="form-control" value="{{data.sig}}" autocomplete="off" />
+							</td>
+						</tr>
+						<tr>
+                          <th>认证：</th>
+						  <td>
+                              <select id="member-idents" name="idents[]" class="form-control" multiple>
+								  {% for ident in idents %}
+								  <option value="{{ident._id}}:{{ident.name}}:{{ident.icon}}" {{ident.selected ? ' selected': ''}}>{{ident.name}}</option>
+								  {% endfor %}
+								  </select>
+						  </td>
+						</tr>
+						{% if type == 2 %}
+						<tr>
+						<th>马甲类别：</th>
+						<td>
+							<select name="title" id="member-tags"  class="chosen-select form-control" data-placeholder="请选择分类">
+								<option></option>
+								{% for tag in tags %}
+								<option value="{{tag
+								.title}}" {{tag.title in data.title ? ' selected':''}}>{{tag.title}}</option>
+								{% endfor %}
+							</select>
+						</td>
+						</tr>
+						{% endif %}
+						<tr>
+							<th></th>
+							<td>
+								<input type="checkbox" id="member-vip" name="vip" value="1"{{data.vip? ' checked': ''}} class="chkbox" />
+								<label for="member-vip">VIP认证</label>
+								&nbsp; 
+								<input type="checkbox" id="member-recommand" name="recommand" value="1"{{not data.recommand? '': ' checked'}} class="chkbox" />
+								<label for="member-recommand">达人推荐</label>
+								&nbsp; 
+								<input type="checkbox" id="member-inviteable" name="inviteable" value="1"{{not data.inviteable? '': ' checked'}} class="chkbox" />
+								<label for="member-inviteable">问签推荐</label>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="member-id" name="id" value="{{id}}" />
+			<input type="hidden" id="member-type" name="type" value="{{data.type}}" />
+			<button type="submit" id="member-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#member-form').on('init', function() {
+		$('#member-tags,#member-idents').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						location.reload();
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+
+
+</script>

@@ -1,0 +1,33 @@
+{% macro upload(id = '', name = '', type = '', multiple=true) %}
+<a class="up-btn" id="{{id}}" app-upload-name="{{name}}" app-upload-type="{{type}}" app-upload-multiple="{{multiple? 'on': ''}}">
+	{% if type == 'file' %}
+	<i class="fa fa-file"></i>
+	<i class="fa fa-cog fa-spin"></i>
+	添加文件
+    {% elseif type == 'video' %}
+    <i class="fa fa-file-video-o"></i>
+	<i class="fa fa-cog fa-spin"></i>
+    添加视频
+	{% else %}
+	<i class="fa fa-picture-o"></i>
+	<i class="fa fa-cog fa-spin"></i>
+	添加图片
+	{% endif %}
+</a>
+{% endmacro %}
+
+{% macro thumb(name="", src="", size = null) %}
+{% if(src) %}
+<div class="thumb">
+	{% if not is_video(src) %}
+	<img src="{{src}}" />
+	{% else %}
+	<video src="{{src}}"></video>
+	{% endif %}
+	<a>&times;</a>
+	<input type="hidden" data-name="name" name="{{name}}" value="{{src}}" />{%- if size %}
+	<input type="hidden" data-name="size" name="size_of_{{name}}" value="{{size}}" />{% endif -%}
+</div>
+{% endif %}
+{% endmacro %}
+

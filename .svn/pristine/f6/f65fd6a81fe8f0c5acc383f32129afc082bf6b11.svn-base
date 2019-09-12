@@ -1,0 +1,216 @@
+{% import "_macro.html" as macro %}
+<form id="club-service-form" action="lbs/club-service-form.html" target="#club-list"{% if not check_perm('main-contents', data._id? 'EDIT': 'ADD') %} class="readonly_form"{% endif %}>
+    <div class="box">
+        <div class="box-title">
+            <h3>服务详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+        </div>
+        <div id="club-form-contet" class="box-content">
+            <div id="club-form-main">
+                <table class="form">
+                    <tr>
+                        <th width="60">标题：</th>
+                        <td colspan="3">
+                            <input type="text" name="title" id="club-title" class="form-control" value="{{data.title}}" placeholder="请输入标题" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>服务类型：</th>
+                        <td colspan="3">
+                            <select id="club-type" class="form-control" name="type">
+                                <option value="课程"{{not  data.type or data.type=='课程'? ' selected': ''}}>课程</option>
+                                <option value="其他"{{ data.type=='其他'? ' selected': ''}}>其他</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>校区：</th>
+                        <td colspan="3">
+                            <select id="club-region" class="form-control" name="region">
+                                <option value=""></option>
+                                {% for region in regions %} {% set rid = region._id ~ '' %}
+                                <option value="{{rid}}::{{region.name}}" {{data.space.region.id==rid? ' selected': ''}}>{{region.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>开放场馆：</th>
+                        <td colspan="3">
+                           <select id="club-natatorium" name="natatorium[]" class="form-control" multiple>
+                                {% for nata in natatoriums %} {% set nid = nata._id ~ '' %}
+                                <option value="{{nid}}::{{nata.title}}" {{slted.natatorium[nid] is defined? ' selected': ''}}>{{nata.title}}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>价格：</th>
+                        <td>
+                            <input type="text" name="price" id="club-price" class="form-control" value="{{data.price}}" placeholder="请输入价格" />
+                        </td>
+                        <th width="70">&nbsp; 价格说明：</th>
+                        <td>
+                            <input type="text" name="price_subject" id="club-price-subject" class="form-control" value="{{data.price_subject}}" placeholder="请输入说明,如:￥1000/人/期" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>课时：</th>
+                        <td>
+                            <input type="text" name="training_time" id="club-training-time" class="form-control" value="{{data.training_time}}" placeholder="请输入课时,如:10课时 每课时含1小时培训时间" />
+                        </td>
+                        <th>&nbsp; 类型：</th>
+                        <td>
+                            <input type="text" name="schedule" id="club-schedule" class="form-control" value="{{data.schedule}}" placeholder="周末班、全日班、寒暑班、其他" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>额外：</th>
+                        <td>
+                            <input type="text" name="extra" id="club-extra" class="form-control" value="{{data.extra|join(';')}}" placeholder="多个请以;隔开" />
+                        </td>
+                        <th>&nbsp; 顺序：</th>
+                        <td>
+                            <input type="text" name="priority" id="club-priority" class="form-control" value="{{data.priority}}" placeholder="数值越大越靠前" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>教练：</th>
+                        <td>
+                            <input type="text" name="teacher" id="club-teacher" class="form-control" value="{{data.teacher}}" placeholder="趣游泳精品教练团队" />
+                        </td>
+                        <th width="60">&nbsp; 教练资质：</th>
+                        <td>
+                            <input type="text" name="teacher_extra" id="club-teacher-extra" class="form-control" value="{{data.teacher_extra}}" placeholder="国家教练游泳资格证" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>教练电话：</th>
+                        <td>
+                            <input type="text" name="teacher_phone" id="club-teacher-phone" class="form-control" value="{{data.teacher_phone}}" placeholder="" />
+                        </td>
+                        <th width="60">&nbsp; 评分：</th>
+                        <td>
+                            <input type="text" name="score" id="club-score" class="form-control" value="{{data.score}}" placeholder="5" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>封面：</th>
+                        <td colspan="3">
+                            <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                <dt style="text-align: center; color: #999;">封面</dt>
+                                <dd>
+                                    {{ macro.thumb('cover', data.cover) }} {{ macro.upload('club-cover', 'cover', '', false) }}
+                                </dd>
+                            </dl>
+                            <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                <dt style="text-align: center; color: #999;">封面(大)</dt>
+                                <dd>
+                                    {{ macro.thumb('cover_big', data.cover_big) }} {{ macro.upload('club-cover-big', 'cover_big', '', false) }}
+                                </dd>
+                            </dl>
+                            <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                <dt style="text-align: center; color: #999;">封面(小)</dt>
+                                <dd>
+                                    {{ macro.thumb('cover_small', data.cover_small) }} {{ macro.upload('club-cover-small', 'cover_small', '', false) }}
+                                </dd>
+                            </dl>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>图片：</th>
+                        <td colspan="3">
+                            {% for photo in data.photos %} {{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }} {% endfor %} {{ macro.upload('club-photos', 'photos[]', 'default') }}
+                        </td>
+                    </tr>
+                    <tr id="native-content">
+                        <th style="vertical-align:top">内容：</th>
+                        <td colspan="3" id="club-contents">
+                            {% set contents = data.contents %} {% for content in contents %} {% set idx = loop.index0 %}
+                            <div class="row">
+                                <div class="col-sm-11">
+                                    <textarea name="content[{{idx}}]" placeholder="请输入内容" class="form-control">{{content.text}}</textarea>
+                                    <div>
+                                        {% for m in content.media %} {{ macro.thumb('contentThumbs['~idx~'][]', m.url, m.w ~ ',' ~ m.h) }} {% endfor %} {{ macro.upload('', 'contentThumbs['~idx~'][]') }}
+                                    </div>
+                                </div>
+                                <div class="club-actions col-sm-1">
+                                    <a class="fa fa-times"></a>
+                                    <a class="fa fa-plus"></a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="box-footer">
+        <span style="margin-left: 60px; float: left;">
+			<input type="checkbox" id="club-status" name="status" value="1"{{not data or data.statu? ' checked': ''}} />
+			<label for="club-status">启用</label>
+			</span>
+        <input type="hidden" id="club-service-id" name="id" value="{{data._id}}" />
+        <input type="hidden" id="club-id" name="club-id" value="{{club_id}}" />
+        <button type="submit" id="club-submit" class="btn btn-primary">确定</button>
+        <button type="button" class="btn" app-state="cancel">取消</button>
+    </div>
+    </div>
+</form>
+<script>
+$(function() {
+	$('#club-service-form').on('init', function() {
+		$('#club-region,#club-natatorium').chosen();
+		 var updateContentIdx = function() {
+            $('#club-contents>div.row').each(function(idx) {
+                var row = $(this);
+                row.find('textarea').attr('name', 'content[' + idx + ']');
+                row.find('input[data-name="name"]').attr('name', 'contentThumbs[' + idx + '][]');
+                row.find('input[data-name="size"]').attr('name', 'size_of_contentThumbs[' + idx + '][]');
+                row.find('a.up-btn').attr('app-upload-name', 'contentThumb[' + idx + '][]');
+            });
+        }
+
+        $('#club-contents').on('click', 'a.fa-times', function() {
+            var row = $(this).closest('div.row');
+            if ($('#club-contents>div.row').length > 1) {
+                row.slideUp(100, function() {
+                    $(this).remove();
+                    updateContentIdx();
+                });
+            } else {
+                row.find('div.thumb').remove();
+                row.find('textarea').val('');
+                row.find('textarea').focus();
+                updateContentIdx();
+            }
+        }).on('click', 'a.fa-plus', function() {
+            var row = $(this).closest('div.row');
+            var clone = row.clone();
+            clone.find('div.thumb').remove();
+            clone.find('textarea').val('');
+            row.after(clone);
+            updateContentIdx();
+            clone.find('textarea').focus();
+        });
+
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

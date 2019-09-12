@@ -1,0 +1,67 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelFinanceMain {
+    public function collection(){
+       return SwimAdmin::db('finance'); 
+    }
+
+    public function insert($data){
+        return $this->collection()->insert($data);
+    }
+
+    public function update($filters, $data, $options=array()){
+       return $this->collection()->update($filters, $data, $options); 
+    }
+
+    public function findOne($filters, $projection=array()){
+        return $this->collection()->findOne($filters, $projection);
+    }
+
+	public function findOneById($id, $projection=array()){
+	    return $this->findOne(array('_id'=>new MongoId($id)), $projection);
+	}
+
+    public function pagination($url='', $pnValue=null, $sort='create_time'){
+        $params = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn = Helper::popValue($params, 'pn', 1);
+        $sort = Helper::popValue($params, 'sort', 'create_time');
+        $order = Helper::popValue($params, 'order', -1);
+        $filters = array();
+		if(isset($params['region']) && $params['region'] != '-') {
+	        $filters['region_id'] = $params['region'];	
+		}
+		if(isset($params['natatorium']) && $params['natatorium']!='-') {
+		    $filters['natatorium'] = $params['natatorium'];
+		}
+		if(isset($params['teacher']) && $params['teacher']!='-') {
+		    $filters['teacher'] = $params['teacher'];
+		}
+		if(isset($params['teacher_phone']) && trim($params['teacher_phone']) != '') {
+		    $filters['teacher_phone'] = trim($params['teacher_phone']);
+		}
+		if(isset($params['start']) && isset($params['end'])){
+			$start = trim($params['start']);
+			$end   = trim($params['end']);
+			if($start !='' && $end != '') {
+				$filters['$and'] = array(
+					array('last_updated'=>array('$gte'=>strtotime($start))),
+					array('last_updated'=>array('$lte'=>strtotime($end)))
+				);
+			}
+		}else if(isset($params['start']) && trim($params['start'])!=''){
+		    $start = trim($params['start']);
+			$filters['last_updated'] = array('$gte' => strtotime($start));
+		}else if(isset($params['end']) && trim($params['end'])!=''){
+		    $end = trim($params['end']);
+			$filters['last_updated'] = array('$lte' => strtotime($end));
+		}
+        $data = SwimAdmin::pagination(
+            $url, 
+            $this->collection(),
+            is_null($pnValue)? $pn : $pnValue,
+            $filters,
+            array($sort=> intval($order)>0 ? 1: -1)
+        );
+        return $data;
+    }
+}

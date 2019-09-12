@@ -1,0 +1,114 @@
+<?php
+class ControlUser {
+	public function __construct() {
+		$app  = SwimAdmin::app();
+		$view = $app->view();
+
+		$view->addGlobal('_MOD', 'system');
+		$view->addGlobal('_Action', 'user');
+		$view->addGlobal('title', '系统');
+	}
+
+	public function indexAction() {
+		$app = SwimAdmin::app();
+		$user = SwimAdmin::model('user.main');
+		$data = $user->pagination();
+		$app->render('user/user.html', array(
+			'data' => $data
+		));
+	}
+
+	public function formAction() {
+		$app   = SwimAdmin::app();
+		$user  = SwimAdmin::model('user.main');
+		$perm  = SwimAdmin::model('permission.main');
+		$id    = $app->request->get('id');
+		if(empty($id)) {
+			$data = array(
+				'permission' => array(
+					'privilege' => array()
+				)
+			);
+		} else {
+			$data = $user->getOneById($id);
+			if($data && $data['group']) {
+				$data['permission'] = $perm->getOneById($data['group']);
+			}
+		}
+		$app->render('user/user.html', array(
+			'data'		=> $data,
+			'settings'  => $perm->getPermissionSettings(),
+			'dict' 		=> $perm->getPermissionDict()
+		));
+	}
+
+	public function saveAction() {
+		$app 	= SwimAdmin::app();
+		$user 	= SwimAdmin::model('user.main');
+		$id 	= $app->request->post('id');
+		$pass 	= $app->request->post('password');
+		$cpass 	= $app->request->post('confirm_password');
+		$doc 	= array(
+			'name' 	 => trim($app->request->post('name')),
+			'group'  => trim($app->request->post('group')),
+			'active' => intval($app->request->post('active'))
+		);
+		if($pass && $pass != $cpass) {
+			SwimAdmin::error('两次输入的密码不一致，请重新输入。');
+		}
+		if(empty($id)) {
+			if(strlen($pass) < 6) {
+				SwimAdmin::error('密码不能少于6个字符，请重新输入。');
+			}
+			$doc['username'] = trim($app->request->post('username'));
+			$doc['password'] = $user->password($pass);
+			$user->addUser($doc);
+		} else {
+			if($pass !== '') {
+				if(strlen($pass) < 6) {
+					SwimAdmin::error('密码不能少于6个字符，请重新输入。');
+				}
+				$doc['password'] = $user->password($pass);
+			}
+			$user->update($doc, $id);
+		}
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	}
+
+	public function deleteAction() {
+		$app   = SwimAdmin::app();
+		$user  = SwimAdmin::model('user.main');
+		$items = $app->request->post('items', array());
+		$user->deleteById($items);
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	}
+
+	public function passwordAction() {
+		$app   = SwimAdmin::app();
+		if($app->request->isPost()) {
+			$admin = SwimAdmin::model('user.main');
+			$user  = $admin->getOneByName($_SESSION[S_USER]);
+			$opass = $app->request->post('old_pass');
+			$npass = $app->request->post('new_pass');
+			$cpass = $app->request->post('cfm_pass');
+			if($admin->password($opass) != $user['password']) {
+				SwimAdmin::error('旧密码不正确，请重新输入。');
+			} else if(strlen($npass) < 6) {
+				SwimAdmin::error('新密码不能少于6个字符，请重新输入。');
+			} else if($npass !== $cpass) {
+				SwimAdmin::error('两次输入的新密码不一致，请重新输入。');
+			} else {
+				$admin->changePassword($_SESSION[S_USER], $npass);
+				$app->view()->renderJSON(array(
+					'result' => true
+				));
+			}
+		} else {
+			$app->render('user/password.html');
+		}
+	}
+}

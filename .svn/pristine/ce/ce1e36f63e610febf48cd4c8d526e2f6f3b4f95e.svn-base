@@ -1,0 +1,61 @@
+<?php
+class ControlUpgrade {
+	public function __construct() {
+		$app  = SwimAdmin::app();
+		$view = $app->view();
+
+		$view->addGlobal('_MOD', 'admin');
+		$view->addGlobal('title', '系统');
+	}
+
+	public function packageAction() {
+		$app 	 = SwimAdmin::app();
+		$setting = SwimAdmin::db('setting');
+		$package = $setting->findOne(array('key' => 'upgrade'));
+		$app->render('upgrade/package.html', array(
+			'package' => isset($package['package'])? $package['package']: array()
+		));
+	}
+
+	public function formAction() {
+		$app = SwimAdmin::app();
+		$app->render('upgrade/package-form.html');
+	}
+
+	public function saveAction() {
+		$app 	 = SwimAdmin::app();
+		$setting = SwimAdmin::db('setting');
+		$package = $setting->findOne(array('key' => 'upgrade'));
+		$doc 	 = array(
+			'version' => trim($app->request->post('version')),
+			'src'     => trim($app->request->post('package')),
+			'time'    => time()
+		);
+		if($package && $package['package'] && $package['package']['src']) {
+			// 删除旧文件
+			require_once(LIB_DIR. 'youpaiyun/upyun.class.php');
+	        $bucketName   = Config::$storage['file']['bucket'];
+			$operatorName = Config::$storage['file']['user'];
+			$operatorPwd  = Config::$storage['file']['pass'];
+
+			$src = $package['package']['src'];
+			$tmp = explode('/file/', $src);
+			unset($tmp[0]);
+			$src = '/file/'. implode('/file/', $tmp);
+			try {
+				$upyun = new UpYun($bucketName, $operatorName, $operatorPwd);
+				$upyun->delete($src);
+			} catch(Exception $e) {
+				$app->getLog()->error($e. ': '. $src);
+			}
+		}
+		$setting->update(
+			array('key' => 'upgrade'), 
+			array('$set' => array('package' => $doc)), 
+			array("upsert" => true)
+		);
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	}
+}

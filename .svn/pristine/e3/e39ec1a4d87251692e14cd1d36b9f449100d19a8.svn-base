@@ -1,0 +1,35 @@
+<table id="adv-table" class="table table-hover">
+	<tbody>
+	{% set delAllowed = check_perm('main-contents', 'DELETE') %}
+	{% for item in data %}
+		<tr data-id="{{item._id}}">
+			<td class="adv-img"><img src="{{item.cover}}" /></td>
+			<td>
+				<ul>
+					<li><label>标题：</label><span>{{item.title_type}} <b class="adv-title">{{item.title}}</b></span></li>
+					<li>
+						<label>分类：</label>
+						<span>{{cats[item.category]? cats[item.category]: item.category}}</span>
+					</li>
+					<li>
+						<label>链接：</label>
+						<a href="{{item.link}}" target="_blank" title="{{item.link}}">{{item.link}}</a>
+					</li>
+					<li><label>模块：</label>
+						{%- for belong in item.belong -%}
+						<a href="adv/index.html?mod={{belong}}">{{belongs[belong]? belongs[belong]: belong}}</a>&nbsp;
+						{%- endfor -%}
+					</li>
+					<li><label>描述：</label><span>{{item.description}}</span></li>
+					<li><label>顺序：</label><span>{{item.order}}</span></li>
+					<li><label>状态：</label><span>{{item.statu|status}}</span></li>
+				</ul>
+			</td>
+			<td width="80" class="table-action">
+				<a class="fa fa-edit"></a>
+				{% if delAllowed %}<a class="fa fa-trash"></a>{% endif %}
+			</td>
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>

@@ -1,0 +1,70 @@
+{% set _Title = '开放校区' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<style type="text/css">
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>课程</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="course/list.html">课程</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>{{_Title}}</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="text-right">
+			<button type="button" id="region-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建分类</button>
+			<button type="button" id="region-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+		</div>
+		<div id="region-list">
+			{% include 'course/region-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#region-btn').on('click', function() {
+		App.Box.open('course/region/form.html');
+	});
+	$('#region-list').on('click', 'a.icon-edit', function() {
+		var id = $(this).closest('tr').attr('region-id');
+		App.Box.open('course/region/form.html?id=' + id);
+	});
+	$('#region-trash-btn').on('click', function() {
+		if(!$(this).hasClass('disabled')) {
+			var ids = [];
+			$('#region-list input[name="region"]:checked').each(function() {
+				ids.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'course/region/delete.html',
+				data: {'items[]': ids},
+				target: '#region-list',
+				dataType: 'html',
+				type: 'post'
+			});
+		}
+	});
+});
+</script>
+{% endblock %}

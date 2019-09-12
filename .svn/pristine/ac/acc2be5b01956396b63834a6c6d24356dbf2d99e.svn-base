@@ -1,0 +1,206 @@
+$upfile = isset($_FILES['upfile'])? $_FILES['upfile']: null;
+	// åˆ¤æ–­æ–‡ä»¶æ˜¯å¦æœ‰æ•ˆ
+	if($upfile && !$upfile['error'] && strpos($upfile['type'], 'text') === 0) {
+		// è¯»å–æ–‡ä»¶å†…å®¹
+		$contents = preg_split('/[\r|\n|\r\n]/', file_get_contents($upfile['tmp_name']));
+		var_dump($contents);
+		$data = array();
+		foreach($contents as $row) {
+			$item = explode(',', $row);
+			if($item) {
+				$match = trim($item[0]);
+				if($match) {
+					// æ¸¸æ³³é¦†ä¿¡æ¯
+					$data = array(
+						// æ ‡é¢˜
+						'match' 	=> iconv("gb2312", "utf-8", isset($item[0])? trim($item[0]): ''),
+						'project'   => iconv("gb2312", "utf-8", isset($item[1])? trim($item[1]): ''),
+						'group'     => isset($item[2])? trim($item[2]): '',
+						'rank'      => isset($item[3])? trim($item[3]): '',
+						'mark'      => isset($item[4])? trim($item[4]): '',
+						'name'      => isset($item[5])? trim($item[5]): '',
+						'number'    => isset($item[6])? trim($item[6]): '',
+					);
+				}
+			}
+		}
+		var_dump($data);
+		if($data) {
+			try {
+				// å†™å…¥DB
+				$natatorium = SwimAdmin::model('match.member');
+				// $natatorium = SwimAdmin::db('natatorium');
+					$natatorium->insert($data);
+			} catch(Exception $e) {
+				$app->log->error($e);
+				$app->view()->renderJSON(array(
+					'result' => false,
+					'error' => 'å¯¼å…¥å¤±è´¥ï¼Œè¯·æ£€æŸ¥åæ ‡æˆ–æ–‡ä»¶æ ¼å¼æ˜¯å¦æ­£ç¡®ã€‚'
+				));
+				return;
+			}
+		}
+		$app->view()->renderJSON(array(
+			'result' 	=> true,
+			'num'		=> count($data) // è¿”å›å¯¼å…¥æ€»æ•°
+		));
+	} else {
+		$app->view()->renderJSON(array(
+			'result' => false,
+			'error' => 'æ‚¨ä¸Šä¼ äº†ä¸€ä¸ªæ— æ³•è¯†åˆ«çš„æ–‡ä»¶ã€‚'
+		));
+	}exception 'MongoException' with message 'non-utf8 string: ²»ÊÇ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(572): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: ²»ÊÇ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(572): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: ²»ÊÇ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(572): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬ÎÒµÄ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(572): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬ÎÒµÄ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(572): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬ÎÒµÄ' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(573): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬1' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(573): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬1' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(573): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬1' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(573): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: 3333£¬1' in D:\phpStudy\WWW\swim-admin\model\model.member.tags.php:33
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.member.tags.php(33): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\home.php(573): ModelMemberTags->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'MongoException' with message 'non-utf8 string: ¾º±êÈü' in D:\phpStudy\WWW\swim-admin\model\model.natatorium.main.php:68
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.natatorium.main.php(68): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\lbs.php(68): ModelNatatoriumMain->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}
+exception 'ErrorException' with message 'Array to string conversion' in D:\phpStudy\WWW\swim-admin\home.php:569
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\home.php(569): Slim\Slim::handleErrors(8, 'Array to string...', 'D:\\phpStudy\\WWW...', 569, Array)
+#1 [internal function]: {closure}()
+#2 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#7 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#8 {main}
+exception 'MongoException' with message 'non-utf8 string: µÚÒ»½ì¾º±êÈü' in D:\phpStudy\WWW\swim-admin\model\model.natatorium.main.php:68
+Stack trace:
+#0 D:\phpStudy\WWW\swim-admin\model\model.natatorium.main.php(68): MongoCollection->insert(Array)
+#1 D:\phpStudy\WWW\swim-admin\lbs.php(69): ModelNatatoriumMain->insert(Array)
+#2 [internal function]: {closure}()
+#3 D:\phpStudy\WWW\swim-admin\lib\Slim\Route.php(462): call_user_func_array(Object(Closure), Array)
+#4 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1326): Slim\Route->dispatch()
+#5 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\Flash.php(85): Slim\Slim->call()
+#6 D:\phpStudy\WWW\swim-admin\lib\Slim\Middleware\MethodOverride.php(92): Slim\Middleware\Flash->call()
+#7 D:\phpStudy\WWW\swim-admin\lib\Slim\Slim.php(1271): Slim\Middleware\MethodOverride->call()
+#8 D:\phpStudy\WWW\swim-admin\index.php(458): Slim\Slim->run()
+#9 {main}

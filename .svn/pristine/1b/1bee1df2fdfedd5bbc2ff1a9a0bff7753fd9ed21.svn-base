@@ -1,0 +1,4 @@
+<nav>
+	<!-- <a href="javascript:;" id="teacher-add-btn"><b class="fa fa-plus"></b>新建</a> -->
+	<a href="lbs/teacher.html"{{_Action=='index'? ' class="slted"': ''}}><b class="fa fa-list-alt"></b>列表</a>
+</nav>

@@ -1,0 +1,70 @@
+{% set _Title = '赛事' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>赛事分类</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>赛事分类</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="match-list">
+			{% include 'match/match_category_list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<!-- <script type="text/javascript" src="js/3rd/plugins/ajax-chosen/ajax-chosen.min.js?ver={{_Config.res3rdVersion}}"></script> -->
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#match-list').on('click', '#match-category-add-btn', function() {
+		App.Box.open('home/match/match_category_form.html');
+	}).on('click', 'input', function() {
+	}).on('click', '#match-category-trash-btn', function() {
+		var slted = $('#match-list input[name="tgroup"]:checked');
+		console.log(slted);
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'home/match/match-list/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'html',
+				target: '#match-list',
+				success: function() {
+					location.reload();
+				}
+			});
+		}
+	}).on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('home/match/match_category_form.html?id=' + id);
+	})
+});
+</script>
+{% endblock %}

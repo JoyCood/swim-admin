@@ -1,0 +1,450 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelCourseOrder
+{
+    const PAY_STATUS_WAIT       = 0; //待付款
+    const PAY_STATUS_SUCESS     = 1; //已付款
+
+    const TRAIN_STATUS_PROCESSING = 0; //排课中
+    const TRAIN_STATUS_START      = 1; //上课中
+    const TRAIN_STATUS_FINISH     = 2; //毕业了
+    
+    const BUYER_PROCESS_STATUS_WAIT_PAY   = 0; //未付款
+    const BUYER_PROCESS_STATUS_PAY_SUCESS = 1; //已付款
+    const BUYER_PROCESS_STATUS_ASK_REFUND = 2; //申请退款
+
+    const SELLER_PROCESS_STATUS_NORMAL        = 0; //正常状态
+    const SELLER_PROCESS_STATUS_REFUND_SUCESS = 1; //退款成功
+    const SELLER_PROCESS_STATUS_PROCESSING    = 2; //退款处理中
+    const COMMENT_STATUS_NORMAL = 0; //未点评
+    const COMMENT_STATUS_FINISH = 1; //已点评
+/*
+    $order = array(
+            'user_id'               => $userId,   //客户id
+            'course_id'             => $courseId, //课程id
+            'order_id'              => $orderId,  //订单id
+            'price'                 => $price, //单价
+            'total_fee'             => $price, //支付总额
+            'quantity'              => 1,      //数量
+            'discount'              => 0,      //优惠价格
+            'demanded'              => $demanded,
+            'order_status'          => 0, //订单状态  0待付款 1已支付 
+            'train_status'          => 0, //训练状态，0排课中 1上课中 2已毕业
+            'buyer_process_status'  => 0, //客户卖家请示退款标识
+            'seller_process_status' => 0, //商家处理状态
+            'order_expired_time'    => time() + (30 * 60), //30分钟有效期
+            'order_available_time'  => 0, //课程过期时间
+            'pay_time'              => 0, //支付时间
+            'comment_status'        => 0, //是否点评过 0未点评 1已点评
+            'platform'              => $platform,
+            'ask_refund_time'       => 0, //请求退款时间
+            'refund_no'             => 0, //退款单号
+            'refund_time'           => 0, //退款时间
+            'refund_fee'            => 0, //退款金额
+            'code'                  => 0, //验证码
+            'teacher_id'            => 0, //教练/场馆id
+            'teacher_name'          => 0, //教练名字/场馆名称
+            'teacher_phone'         => 0, //教练电话/场管电话
+            'type'                  => 'course', //订单类型
+            'teacher_type'          => 0, //1教练 2场馆  
+            'active_time'           => 0, //订单激活时间       
+            'current_step'          => 0, //当前课时
+            'create_time'           => time(), //订单生成时间
+            'modified_time'         => 0,  //订单修改时间
+            'allocation_time'       => 0,  //分配教练的时间
+            'finish_time'           => 0,  //毕业时间
+            'operator'              => ''  //操作人
+        );
+        */
+
+	public function collection()
+	{
+        return SwimAdmin::db('course_order');
+	}
+
+    public function find($filter=array(), $projection=array()) 
+    {
+        return $this->collection()->find($filter, $projection);
+    }
+
+    public function insert($data) {
+        return $this->collection()->insert($data); 
+    }
+
+    public function update($filter, $data)
+    {
+        return $this->collection()->update($filter, array('$set'=>$data));
+    }
+
+    public function batchInsert($data, $options=array()) {
+        return $this->collection()->batchInsert($data, $options);
+    }
+
+    public function delete($filter, $options=array('justOne'=>true)) {
+        return $this->collection()->remove($filter, $options);
+    }
+
+    /**
+     * 分配教练
+     *
+     * @param string  $orderId
+     * @param string  $teacherId
+     *
+     * @return bool
+     */
+	public function teacherAllocation($orderId, $teacherId)
+	{
+        $teacher = SwimAdmin::model('teacher.main');
+        $data = $teacher->findOneById($teacherId);
+
+        $matcher = array(
+        	'order_id'              => $orderId, 
+        	'type'                  => 'course', //课程订单
+        	'order_status'          => self::PAY_STATUS_SUCESS,            //已付款
+        	'train_status'          => self::TRAIN_STATUS_PROCESSING,      //未开始上课
+        	'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL  //商家未退款
+        );
+
+        $update  = array('$set' => array(
+        	'allocation_time'=> time(),
+        	'teacher_id'     => $teacherId,
+        	'teacher_name'   => $data['nick'],
+        	'teacher_phone'  => $data['phone'],
+            'teacher_type'   => 1, //1教练  2泳馆
+        	'operator'       => $_SESSION[S_USER],
+        	'modified_time'  => time()
+        ));
+        
+        $res = $this->collection()->update($matcher, $update);
+
+        $updated = $res['nModified'] > 0;
+
+        if($updated)
+        {
+            SwimAdmin::model("push.main")->teacherPush($orderId);
+        }
+
+        return $updated;
+	}
+    
+    /**
+     * 分配场馆
+     */
+    public function allocateNatatorium($orderId, $id) {
+        $data = SwimAdmin::model('natatorium.main')->findOneById($id);   
+        if(!$data) {
+            return FALSE;
+        }
+        $filters = array(
+            'order_id' => $orderId,
+            'type' => 'course',
+            'order_status' => self::PAY_STATUS_SUCESS,
+            'train_status' => self::TRAIN_STATUS_PROCESSING,
+            'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL,
+        );
+        $update = array('$set' => array(
+		//  'demanded.natatorium_id' => $id,
+		//	'demanded.natatorium' => $data['title'],
+            'allocation_time' => time(),
+            'teacher_id' => $id,
+            'teacher_name' => $data['title'],       
+            'teacher_phone' => $data['tel'],
+			'reallocate_natatorium_id' => $id,
+			'reallocate_natatorium_name' => $data['title'],
+			'reallocate_natatorium_phone' => $data['tel'],
+            'teacher_type'  => 2, //1教练 2泳馆
+            'operator' => $_SESSION[S_USER],
+            'modified_time' => time()
+        ));
+
+        $res = $this->collection()->update($filters, $update);
+        $updated = $res['nModified'] > 0;
+        if($updated) {
+            //SwimAdmin::model('push.main')->teacherPush($orderId);
+        }
+        return $updated;    
+    }
+
+    /**
+     * 输入验证码，激活订单开始上课
+     *
+     * @param string  $orderId
+     * @param int     $step
+     *
+     * @return bool
+     */
+	public function beginTrain($orderId, $step)
+    {
+        $filter = array(
+            'order_id' => $orderId,
+            'order_status' => self::PAY_STATUS_SUCESS, //1
+            'train_status' => self::TRAIN_STATUS_PROCESSING, //0
+            'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL, //0
+            'teacher_id' => array('$ne' => 0),
+            'active_time' => 0
+        );
+        $update = array('$set'=>array(
+            'active_time' => time(),
+            'train_status' => self::TRAIN_STATUS_START
+        ));
+        $res = $this->collection()->update($filter, $update);
+        $updated = $res['nModified'] > 0;
+        if($updated)
+        {
+            try {
+                SwimAdmin::model('push.main')->activePush($orderId);
+            } catch(Exception $e) {
+                
+            }
+        }
+        $filter = array(
+            'order_id' => $orderId,
+            'order_status' => self::PAY_STATUS_SUCESS,
+            'train_status' => self::TRAIN_STATUS_START,
+            'active_time'  => array('$ne' => 0),
+            'teacher_id'   => array('$ne' => 0),
+            'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL
+        );
+        $update = array('$set' => array(
+            'current_step' => $step
+        ));
+
+        $res = $this->collection()->update($filter, $update);
+
+        return $res['nModified'] > 0;
+	}
+
+    //取消退款
+    public function cancelRefund($orderId) {
+        $filter = array(
+            'order_id' => $orderId,
+            'order_status' => self::PAY_STATUS_SUCESS,
+            'seller_process_status' => self::SELLER_PROCESS_STATUS_PROCESSING,
+            'buyer_process_status' => self::BUYER_PROCESS_STATUS_ASK_REFUND, 
+        ); 
+        $update = array(
+            '$set' => array(
+                'ask_refund_time' => 0,
+                'train_status' => self::TRAIN_STATUS_PROCESSING,
+                'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL,
+                'buyer_process_status' => self::BUYER_PROCESS_STATUS_PAY_SUCESS,
+                'allocation_time' => 0,
+                'active_time' => 0,
+                'teacher_id' => 0,
+                'teacher_name' => 0,
+                'teacher_phone' => 0,
+                'operator' => '',
+                'modified_time' => 0
+            )
+        );
+        $result = $this->collection()->update($filter, $update);
+
+        return $result['nModified'] > 0;
+    }
+
+    /**
+     * 课程结束后将状态变更为毕业状态
+     *
+     * @param string $orderId 订单号
+     * @param int    $step    课时
+     *
+     * @return bool
+     */
+    public function finishTrain($orderId, $step)
+    {
+        $matcher = array(
+            'order_id'              => $orderId,
+            // 'finish_time'           => 0,                                    //未毕业
+            'order_status'          => self::PAY_STATUS_SUCESS,                 //已付款
+            'train_status'          => self::TRAIN_STATUS_START,                //正在培训
+            'seller_process_status' => self::SELLER_PROCESS_STATUS_NORMAL,      //商家未退款
+            'buyer_process_status'  => self::BUYER_PROCESS_STATUS_PAY_SUCESS,   //已付款
+            'teacher_id'            => array('$ne' => 0),                       //已安排教练
+            'active_time'           => array('$ne' => 0),                       //订单已激活
+            'code'                  => array('$ne' => 0)                        //已分配验证码
+        );
+
+        $update = array(
+            'finish_time'  => time(),
+            'train_status' => self::TRAIN_STATUS_FINISH,
+            'current_step' => $step,
+        );
+
+        $res = $this->collection()->update($matcher, array('$set' => $update));
+
+        return $res['nModified'] > 0;
+    }
+
+    /**
+     * 更新订单为退款成功状态
+     *
+     * @param string $orderId    订单号
+     * @param double $refundNo   退款流水号(支付平台返回)
+     * @param float  $refundFee  退款金额中(支付平台返回)
+     * @param string $platform   平台
+     *
+     * @return bool
+     */
+    public function updateRefundStatus($orderId, $refundNo, $refundFee, $platform)
+    {
+        $matcher = array(
+            'order_id' => $orderId,
+            'platform' => $platform
+        );
+        $update = array(
+            '$set' => array(
+                'refundNo'    => $refundNo,
+                'refund_time' => time(),
+                'refund_fee'  => $refundFee,
+                'seller_process_status' => self::SELLER_PROCESS_STATUS_REFUND_SUCESS
+            )
+        );
+
+        $res = $this->collection()->update($matcher, $update);
+        $updated = $res['nModified'] > 0;
+
+        if($updated)
+        {
+            SwimAdmin::model('push.main')->refundPush($orderId); //推送退款成功消息
+        }
+
+        return $updated;  
+    }
+
+    /**
+     * 根据订单号查找订单
+     *
+     * @param string  $orderId  订单id
+     * @param array   $fields   返回的数据项
+     *
+     * @return null | array
+     */
+    public function findOneByOrderId($orderId, $fields=array())
+    {
+        $matcher = array('order_id' => $orderId);
+
+        $fields = is_array($fields) ? $fields : array();
+
+        return $this->collection()->findOne($matcher, $fields);
+    }
+
+	public function findOneByCode($code)
+	{
+		$matcher = array('code' => intval($code));
+		return $this->collection()->find($matcher);
+	}
+
+    /**
+     * 根据id查找订单
+     *
+     * @param string  $id
+     * @param array   $fields  返回的数据项
+     *
+     * @return false | array 
+     */
+    public function findOneById($id, $fields = array())
+    {
+        try
+        {
+            $matcher = array(
+                '_id' => new MongoId($id)
+            );
+
+            $fields = is_array($fields) ? $fields : array();
+
+            return $this->collection()->findOne($matcher, $fields);
+        }
+        catch(MongoException $e)
+        {
+            return FALSE;
+        }
+    }
+
+    /**
+     * 订单分页列表
+     *
+     * @param string $url
+     * @param int    $pnValue
+     * @param string $sort
+     * @param array  $filter
+     *
+     * @return array
+     */
+	public function pagination($url='', $pnValue=null, $sort='create_time')
+	{
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+		$pn      = Helper::popValue($params, 'pn', 1);
+		$sort    = Helper::popValue($params, 'sort', 'create_time');
+        $order   = Helper::popValue($params, 'order', -1);
+		$User = SwimAdmin::model('user.main');
+        $filters = array();
+		if($_SESSION[S_TYPE]==$User::USER_TYPE_JIAOLIAN) {
+			$filters['teacher_id'] = $_SESSION[S_TEACHER_ID];
+		} else if($_SESSION[S_TYPE]==$User::USER_TYPE_YONGGUAN) {
+            $filters['$or'] = array(
+	            array('teacher_id' => $_SESSION[S_NATATORIUM_ID]),
+				array('reallocate_natatorium_id' => $_SESSION[S_NATATORIUM_ID])
+			);	
+		}
+
+        if(isset($params['order_status']) && ($params['order_status'] != '-' && $params['order_status'] != '')) {
+            $filters['order_status'] = intval($params['order_status']);
+        }
+        if(isset($params['train_status']) && ($params['train_status'] != '-' && $params['train_status'] != '')) {
+            $filters['train_status'] = intval($params['train_status']);
+        }
+        if(isset($params['process_status']) && ($params['process_status'] != '-' && $params['process_status'] != '')) {
+            $filters['seller_process_status'] = intval($params['process_status']);
+        }
+		if(isset($params['phone']) && trim($params['phone']) != '') {
+			$phone = trim($params['phone']);
+            $filters['demanded.phone'] = new MongoRegex('/'.$phone.'/');
+        }
+        if(isset($params['name']) && trim($params['name']) != '') {
+            $filters['demanded.name'] = trim($params['name']);
+        }
+        if(isset($params['query']) && trim($params['query']) != '') {
+            $filters['order_id'] = $params['query'];
+        }
+		
+		$data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue) ? $pn : $pnValue,
+            $filters,
+            array($sort => intval($order) > 0 ? 1 : -1)
+		);
+
+        $courseIds = array();
+		$uids = array();
+        foreach($data['items'] as $item) {
+            $item['_id'] = (string)$item['_id'];
+            try {
+				$uids[] = new mongoId($item['user_id']);
+                $courseIds[] = new MongoId($item['course_id']);
+            } catch(Exception $e) {}
+        }
+        $Course     = SwimAdmin::model('course.main');
+        $rs         = $Course->collection()->find(array('_id' => array('$in' => $courseIds)));
+
+        $courseData = array();
+        foreach($rs as $course) {
+            $cid = (string)$course['_id'];
+            $courseData[$cid] = $course;
+        }
+
+        $data['courses'] = $courseData;
+        $buyers = array();
+		if($uids) {
+			$Member = SwimAdmin::model('member.main');
+			$cursor = $Member->find(array('_id' => array('$in'=>$uids)));
+			foreach($cursor as $item) {
+		        $buyers[(string)$item['_id']] = $item;	
+			}
+		}
+		$data['buyers'] = $buyers;
+
+        return $data;
+	}
+    
+}

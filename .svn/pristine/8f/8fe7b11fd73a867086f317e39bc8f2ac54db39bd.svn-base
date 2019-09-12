@@ -1,0 +1,36 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<!-- <th width="30"><input type="checkbox" rel="#news-trash-btn" /></th> -->
+			<th width="80">校区</th>
+			<th width="200">场馆名称</th>
+            <th width="70">教练</th>
+            <th width="120">教练联系方式</th>
+			<th width="120">已完成订单</th>
+			<th width="150">已完成总金额（元）</th>
+			<th width="120">账户总金额（元）</th>
+			<th width="120">待结算（元）</th>
+			<th width="120">上次操作时间</th>
+			<th width="80">操作</th>
+		</tr>
+	</thead>
+	<tbody>
+        {% for item in data.items %}
+		<tr data-id="1">
+			<td>{{item.region_name}}</td>
+			<td>{{item.natatorium_name}}</td>
+			<td>{{item.teacher_name}}</td>
+			<td>{{item.teacher_phone}}</td>
+			<td>{{item.finish_num}}</td>
+			<td>{{item.finish_total}}</td>
+			<td>{{item.balance}}</td>
+			<td>{{item.settle}}</td>
+			<td>{{item.last_updated|date('Y-m-d H:i:s')}}</td>
+			<td class="table-action">
+				<a href="javascript:;" class="fa fa-bars"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

@@ -1,0 +1,82 @@
+{% import "_macro.html" as macro %}
+<form id="group-form" action="user/group/save.html" data-type="json">
+	<div class="box">
+		<div class="box-title">
+			<h3>组资料</h3>
+		</div>
+		<div id="group-form-contet" class="box-content">
+			<div id="group-form-main">
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td>
+							<input type="text" name="name" id="group-name" class="form-control" value="{{data.name}}" placeholder="请输入名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>说明：</th>
+						<td>
+							<textarea name="description" id="group-desc" class="form-control" placeholder="请输入说明" autofocus="on" autocomplete="off">{{data.description}}</textarea>
+						</td>
+					</tr>
+					<tr>
+						<th style="vertical-align: top">权限：</th>
+						<td>
+							{% set readonly = false %}
+							{% include 'user/permission.html' %}
+							&nbsp; &nbsp;<a id="perm-all">全选</a> &nbsp; <a id="perm-none">无 </a>
+						</td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td>
+							<input type="checkbox" id="group-statu" name="statu" value="1"{{data.statu? ' checked': ''}} />
+							<label for="group-statu">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="group-id" name="id" value="{{data._id}}" />
+			{% if check_perm('groups', data._id? 'EDIT': 'ADD') %}<button type="submit" id="group-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#group-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						location.reload();
+					}
+				});
+			}
+			return false;
+		}).on('click', 'dt input:checkbox', function() {
+			$(this).closest('dt').next('dd').find(':checkbox').prop('checked', this.checked);
+		}).on('click', 'dd input:checkbox', function() {
+			var dd = $(this).closest('dd');
+			var sibling = dd.find(':checkbox');
+			var all = sibling.filter(':checked').length == sibling.length;
+			dd.prev('dt').find(':checkbox').prop('checked', all);
+		}).on('click', '#perm-all', function() {
+			$('#group-form dl.permission :checkbox').prop('checked', true);
+		}).on('click', '#perm-none', function() {
+			$('#group-form dl.permission :checkbox').prop('checked', false);
+		});
+	}).on('active', function() {
+		$('#group-form dl.permission>dt').each(function() {
+			var sibling = $(this).next('dd').find(':checkbox');
+			var all = sibling.filter(':checked').length == sibling.length;
+			$(':checkbox', this).prop('checked', all);
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

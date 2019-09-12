@@ -1,0 +1,199 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelPointsMain {
+    public function collection() {
+        return SwimAdmin::db('points_log');
+    }
+
+    public function insert($data) {
+        $data['create_time'] = time();
+        return $this->collection()->insert($data); 
+    }
+
+    public function pg($url='', $pnValue=null) {
+        $params = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn  = Helper::popValue($params, 'pn', 1); 
+        $sort  = Helper::popValue($params, 'sort', 'create_time');
+        $order = Helper::popValue($params, 'order', -1);
+        $filters = array();
+
+        $mid   = Helper::getValue($params, 'mid', '');
+        $phone = Helper::getValue($params, 'phone', '');
+        $nick  = Helper::getValue($params, 'nick', '');
+        $start = Helper::getValue($params, 'start', '');
+        $end   = Helper::getValue($params, 'end', '');
+        $min   = Helper::getValue($params, 'min', 0)*1;
+        $max   = Helper::getValue($params, 'max', 0)*1;
+        
+        $members = array();
+        if($mid) {
+            $filters['user_id'] = $mid;
+        }
+        if($phone) {
+            $filters['phone'] = new MongoRegex('/'.$phone.'/');
+        }
+        if($nick) {
+            $filters['nick'] = new MongoRegex('/'.$nick.'/');
+        }
+        if($filters) {
+            $cursor = SwimAdmin::model('member.main')->collection()->find($filters); 
+            foreach($cursor as $item){
+                $mid = (string)$item['_id'];
+                $members[$mid] = $item; 
+            }
+            if($members) {
+                $filters['user_id'] = array('$in'=>array_keys($members));
+            }
+            unset($filters['phone'], $filters['nick']);
+        }
+
+        if($start && $end) {
+            $filters['$and'] = array(
+                array('create_time' => array('$gte'=>strtotime($start))),
+                array('create_time' => array('$lt' => strtotime($end)+3600*24))
+            ); 
+        }else if($start) {
+            $filters['create_time'] = array('$gte'=>strtotime($start));
+        }else if($end) {
+            $filters['create_time'] = array('$lt'=>strtotime($end)+3600*24);
+        }
+        if($max && $min) {
+            $filters['$and'] = array(
+                array('points' => array('$lte'=>$max)),
+                array('points' => array('$gte' => $min))
+            ); 
+        }else if($min) {
+            $filters['points'] = array('$gte'=> $min);
+        }else if($max) {
+            $filters['points'] = array('$lte'=>$max);
+        }
+        $data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order)> 0? 1: -1)
+        );
+        if(empty($members)) {
+            $mids = array();
+            foreach($data['items'] as $item) {
+               $mids[] = new MongoId($item['user_id']); 
+            }
+            if($mids) {
+                $filters = array('_id' => array('$in'=>$mids));
+                $cursor = SwimAdmin::model('member.main')->collection()->find($filters);
+                foreach($cursor as $item) {
+                    $mid = (string)$item['_id'];
+                    $members[$mid] = $item;
+                }
+            }
+        }
+        $data['members'] = $members;
+
+        return $data;
+    }
+
+    public function pagination($url='', $pnValue=null) {
+        $params = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn  = Helper::popValue($params, 'pn', 1); 
+        $sort  = Helper::popValue($params, 'sort', 'sum');
+        $order = Helper::popValue($params, 'order', -1);
+        $filters = array();
+
+        $mid   = Helper::getValue($params, 'mid', '');
+        $phone = Helper::getValue($params, 'phone', '');
+        $nick  = Helper::getValue($params, 'nick', '');
+        $start = Helper::getValue($params, 'start', '');
+        $end   = Helper::getValue($params, 'end', '');
+        $min   = Helper::getValue($params, 'min', 0)*1;
+        $max   = Helper::getValue($params, 'max', 0)*1;
+        
+        $members = array();
+        if($mid) {
+            $filters['user_id'] = $mid;
+        }
+        if($phone) {
+            $filters['phone'] = new MongoRegex('/'.$phone.'/');
+        }
+        if($nick) {
+            $filters['nick'] = new MongoRegex('/'.$nick.'/');
+        }
+        if($filters) {
+            $cursor = SwimAdmin::model('member.main')->collection()->find($filters); 
+            foreach($cursor as $item){
+                $mid = (string)$item['_id'];
+                $members[$mid] = $item; 
+            }
+            if($members) {
+                $filters['user_id'] = array('$in'=>array_keys($members));
+            }
+            unset($filters['phone'], $filters['nick']);
+        }
+
+        if($start && $end) {
+            $filters['$and'] = array(
+                array('create_time' => array('$gte'=>strtotime($start))),
+                array('create_time' => array('$lt' => strtotime($end)+3600*24))
+            ); 
+        }else if($start) {
+            $filters['create_time'] = array('$gte'=>strtotime($start));
+        }else if($end) {
+            $filters['create_time'] = array('$lt'=>strtotime($end)+3600*24);
+        }
+        if($max && $min) {
+            $filters['$and'] = array(
+                array('points' => array('$lte'=>$max)),
+                array('points' => array('$gte' => $min))
+            ); 
+        }else if($min) {
+            $filters['points'] = array('$gte'=> $min);
+        }else if($max) {
+            $filters['points'] = array('$lte'=>$max);
+        }
+        if($filters) {
+            $filters = array(
+                array('$match' => $filters),  
+            );
+		}
+		
+        $filters[] = array('$group' => array(
+                '_id' => array('user_id' => '$user_id'),
+                'sum' => array('$sum' => '$points')
+			));
+        $filters[] = array('$count' => 'count');
+        $data = SwimAdmin::pgAggregate(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order)> 0? 1: -1)
+        );
+/*
+        $data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order)> 0? 1: -1)
+        );*/
+        if(empty($members)) {
+            $mids = array();
+            foreach($data['items'] as $item) {
+               $mids[] = new MongoId($item['_id']['user_id']); 
+            }
+            if($mids) {
+                $filters = array('_id' => array('$in'=>$mids));
+                $cursor = SwimAdmin::model('member.main')->collection()->find($filters);
+                foreach($cursor as $item) {
+                    $mid = (string)$item['_id'];
+                    $members[$mid] = $item;
+                }
+            }
+        }
+        $data['members'] = $members;
+
+        return $data;
+    }
+
+
+}

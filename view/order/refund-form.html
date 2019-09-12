@@ -1,0 +1,60 @@
+<form id="refund-form" action="order/{{order.platform}}/refund" method="POST" target="{{order.platform=='alipay'? '_blank': '#order-list'}}">
+	<div class="box">
+		<div class="box-title">
+			<h3>确认退款</h3>
+		</div>
+		<div class="box-content">
+			<div style="font-size: 14px; color: #369; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+				<div>
+					退款金额：<input type="text" id="refund-fee-input" name="refundFee" value="{{order.total_fee}}" placeholder="请输入退款金额" autofocus="on" />
+					{% if order.platform == 'alipay' %}
+					<br />退款原因：<input type="text" id="refund-reason-input" name="reason" value="正常退款" />
+					{% endif %}
+					&nbsp;
+					<input type="checkbox" id="refund-checkbox" checked value="1" />
+					<label for="refund-checkbox">&nbsp;确定退款</label>
+				</div>
+			</div>
+			<div id="refund-order-detail" style="width: 600px; height: 380px; overflow: auto;">
+				{% include 'order/order-detail.html' %}
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="orderId" value="{{order.order_id}}" />
+			<input type="hidden" id="order-platform-input" value="{{order.platform}}" />
+			{% if check_perm('orders', 'REFUND') %}<button type="submit" id="refund-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#refund-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				if($.trim($('#order-platform-input').val()) == '') {
+					App.Notific.error('订单“支付平台”为空，无法确定退款。');
+				} else if(!$('#refund-checkbox').prop('checked')) {
+					App.Notific.error('请选中“确定退款”。');
+				} else {
+					if(this.target == '_blank') {
+						App.Box.close();
+						return true;
+					}
+					App.ajax({
+						form: this,
+						success: function(rs) {
+							App.Box.close();
+							App.Notific.success('订单已确定完成。');
+						}
+					});
+				}
+			}
+			return false;
+		});
+		$('#refund-order-detail').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

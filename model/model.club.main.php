@@ -1,0 +1,149 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelClubMain
+{
+    private $errMsg;
+    private $allowed = array(
+        'name',
+        'icon',
+        'summary',
+        'service_area',
+        'contents',
+        'created_on',
+        'created_by',
+        'modified_on',
+        'modified_by',
+        'status',
+    );
+    public function collection() {
+        return SwimAdmin::db('club');
+    }
+
+  /**
+     * 添加协会
+     *
+     * @param $data array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data['created_on'] = time();
+        $data['created_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+        $data['create_time'] = time();
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+         $data['modified_on'] = time();
+        $data['modified_by'] = $_SESSION[S_USER];
+        $data = Helper::allowed($data, $this->allowed);
+
+        return $collection->update(array('_id' => $id), array('$set' => $data));
+    }
+
+    /**
+     * 删除协会
+     *
+     * @param $ids array
+     *
+     * @return array
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+
+        $collection = $this->collection();
+        return $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+    }
+
+    /**
+     * 查询协会
+     *
+     * @param $filter array
+     *
+     * @return array
+     */
+      public function find($filter=array()) {
+        $collection = $this->collection();
+
+        return $collection->find($filter)->sort(array('create_time'=>-1));
+    }
+
+    public function findAll() 
+    {
+        $groups = array();
+        $query  = array();
+        $cursor = $this->collection()->find($query);
+        $cursor->sort(array('priority' => -1, 'create_time' => -1));
+        foreach($cursor as $row) {
+            $row['_id'] = (string)$row['_id'];
+            $groups[]   = $row;
+        }
+        return $groups;
+    }
+    /**
+     * 分页查询
+     * @param string $url
+     * @param null   $pnValue
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $order   = Helper::popValue($params, 'order', -1);
+        $filters = array();
+
+        $query = Helper::getValue($params, 'query', '');
+        if($query) {
+            $filters['title'] = new MongoRegex('/'.$query.'/');
+        }
+
+        $data = SwimAdmin::pagination($url, $this->collection(), is_null($pnValue)? $pn: $pnValue, $filters, array(
+            'block'    => 1,
+            'reg_time' => -1
+        ));
+
+        $ids     = array();
+        $members = array();
+        foreach($data['items'] as $item) {
+            $item        = (array)$item;
+            $item['_id'] = (string)$item['_id'];
+            $ids[]       = $item['_id'];
+            $members[]   = $item;
+        }
+        $recoCollection = SwimAdmin::db('member_recommand');
+        $recommands     = array();
+        $result         = $recoCollection->find(array('user_id' => array('$in' => $ids)));
+        foreach($result as $item) {
+            $recommands[$item['user_id']] = $item;
+        }
+        foreach($members as & $item) {
+            $item['recommand'] = isset($recommands[$item['_id']])? $recommands[$item['_id']]: array();
+        }
+        $data['items'] = $members;
+
+        $data['params'] = $params;
+
+        return $data;
+    }
+    /**
+     * 查询一个协会
+     *
+     * @param $filter array
+     * 
+     * @return array | null
+     */
+    public function findOne($filter=array()) {
+        $collection = $this->collection();
+        return $collection->findOne($filter);
+    }
+}

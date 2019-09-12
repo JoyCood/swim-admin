@@ -1,0 +1,123 @@
+{% import "_macro.html" as macro %}
+<form id="adv-form" action="adv/form.html" target="#adv-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>广告图片{{adv._id? ' - ' ~ adv._id: ''}}</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th valign="top">标题：</th>
+						<td>
+							<input type="text" name="title" id="adv-title" class="form-control" value="{{adv.title}}" placeholder="请输入广告图片标题" autofocus="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th valign="top">Title Type：</th>
+						<td>
+							<input type="text" name="title_type" id="adv-title-type" class="form-control" value="{{adv.title_type}}" placeholder="" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>分类：</th>
+						<td>
+							<select name="category" id="adv-category" class="form-control">
+								{% for k, v in cats %}
+								<option value="{{k}}"{{k == adv.category? ' selected': ''}}>{{v}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+					<tr>
+						<th>开放城市：</th>
+						<td colspan="3">
+							<select id="service-area" name="service_area[]" class="form-control" multiple>
+								{% for city in cities %}
+								{% set cid = city._id ~ '' %}
+								<option value="{{cid}}::{{city.city}}"{{slted.city[cid] is defined? ' selected': ''}}>{{city.city}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+						<th>链接：</th>
+						<td>
+							<input type="text" name="link" id="adv-link" value="{{adv.link}}" class="form-control" placeholder="请输入广告链接" autocomplete="off" />
+							<button type="button" id="adv-lnk-btn" class="btn btn-success">...</button>
+						</td>
+					</tr>
+					<tr>
+						<th>模块：</th>
+						<td>
+							<select name="belong[]" id="adv-belong" multiple="multiple" class="chosen-select form-control" data-placeholder="请选择分类">
+								{% for k, v in belong %}
+								<option value="{{k}}"{{k in adv.belong? ' selected':''}}>{{v}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th valign="top">图片：</th>
+						<td>
+							{{ macro.thumb('cover', adv.cover) }}
+							{{ macro.upload('adv-upload', 'cover', 'banner', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th width="80">描述：</th>
+						<td>
+							<input type="text" name="desc" id="adv-desc" class="form-control" value="{{adv.description}}" placeholder="请输入广告图片描述" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>开始日期：</th>
+						<td><input type="text" name="start_at" id="adv-start" value="{{adv.start_at|date('Y-m-d')}}" class="form-control datepicker" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>有效期至：</th>
+						<td><input type="text" name="expire_at" id="adv-expire" value="{{adv.expire_at|date('Y-m-d')}}" class="form-control datepicker" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>顺序：</th>
+						<td><input type="text" name="order" id="adv-order" value="{{adv.order}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td><input type="checkbox" name="statu" id="adv-statu" value="1"{{adv.statu? ' checked': ''}} /></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{adv._id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#adv-form').on('init', function() {
+		$('#adv-belong, #service-area').chosen();
+
+		$(this).on('submit', function() {
+			if($('#adv-form a.up-loading').length) {
+				App.alert('图片正在上传，请耐心等待图片上传完成。');
+			} else if($('#adv-form input[name="cover"]').length == 0) {
+				App.alert('请先上传图片。');
+			} else if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

@@ -1,0 +1,17 @@
+{% extends '_base.html' %}
+
+{% block css %}
+<style type="text/css">
+#main-nav { display: none; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div style="text-align: center; margin: 12% 0 0 0;">
+	<div style="display: inline-block; text-align: left;">
+		<h2 style="font-size: 18px;">{{code}}</h2>
+		<h1 style="font-size: 24px; line-height: 48px;">{{message}}</h1>
+		<a href="index.html"><b class="fa fa-home"></b>首页</a>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+#group-form-contet { width: 540px; max-height: 420px; overflow: auto; }
+dl.permission>dt {
+	border-bottom: 1px solid #eee; text-indent: 5px;
+	line-height: 22px;
+}
+dl.permission>dd {
+	padding: 5px 5px 10px 5px;
+	white-space: nowrap;
+}
+dl.permission>dd>label {
+	display: inline-block; 
+	width: 80px; white-space: nowrap;
+	margin: 0 3px;
+}

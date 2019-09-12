@@ -1,0 +1,47 @@
+<form id="active-form" action="order/active" target="#order-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>确认核销</h3>
+		</div>
+		<div class="box-content">
+			<div style="font-size: 14px; color: #369; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+				<input type="checkbox" id="active-checkbox" checked value="1" />
+				<label for="finish-checkbox">&nbsp;确定核销课程</label>
+			</div>
+			<div id="active-order-detail" style="width: 600px; height: 380px; overflow: auto;">
+				{% include 'order/order-detail.html' %}
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="orderId" value="{{order.order_id}}" />
+			{% if check_perm('orders', 'CONFIRM') %}<button type="submit" id="finish-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#active-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				var finish = $('#active-checkbox').prop('checked');
+				if(finish) {
+					App.ajax({
+						form: this,
+						success: function(rs) {
+							App.Box.close();
+							App.Notific.success('订单已核销完成');
+						}
+					});
+				} else {
+					App.Notific.warning('请选中“确定核销课程”。');
+				}
+			}
+			return false;
+		});
+		$('#active-order-detail').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

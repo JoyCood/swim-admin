@@ -1,0 +1,147 @@
+<div id="teacher-box" action="order/teacher.html" target="#teacher-list" style="position: relative;">
+	<div class="box">
+		<div class="box-title">
+			<h3>关联教练 订单号：#{{orderId}}</h3>
+		</div>
+		<div id="teacher-box-content" class="box-content">
+			<div style="width: 700px; height: 490px; overflow: auto;">
+				<form id="teacher-search" action="order/teacher.html">
+					<input type="text" name="name" class="form-control" placeholder="教练名称" />
+					<input type="text" name="district" class="form-control" placeholder="地区" />
+					<button type="submit" class="btn btn-success">搜索</button>
+					<input type="hidden" name="from" value="ajax" />
+                    {% if check_perm('orders', 'ALLOCATE_YONGGUAN') %}
+					<button type="button" class="btn btn-primary" id="teacher-reply" style="float:right">指派泳馆</button>
+                    {% endif %}
+				</form>
+				<div id="teacher-list">
+					{% include 'order/teacher-list.html' %}
+				</div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<form id="teacher-form" method="POST" action="order/allocation">
+				<input type="hidden" name="orderId" value="{{orderId}}" />
+				<input type="hidden" name="teacherId" id="teacher-id" value="" />
+				<button type="submit" class="btn btn-primary">确定</button>
+				<button type="button" class="btn" app-state="cancel">取消</button>
+			</form>
+		</div>
+	</div>
+	<form id="teacher-form-reply" method="POST" action="order/allocate-natatorium">
+		<div>
+			<div>
+				<div id="teacher-reply-title" class="bg-primary">指派泳馆<button type="button" class="close" aria-hidden="true">&times;</button></div>
+				<div class="form-group">
+					<label for="" class="control-label">请选择校区:</label>
+					<select id="teacher-region" name="region" class="form-control" data-placeholder="请选择校区">
+						<option></option>
+                        {% for region in regions %}
+                        <option value="{{region._id}}">{{region.name}}</option>
+                        {% endfor %}
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="" class="control-label">请选择场馆:</label>
+					<select id="teacher-natatorium" name="natatoriumId" class="form-control" data-placeholder="请选择场馆">
+					</select>
+				</div>
+			</div>
+			<div>
+                <input type="hidden" name="orderId" value="{{orderId}}" />
+				<button type="submit" id="teacher-form-reply-submit" class="btn btn-primary">确定</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script>
+$(function() {
+	$('#teacher-box').on('init', function() {
+		$('#teacher-search').on('submit', function() {
+			App.ajax({
+				url: $(this).attr('action'),
+				data: $(this).serialize(),
+				target: '#teacher-list'
+			});
+			return false;
+		});
+		$('#teacher-form').on('submit', function() {
+			if($('#teacher-id').val()) {
+				App.ajax({
+					form: this,
+					type: 'post',
+					target: '#order-list',
+					dataType: 'html',
+					success: function(rs) {
+						App.Box.close();
+					}
+				});
+			} else {
+				alert('请选择一个教练。');
+			}
+			return false;
+		});
+		$('#teacher-list').on('click', 'tbody>tr', function(e) {
+			var row   = $(this);
+			var radio = row.find('input:radio');
+			if(e.target.tagName != 'INPUT') {
+				radio.prop('checked', true);
+			}
+			var teacherId = $('#teacher-list input[name="teacher"]:checked').val();
+			$('#teacher-id').val(teacherId);
+		}).on('click', 'ul.pagination a', function() {
+			App.ajax({
+				url: $(this).attr('href') + '&from=ajax',
+				target: '#teacher-list'
+			});
+			return false;
+		});
+		$('#teacher-box-content').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+    $('#teacher-region').on('change', function(){
+       var regionId = this.value;
+       if(regionId != '') {
+           App.ajax({
+               url: 'order/natatorium.html',
+               data: {region:regionId},
+               success: function(result) {
+                   $('#teacher-natatorium').find('option').remove();
+                   var rs;
+                   rs = JSON.parse(result); 
+                   $.each(rs, function(index, item){
+                       $('#teacher-natatorium').append($('<option>', {
+                           value:item.id,
+                           text:item.title
+                       }));
+                   });
+               }
+           });
+       }  
+    });
+    $('#teacher-form-reply').on('submit', function(){
+       var id = $('#teacher-natatorium option:selected').val(); 
+       if(id != '') {
+           App.ajax({
+               form: this,
+               type: 'post',
+               target: '#order-list',
+               dataType: 'html',
+               success: function(rs) {
+                   App.Box.close();
+               }
+           }); 
+       } else {
+           App.alert('请选择泳馆。');
+       }
+        return false;
+    });
+	$("#teacher-reply").on('click',function(){
+		$("#teacher-form-reply").css("display","block");
+	});
+	$("#teacher-form-reply .close").on('click',function(){
+		$("#teacher-form-reply").css("display","none");
+	})
+});
+</script>

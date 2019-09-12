@@ -1,0 +1,132 @@
+{% set _Title = type == '0'? '会员': (type=='1'? '马甲': '全部') %} {% extends '_base.html' %} {% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#member-address {
+    width: 100%;
+    height: 40px;
+}
+
+#member-form-contet {
+    height: 420px;
+    overflow: auto;
+}
+
+#member-form-contet>div {
+    display: inline-block;
+    vertical-align: top;
+}
+
+#member-form-main {
+    width: 640px;
+}
+
+#member-form-main>div {
+    display: inline-block;
+    width: 300px;
+    vertical-align: top;
+    margin-right: 10px;
+}
+
+.member-avatar {
+    max-width: 80px;
+    max-height: 40px;
+}
+
+tr.mj {
+    background-color: #D7E6F4;
+}
+
+tr.tc {
+    background-color: #F4E0D7;
+}
+
+tr.disabled {
+    text-shadow: 1px 1px #fcfcfc;
+    color: #666;
+    background-color: #f0f0f0;
+}
+
+tr.disabled>td.t {
+    text-decoration: line-through;
+}
+</style>
+{% endblock %} {% block main %}
+<h1>{{_Title}} <small>会员管理</small></h1> {% include 'member/nav.html' %}
+<div id="main-content">
+    <div class="breadcrumbs">
+        <ul>
+            <li>
+                <a href="index.html">首页</a>
+                <i class="fa fa-angle-right"></i>
+            </li>
+            <li>
+                <span>会员管理</span>
+            </li>
+        </ul>
+        <div class="close-bread">
+            <a>
+                <i class="fa fa-times"></i>
+            </a>
+        </div>
+    </div>
+    <div id="member-list">
+        {% include 'member/list.html' %}
+    </div>
+</div>
+{% endblock %} {% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	function GetRequest() {
+        var url = location.search; 
+        var theRequest = new Object();
+        if (url.indexOf("?") != -1) {
+            var str = url.substr(1);
+            strs = str.split("&");
+            for (var i = 0; i < strs.length; i++) {
+                theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+            }
+        }
+        return theRequest;
+    };
+    var  type;
+    type = GetRequest('type');
+    $('#member-list').on('click', '#member-add-btn', function() {    	
+    	if (type.type==0) {App.Box.open('member/form.html?type=1');}
+    	else{App.Box.open('member/form.html?type=2');}
+    }).on('click', '#member-yes-btn, #member-no-btn', function() {
+        var status = this.id.split('-')[1];
+        var slted = $('#member-list input[name="member"]:checked');
+        if (slted.length == 0) {
+            App.alert('请选中最少一个记录。');
+        } else {
+            var items = [];
+            slted.each(function() {
+                items.push(this.value);
+                this.checked = false;
+            });
+            App.ajax({
+                url: 'member/status.html',
+                type: 'post',
+                data: {
+                    'items[]': items,
+                    'status': status == 'yes' ? 0 : 1
+                },
+                dataType: 'json',
+                // target: '#member-list'
+                success: function() {
+                    location.reload();
+                }
+            });
+        }
+    });
+    $('#member-list').on('click', 'a.icon-edit', function() {
+        var row = $(this).closest('tr');
+        var id = row.attr('data-id');
+        if (type.type==2) {App.Box.open('member/form.html?type=2&id=' + id);}
+        else{App.Box.open('member/form.html?type=1&id=' + id);}
+    });
+    $('#a1').removeClass("slted");
+});
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+<form id="code-form" action="order/active" target="#order-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>订单核消</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<h2>订单号：#{{orderId}}</h2>
+				<table class="form">
+					<tr>
+						<th width="60">验证码：</th>
+						<td colspan="2">
+							<input type="text" name="code" class="form-control" placeholder="请输入验证码" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="orderId" value="{{orderId}}" />
+			<button type="submit" id="code-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#code-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function(rs) {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

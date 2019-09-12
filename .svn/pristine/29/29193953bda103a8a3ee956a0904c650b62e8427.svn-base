@@ -1,0 +1,61 @@
+{% extends '_base.html' %}
+{% block main %}
+	<h1>分类管理 <small>鲜资讯</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>标签管理</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="text-right">
+			<button type="button" id="tag-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建标签</button>
+			<button type="button" id="tag-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+		</div>
+		<div id="tag-list">
+            {% include 'interview/tag-list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('#tag-btn').on('click', function() {
+            App.Box.open('home/interview/tag/form.html');
+        });
+        $('#tag-list').on('click', 'a.icon-edit', function() {
+            var id = $(this).closest('tr').attr('tag-id');
+            App.Box.open('home/interview/tag/form.html?id=' + id);
+        });
+        $('#tag-trash-btn').on('click', function() {
+            if(!$(this).hasClass('disabled')) {
+                var ids = [];
+                $('#tag-list input[name="tag"]:checked').each(
+                    function() {
+                        ids.push(this.value);
+                        this.checked = false;
+                    }
+                );
+                App.ajax({
+                    url: 'home/interview/tag/delete.html',
+                    data: {'items[]': ids},
+                    target: '#tag-list',
+                    dataType: 'html',
+                    type: 'post'
+                });
+            } 
+        });
+    });
+    </script>
+{% endblock %}

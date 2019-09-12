@@ -1,0 +1,141 @@
+{% import "_macro.html" as macro %}
+<form id="club-notice-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="lbs/club-notice-form.html" target="#club-notice-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>协会公告{{club._id? ' - ' ~ club._id: ''}}</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="80">公告：</th>
+						<td colspan="2">
+							<input type="text" name="title" id="club-title" class="form-control" value="{{club.title}}" placeholder="请输入公告名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th width="80">公告类型：</th>
+						<td>
+							<select id="content_type" name="content_type" class="form-control">
+								<option value="native"{{not club.content_type or club.content_type=='native'? ' selected': ''}}>原生</option>
+								<option value="link"{{club.content_type=='link'? ' selected': ''}}>H5</option>
+							</select>
+						</td>
+					</tr>
+					<tr class="native-content">
+						<th width="60">公告时间：</th>
+						<td>
+							<input type="text" name="create_time" id="interview-date" class="form-control"  value="{{(club.create_time? club.create_time: '')|date('Y-m-d H:i:s')}}" placeholder="年-月-日 时:分:秒" />
+						</td>	
+					</tr>
+					<tr>
+                        <th>图标：</th>
+					    <td>
+						    {{ macro.thumb('club-icon', data.icon) }}
+							{{ macro.upload('club-icon', 'club-icon', 'default', false) }}
+						</td>
+					</tr>
+					<tr class="h5-link" style="display: {{club.content_type!='link'? 'dtable-row': 'table-row'}};">
+						<th width="80">链接：</th>
+						<td colspan="2">
+							<input type="text" name="link" id="club-link" class="form-control" value="{{club.link}}" placeholder="请输入链接" autofocus="on"/>
+						</td>
+					</tr>
+                    <tr id="native-content" class="native-content" style="display: {{club.content_type!='link'? 'dtable-row': 'none'}};">
+						<th style="vertical-align:top">内容：</th>
+                        <td colspan="3" id="news-contents">
+                            {% set contents = club.contents %} {% for content in contents %} {% set idx = loop.index0 %}
+                            <div class="row">
+                                <div class="col-sm-11">
+                                    <textarea name="content[{{idx}}]" placeholder="请输入内容" class="form-control">{{content.text}}</textarea>
+                                    <div>
+                                        {% for m in content.media %} {{ macro.thumb('contentThumbs['~idx~'][]', m.url, m.w ~ ',' ~ m.h) }} {% endfor %} {{ macro.upload('', 'contentThumbs['~idx~'][]') }}
+                                    </div>
+                                </div>
+                                <div class="course-actions col-sm-1">
+                                    <a class="fa fa-times"></a>
+                                    <a class="fa fa-plus"></a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="category-status" value="1"{{not club._id or club.status? ' checked': ''}} />
+							<label for="club-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{club._id}}" />
+			 <input type="hidden" id="club-id" name="club-id" value="{{club_id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#club-notice-form').on('init', function() {
+		$('#club-notice-area').chosen();
+		$('#content_type').on('change', function() {
+			if(this.value == 'link') {
+				$('.h5-link').css('display', 'table-row');
+				$('.native-content').css('display', 'none');
+			} else {
+				$('.h5-link').css('display', 'none');
+				$('.native-content').css('display', 'table-row');
+			}
+		});
+		var updateContentIdx = function() {
+			$('#news-contents>div.row').each(function(idx) {
+				var row = $(this);
+				row.find('textarea').attr('name', 'content[' + idx + ']');
+				row.find('input[data-name="name"]').attr('name', 'contentThumbs[' + idx + '][]');
+				row.find('input[data-name="size"]').attr('name', 'size_of_contentThumbs[' + idx + '][]');
+				row.find('a.up-btn').attr('app-upload-name', 'contentThumb[' + idx + '][]');
+			});
+		}
+		$('#news-contents').on('click', 'a.fa-times', function() {
+			var row = $(this).closest('div.row');
+			if($('#news-contents>div.row').length > 1) {
+				row.slideUp(100, function() {
+					$(this).remove();
+					updateContentIdx();
+				});
+			} else {
+				row.find('div.thumb').remove();
+				row.find('textarea').val('');
+				row.find('textarea').focus();
+				updateContentIdx();
+			}
+		}).on('click', 'a.fa-plus', function() {
+			var row = $(this).closest('div.row');
+			var clone = row.clone();
+			clone.find('div.thumb').remove();
+			clone.find('textarea').val('');
+			row.after(clone);
+			updateContentIdx();
+			clone.find('textarea').focus();
+		});
+		$('#news-form-contet').mousewheelStopPropagation();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {	
+	});
+});
+</script>

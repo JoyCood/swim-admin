@@ -1,0 +1,84 @@
+{% set _Title = '鲜资讯' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#news-form { width: 720px; }
+#news-form-contet { height: 520px; overflow: auto; }
+/*#news-form-contet>div { display: inline-block; vertical-align: top; }*/
+#news-form-main { width:680px; padding-bottom: 30px; }
+/*#news-form-photos { width: 300px; padding-left: 10px; display: inline-block; vertical-align: top; }*/
+#news-contents textarea { height: 80px; resize: none; }
+.news-icon { max-height: 60px; max-width: 60px; }
+.news-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.news-actions { text-align: left; }
+.news-actions>a.fa { padding: 3px; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>资讯列表 <small>鲜资讯</small></h1>
+	{% include 'news/nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>资讯列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="news-list">
+			{% include 'news/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#news-list').on('click', '#news-add-btn', function() {
+		App.Box.open('news/form.html');
+	}).on('click', '#news-trash-btn', function() {
+		var slted = $('#news-list input[name="news"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'news/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'json',
+				success: function() {
+					location.href = App.urlReplace(location.href, 'pn', 1);
+				}
+			});
+		}
+	});
+	$('#news-list').on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('news/form.html?id=' + id);
+	});
+});
+</script>
+{% endblock %}

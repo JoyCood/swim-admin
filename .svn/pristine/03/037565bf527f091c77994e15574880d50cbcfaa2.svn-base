@@ -1,0 +1,18 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+require_once(LIB_DIR . 'elasticsearch/vendor/autoload.php');
+
+class Loader_ElasticSearch
+{
+	private static $instance;
+
+	public static function factory()
+	{
+        if(!is_object(self::$instance))
+        {
+        	self::$instance = Elasticsearch\ClientBuilder::create()->build();
+        }
+
+        return self::$instance;
+	}
+}

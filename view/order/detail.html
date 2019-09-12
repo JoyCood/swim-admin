@@ -1,0 +1,62 @@
+{% set _Title = '订单' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#order-detail { width: 800px; margin: 20px auto; }
+#order-detail table.form { margin-top: 10px; width: auto; }
+#order-detail td { padding: 5px 10px; }
+#order-detail td.numeric { text-align: right; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>订单详情 <small>{{_Title}}</small></h1>
+	{#% include 'order/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="order/list.html">订单</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>订单详情</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="order-body">
+			<div class="text-right">
+				<button id="order-back" class="btn"><b class="fa fa-angle-left"></b> 返回</button>
+			</div>
+			<div id="order-detail">
+				{% include 'order/order-detail.html' %}
+			</div>
+			<div style="text-align: center; padding: 20px;">
+				<a href="javascript: history.back();">返回</a>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#order-back').on('click', function() {
+		history.back();
+	});
+});
+</script>
+{% endblock %}
+

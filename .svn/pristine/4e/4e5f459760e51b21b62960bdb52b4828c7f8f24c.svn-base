@@ -1,0 +1,673 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+require_once(LIB_DIR . 'umeng/notification/android/AndroidBroadcast.php');
+require_once(LIB_DIR . 'umeng/notification/android/AndroidFilecast.php');
+require_once(LIB_DIR . 'umeng/notification/android/AndroidGroupcast.php');
+require_once(LIB_DIR . 'umeng/notification/android/AndroidUnicast.php');
+require_once(LIB_DIR . 'umeng/notification/android/AndroidCustomizedcast.php');
+require_once(LIB_DIR . 'umeng/notification/ios/IOSBroadcast.php');
+require_once(LIB_DIR . 'umeng/notification/ios/IOSFilecast.php');
+require_once(LIB_DIR . 'umeng/notification/ios/IOSGroupcast.php');
+require_once(LIB_DIR . 'umeng/notification/ios/IOSUnicast.php');
+require_once(LIB_DIR . 'umeng/notification/ios/IOSCustomizedcast.php');
+
+class ModelPushMain 
+{
+    private $production_mode;
+
+    public function __construct() {
+        $this->production_mode = DEVELOPMENT  ? "false" : "true";
+    }
+    
+    public function technicalCatPush($id, $startTime=0, $title='', $text='')
+    {
+        $item = SwimAdmin::model('technical.category')->findOneById($id);
+
+        if($title=='')
+        {
+            if(!isset($item['title']) OR trim($item['title'])=='')
+            {
+                return FALSE;
+            }
+
+            $title = $item['title'];
+        }
+
+        if($text == '')
+        {
+            if(!isset($item['summary']) OR trim($item['summary'])=='')
+            {
+                return FALSE;
+            }
+
+            $text = $item['summary'];
+        }
+
+        if($item)
+        {
+            $broadcast = new AndroidBroadcast();
+            $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+            $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+            $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $broadcast->setPredefinedKeyValue("ticker", "新消息");
+            $broadcast->setPredefinedKeyValue("title",  $title);
+            $broadcast->setPredefinedKeyValue("text",   $text);
+            $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+            $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+            $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_VideoStudy_MsgPush");
+                
+            $parcelable = array(
+                'id'         => $item['id'],
+                'name'       => $item['name'],
+                'cover'      => $item['cover'],
+                'banner'     => $item['banner'],
+                'type'       => $item['type'],
+                'difficulty' => $item['difficulty']
+            );
+
+            $broadcast->setExtraField("parcelable", $parcelable);
+            $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+                
+            $broadcast->send();
+     
+            //ios
+            $iosBroadcast = new IOSBroadcast();
+            $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+            $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+            $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $iosBroadcast->setPredefinedKeyValue("alert", $title);
+            $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+            
+            $iosBroadcast->setCustomizedField('page', 'VideoStudy_Detail');
+            $iosBroadcast->setCustomizedField("data", $parcelable);
+            $iosBroadcast->send(); 
+        }       
+    }
+
+    //资讯推送
+    public function newsPush($id, $startTime=0, $title='', $text='')
+    {
+        $item = SwimAdmin::model('news.main')->findOneById($id);
+
+        if($title=='')
+        {
+            if(!isset($item['title']) OR trim($item['title'])=='')
+            {
+                return FALSE;
+            }
+
+            $title = $item['title'];
+        }
+
+        if($text == '')
+        {
+            if(!isset($item['summary']) OR trim($item['summary'])=='')
+            {
+                return FALSE;
+            }
+
+            $text = $item['summary'];
+        }
+   
+        if($item)
+        {
+            if($item['type']=='link')
+            {
+                $this->pushLinkNews($item, $title, $text, $startTime);
+            }
+            else
+            {
+                $this->pushOriginalNews($item, $title, $text, $startTime);
+            }
+        }
+    }
+
+    private function pushLinkNews($item, $title, $text, $startTime)
+    {
+        $broadcast = new AndroidBroadcast();
+        $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+        $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+        $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+        $broadcast->setPredefinedKeyValue("ticker", "新消息");
+        $broadcast->setPredefinedKeyValue("title",  $title);
+        $broadcast->setPredefinedKeyValue("text",   $text);
+        $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+        $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+        $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+        $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_NoTitle_WebDetail_NewsMsg");
+        
+        $parcelable = array(
+            'id'         => $item['id'],
+            'title'      => $item['title'],
+            'content'    => $item['summary'],
+            'pic'        => $item['cover'],
+            'url'        => $item['link'],
+            'comments_counter' => $item['comments_counter']
+        );
+
+        $broadcast->setExtraField("parcelable", $parcelable);
+        $broadcast->setExtraField("data", $item['link']);
+        $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+        
+        $broadcast->send();
+
+        $parcelable = array(
+            'webTitle'    => $item['title'],
+            'strSummary'  => $item['summary'],
+            'strLink'     => $item['link'],
+            'strCover'    => $item['cover'],
+            'strID'       => $item['id'],
+            'numbCommentCounter' => $item['comments_counter']
+        );
+        //ios
+        $iosBroadcast = new IOSBroadcast();
+        $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+        $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+        $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+        $iosBroadcast->setPredefinedKeyValue("alert", $item['title']);
+        $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+        $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+        $iosBroadcast->setCustomizedField("data", $item['link']);
+        $iosBroadcast->setCustomizedField("page", 'H5_Detail');
+        $iosBroadcast->setCustomizedField('parcelable', $parcelable);
+        $iosBroadcast->send();    
+    }
+
+    private function pushOriginalNews($item, $title, $text, $startTime)
+    {
+        $broadcast = new AndroidBroadcast();
+        $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+        $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+        $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+        $broadcast->setPredefinedKeyValue("ticker", "新消息");
+        $broadcast->setPredefinedKeyValue("title",  $title);
+        $broadcast->setPredefinedKeyValue("text",   $text);
+        $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+        $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+        $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+        $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_SwimNews_Detail");
+        
+        $broadcast->setExtraField("data", $item['id']);
+        $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+        
+        $broadcast->send();
+
+        //ios
+        $iosBroadcast = new IOSBroadcast();
+        $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+        $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+        $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+        $iosBroadcast->setPredefinedKeyValue("alert", $item['title']);
+        $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+        $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+        $iosBroadcast->setCustomizedField("data", $item['id']);
+        $iosBroadcast->setCustomizedField("page", 'SwimNews_Detail');
+        $iosBroadcast->send();
+    }
+    
+    
+    //泳圈帖子推送
+    public function tweetPush($id, $startTime=0, $title='', $text='')
+    {
+        $item = SwimAdmin::model('tweet.main')->findOneById($id);
+
+        if($title=='')
+        {
+            if(!isset($item['title']) OR trim($item['title'])=='')
+            {
+                return FALSE;
+            }
+
+            $title = $item['title'];
+        }
+
+        if($text == '')
+        {
+            if(!isset($item['summary']) OR trim($item['summary'])=='')
+            {
+                return FALSE;
+            }
+
+            $text = $item['summary'];
+        }
+
+        if($item)
+        {
+            $broadcast = new AndroidBroadcast();
+            $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+            $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+            $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $broadcast->setPredefinedKeyValue("ticker", "新消息");
+            $broadcast->setPredefinedKeyValue("title",  $title);
+            $broadcast->setPredefinedKeyValue("text",   $text);
+            $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+            $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+            $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_SwimGroup_Detail");
+            
+            $broadcast->setExtraField("data", $item['id']);
+            $broadcast->setExtraField("PageTag", FALSE);
+            $broadcast->setExtraField('PageStyle', FALSE);
+            $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+            
+            $broadcast->send();
+
+            //ios
+            $iosBroadcast = new IOSBroadcast();
+            $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+            $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+            $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $iosBroadcast->setPredefinedKeyValue("alert", $title);
+            $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+            $iosBroadcast->setCustomizedField("data", $item['id']);
+            $iosBroadcast->setCustomizedField("page", 'SwimGroup_Detail');
+            $iosBroadcast->send();
+        }
+    }
+
+    /**
+     * 分配教练推送
+     *
+     * @author joy.cood
+     *
+     * @param $orderId  double
+     *
+     * @return void
+     */
+    public function teacherPush($orderId)
+    {
+        $modOrder = SwimAdmin::model("course.order");
+        $order = $modOrder->findOneByOrderId($orderId);
+
+        if(!$order OR ($order['order_status']!=$modOrder::PAY_STATUS_SUCESS) OR ($order['train_status']!=$modOrder::TRAIN_STATUS_PROCESSING) OR $order['teacher_id']==0)
+        {
+            return FALSE;
+        }
+        $member = SwimAdmin::model("member.main");
+        $device = $member->getDeviceToken($order['user_id']);
+
+        if($device AND $device['os'] == 1)
+        {
+            try 
+            {
+                $unicast = new AndroidUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                
+                $unicast->setPredefinedKeyValue("device_tokens",    $device['device_id']); 
+                $unicast->setPredefinedKeyValue("ticker",           "新消息");
+                $unicast->setPredefinedKeyValue("title",            "趣游泳已经给你安排好教练了");
+                $unicast->setPredefinedKeyValue("text",             "教练联系方式：{$order['teacher_name']} {$order['teacher_phone']}");
+                $unicast->setPredefinedKeyValue("after_open",       "go_activity");
+                $unicast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_Order_Detail");
+                
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                
+                $unicast->setExtraField("ID", $orderId);
+                $unicast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+        else if($device AND $device['os'] == 2)
+        {
+            try 
+            {
+                $unicast = new IOSUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                // Set your device tokens here
+                $unicast->setPredefinedKeyValue("device_tokens", $device['device_id']); 
+                $unicast->setPredefinedKeyValue("alert", "趣游泳已经给您安排好教练了哦，快来看看吧");
+                
+                // Set 'production_mode' to 'true' if your app is under production mode
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                // Set customized fields
+                $unicast->setCustomizedField("data", $orderId);
+                $unicast->setCustomizedField("page", 'Order_Detail');
+                
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * 激活订单推送
+     *
+     * @author joy.cood
+     *
+     * @param $orderId  double
+     *
+     * @return void
+     */
+    public function activePush($orderId)
+    {
+        $modOrder = SwimAdmin::model("course.order");
+        $order = $modOrder->findOneByOrderId($orderId);
+
+        if(!$order OR ($order['order_status']!=$modOrder::PAY_STATUS_SUCESS) OR ($order['train_status']!=$modOrder::TRAIN_STATUS_START) OR $order['teacher_id']==0)
+        {
+            return FALSE;
+        }
+        $member = SwimAdmin::model("member.main");
+        $device = $member->getDeviceToken($order['user_id']);
+
+        if($device AND $device['os'] == 1)
+        {
+            try 
+            {
+                $unicast = new AndroidUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                
+                $unicast->setPredefinedKeyValue("device_tokens",    $device['device_id']); 
+                $unicast->setPredefinedKeyValue("ticker",           "新消息");
+                $unicast->setPredefinedKeyValue("title",            "消费提醒");
+                $unicast->setPredefinedKeyValue("text",             "您的订单 {$order['order_id']} 已消费");
+                $unicast->setPredefinedKeyValue("after_open",       "go_activity");
+                $unicast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_Order_Detail");
+                
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                
+                $unicast->setExtraField("ID", $orderId);
+                $unicast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+        else if($device AND $device['os'] == 2)
+        {
+            try 
+            {
+                $unicast = new IOSUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                // Set your device tokens here
+                $unicast->setPredefinedKeyValue("device_tokens", $device['device_id']); 
+                $unicast->setPredefinedKeyValue("alert", "您的订单 {$order['order_id']} 已消费");
+                
+                // Set 'production_mode' to 'true' if your app is under production mode
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                // Set customized fields
+                $unicast->setCustomizedField("data", $orderId);
+                $unicast->setCustomizedField("page", 'Order_Detail');
+                
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * 退款成功推送
+     *
+     * @author joy.cood
+     *
+     * @param $orderId  double
+     *
+     * @return void
+     */
+    public function refundPush($orderId)
+    {
+        $modOrder = SwimAdmin::model("course.order");
+        $order = $modOrder->findOneByOrderId($orderId);
+
+        if(!$order OR ($order['order_status']!=$modOrder::PAY_STATUS_SUCESS) OR ($order['train_status']!=$modOrder::SELLER_PROCESS_STATUS_REFUND_SUCESS))
+        {
+            return FALSE;
+        }
+        $member = SwimAdmin::model("member.main");
+        $device = $member->getDeviceToken($order['user_id']);
+
+        if($device AND $device['os'] == 1)
+        {
+            try 
+            {
+                $unicast = new AndroidUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                
+                $unicast->setPredefinedKeyValue("device_tokens",    $device['device_id']); 
+                $unicast->setPredefinedKeyValue("ticker",           "新消息");
+                $unicast->setPredefinedKeyValue("title",            "退款提醒");
+                $unicast->setPredefinedKeyValue("text",             "您的订单 {$order['order_id']} 已退款 ￥{$order['refund_fee']}元到您的支付帐号");
+                $unicast->setPredefinedKeyValue("after_open",       "go_activity");
+                $unicast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_Order_Detail");
+                
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                
+                $unicast->setExtraField("ID", $orderId);
+                $unicast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+        else if($device AND $device['os'] == 2)
+        {
+            try 
+            {
+                $unicast = new IOSUnicast();
+                $unicast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+                $unicast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+                $unicast->setPredefinedKeyValue("timestamp", strval(time()));
+                // Set your device tokens here
+                $unicast->setPredefinedKeyValue("device_tokens", $device['device_id']); 
+                $unicast->setPredefinedKeyValue("alert", "您的订单 {$order['order_id']} 已退款 ￥{$order['refund_fee']}元到您的支付帐号");
+                
+                // Set 'production_mode' to 'true' if your app is under production mode
+                $unicast->setPredefinedKeyValue("production_mode", $this->production_mode);
+                // Set customized fields
+                $unicast->setCustomizedField("ID", $orderId);
+                
+                $unicast->send();
+            } 
+            catch (Exception $e) 
+            {
+                print("Caught exception: " . $e->getMessage());
+            }
+        }
+    }
+
+
+    public function setError($msg)
+    {
+    	$this->errMsg = $msg;
+    }
+
+    public function getError()
+    {
+    	return $this->errMsg;
+    }
+
+    /*
+    private function send($msg)
+    {
+        $socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+
+        if($socket === FALSE)
+        {
+            $this->setError();
+
+            return FALSE;
+        }
+       
+        $connection = @socket_connect($socket, Config::$pusher['host'], Config::$pusher['port']);
+
+        if($connection === FALSE)
+        {
+            $this->setError('can not connection to server');
+
+            return FALSE;
+        }
+
+        $msg = Config::$pusher['secret'] . "{$msg}";
+        socket_write($socket, $msg, strlen($msg));
+
+        $data = "";
+        while($response = socket_read($socket, 8192))
+        {
+            $data .= $response;
+        }
+        socket_close($socket);
+
+        return $data;
+    }
+
+    //泳馆推送
+    public function natatoriumPush($id, $startTime=0, $title='', $text='')
+    {
+        //$msg = "natatorium_push|{$id}|{$startTime}";
+        //$this->send($msg);
+        $item = SwimAdmin::model('natatorium.main')->findOneById($id);
+
+        if($item)
+        {
+            $broadcast = new AndroidBroadcast();
+            $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+            $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+            $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $broadcast->setPredefinedKeyValue("ticker", "新消息");
+            $broadcast->setPredefinedKeyValue("title",  $item['title']);
+            $broadcast->setPredefinedKeyValue("text",   $item['title']);
+            $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+            $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+            $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_Natatorium_Detail");
+            
+     
+            $broadcast->setExtraField("data", $item['id']);
+            $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+            
+            $broadcast->send();
+ 
+            //ios
+            $iosBroadcast = new IOSBroadcast();
+            $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+            $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+            $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $iosBroadcast->setPredefinedKeyValue("alert", $item['title']);
+            $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+            $iosBroadcast->setCustomizedField("data", $item['id']);
+            $iosBroadcast->send();
+        }
+    }
+
+    //教练推送
+    public function teacherPush($id, $startTime=0, $title='', $text='')
+    {
+        //$msg = "teacher_push|{$id}|{$startTime}";
+        //$this->send($msg);
+        $item = SwimAdmin::model('member.main')->findOneById($id);
+
+        if($item)
+        {
+            $broadcast = new AndroidBroadcast();
+            $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+            $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+            $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $broadcast->setPredefinedKeyValue("ticker", "新消息");
+            $broadcast->setPredefinedKeyValue("title",  $item['nick']);
+            $broadcast->setPredefinedKeyValue("text",   $item['nick']);
+            $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $broadcast->setPredefinedKeyValue("after_open", "go_activity");
+            $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+            $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_Trainer_Detail");
+            
+     
+            $broadcast->setExtraField("data", $item['id']);
+            $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+            
+            $broadcast->send();
+ 
+            //ios
+            $iosBroadcast = new IOSBroadcast();
+            $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+            $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+            $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $iosBroadcast->setPredefinedKeyValue("alert", $item['title']);
+            $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+            $iosBroadcast->setCustomizedField("data", $item['id']);
+            $iosBroadcast->send();
+        }
+    }
+
+    //装备推送
+    public function goodsPush($id, $startTime=0)
+    {
+        //$msg = "goods_push|{$id}|{$startTime}";
+        //$this->send($msg);
+        $item = SwimAdmin::model('goods.main')->findOneById($id);
+
+        if($item)
+        {
+            //android
+            $broadcast = new AndroidBroadcast();
+            $broadcast->setAppMasterSecret(Config::$pusher['umeng_android_app_master_secret']);
+            $broadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_android_app_key']);
+            $broadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $broadcast->setPredefinedKeyValue("ticker", "新消息");
+            $broadcast->setPredefinedKeyValue("title",  $item['title']);
+            $broadcast->setPredefinedKeyValue("text",   $item['description']);
+            $broadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $broadcast->setPredefinedKeyValue("after_open", "go_app");
+            $broadcast->setPredefinedKeyValue("production_mode", $this->production_mode) ;
+            $broadcast->setPredefinedKeyValue("activity", "com.youngteam.funswimming.Activity_CowEquipment_Detail");
+            
+            $broadcast->setExtraField("data", $item['id']);
+            $broadcast->setExtraField("FunSwim_MsgPush", "FunSwim_MsgPush");
+            $broadcast->setExtraField("PageTag", "消息推送");
+            $broadcast->send();
+ 
+            //ios
+            $iosBroadcast = new IOSBroadcast();
+            $iosBroadcast->setAppMasterSecret(Config::$pusher['umeng_ios_app_master_secret']);
+            $iosBroadcast->setPredefinedKeyValue("appkey", Config::$pusher['umeng_ios_app_key']);
+            $iosBroadcast->setPredefinedKeyValue("timestamp", strval(time()));
+            $iosBroadcast->setPredefinedKeyValue("alert", $item['title']);
+            $iosBroadcast->setPredefinedKeyValue("start_time", date("Y-m-d H:i:s", $startTime));
+            $iosBroadcast->setPredefinedKeyValue("production_mode", $this->production_mode);
+
+            $iosBroadcast->setCustomizedField("data", $item['id']);
+            $iosBroadcast->send();
+        }
+    }
+    
+    //教学推送
+    public function technicalPush($id, $startTime=0)
+    {
+        //$msg = "technical_push|{$id}|{$startTime}";
+        //$this->send($msg);
+    }
+    */
+}

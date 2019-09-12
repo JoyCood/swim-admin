@@ -1,0 +1,202 @@
+{% import "_macro.html" as macro %}
+<form id="video-form" action="school/teaching/video-group/video-form.html" target="#video-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>视频{{data.id? ' - ' ~ data.id: ''}}</h3>
+		</div>
+		<div id="video-form-contet" class="box-content">
+			<div id="video-form-main">
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td colspan="3">
+							<input type="text" name="name" id="video-name" class="form-control" value="{{data.name}}" placeholder="请输入名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</td>
+					</tr>
+					
+					<tr>
+						<th>顺序：</th>
+						<td colspan="3">
+							<input type="text" name="priority" id="video-priority" class="form-control" value="{{data.priority}}" placeholder="数值越大越靠前" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>图标：</th>
+						<td colspan="3">
+							{{ macro.thumb('cover', data.cover.url, data.cover.w ~ ',' ~ data.cover.h) }}
+							{{ macro.upload('video-cover', 'cover', 'default', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="3">
+							<input type="checkbox" name="statu" id="video-status" value="1"{{not data.id or data.statu? ' checked': ''}} />
+							<label for="video-status">启用</label>
+						</td>
+					</tr>
+					<tr>
+						<th>媒体类型：</th>
+						<td colspan="3">
+							<select id="video-media-type" class="form-control" name="mediaType">
+								<option value="video"{{data.media.type != 'gif'? ' selected':''}}>视频</option>
+								<option value="gif"{{data.media.type == 'gif'? ' selected':''}}>GIF</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>媒体文件：</th>
+						<td colspan="2">
+							<input type="text" value="{{data.media.url}}" id="video-media" name="media" class="form-control" autocomplete="off" />
+						</td>
+						<td width="100">
+							<a class="btn btn-primary fl" id="video-media-up">
+								<i class="fa fa-upload"></i> 
+								上传文件
+							</a>
+						</td>
+					</tr>
+					<tr>
+						<th>媒体封面：</th>
+						<td colspan="3">
+							{{ macro.thumb('media_cover', data.media_cover.url, data.media_cover.w ~ ',' ~ data.media_cover.h) }}
+							{{ macro.upload('media-cover', 'media_cover', 'default', false) }}
+						</td>
+					</tr>
+					
+					<tr>
+						<th style="vertical-align:top">内容：</th>
+						<td colspan="3" id="video-contents">
+							{% set contents = data.contents %}
+							{% for content in contents %}
+							{% set idx = loop.index0 %}
+								<div class="form-group video-text-row">
+									<div class="col-sm-11">
+										<input name="contents[title][{{idx}}]" placeholder="请输入副标题" class="form-control" value="{{content.title}}" autocomplete="off" />
+									</div>
+									<div class="col-sm-1">
+										<br />&nbsp;&nbsp;
+										<a class="fa fa-times"></a>
+										&nbsp;&nbsp;
+										<a class="fa fa-plus"></a>
+									</div>
+									{% for val in content.text %}
+									<div class="video-text">
+										<div class="col-sm-10">
+											<textarea name="contents[text][{{idx}}][]" placeholder="请输入内容" class="form-control video-text fl">{{val}}</textarea>
+										</div>
+										<div class="col-sm-1">
+											<br />&nbsp;&nbsp;
+											<a class="fa fa-times" txt="1"></a>
+											&nbsp;&nbsp;
+										<a class="fa fa-plus" txt="1"></a>
+										</div>
+									</div>
+									{% endfor %}
+									<div class="cb"></div>
+								</div>
+							{% endfor %}
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="video-id" name="id" value="{{data.id}}" />
+			<input type="hidden" id="video-gid" name="gid" value="{{gid}}" />
+			<button type="submit" id="video-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#video-form').on('init', function() {
+		$('#video-category').chosen();
+
+		var updateContentIdx = function() {
+			$('#video-contents>div.video-text-row').each(function(idx) {
+				var row = $(this);
+				row.find('textarea').attr('name', 'contents[text][' + idx + '][]');
+				row.find('input').attr('name', 'contents[title][' + idx + ']');
+			});
+		}
+		$('#video-contents').on('click', 'a.fa-times', function() {
+			if(!$(this).attr('txt')) {
+				var row = $(this).closest('div.video-text-row');
+				if($('#video-contents>div.video-text-row ').length > 1) {
+					row.slideUp(100, function() {
+						$(this).remove();
+						updateContentIdx();
+					});
+				} else {
+					row.find('textarea').val('');
+					row.find('input').focus();
+					updateContentIdx();
+				}
+			} else {
+				var parent = $(this).closest('div.video-text-row');
+				var rows   = parent.find('div.video-text');
+				if(rows.length > 1) {
+					$(this).closest('div.video-text').remove();
+				} else {
+					rows.find('textarea').val('').focus();
+				}
+			}
+		}).on('click', 'a.fa-plus', function() {
+			if(!$(this).attr('txt')) {
+				var row = $(this).closest('div.video-text-row');
+				var clone = row.clone();
+				clone.find('div.video-text').each(function(idx) {
+					if(idx > 0) {
+						$(this).remove();
+					}
+				});
+				clone.find('textarea').val('');
+				clone.find('input').val('');
+				row.after(clone);
+				updateContentIdx();
+				clone.find('input').focus();
+			} else {
+				var row = $(this).closest('div.video-text');
+				var clone = row.clone();
+				clone.find('textarea').val('');
+				row.after(clone);
+				clone.find('textarea').focus();
+			}
+		});
+
+		// $('#video-media-type').on('change', function() {
+		// 	$('#video-toggle>div').addClass('none');
+		// 	if(this.value == 'gif') {
+		// 		$('#video-gif').removeClass('none');
+		// 	} else {
+		// 		$('#video-media').removeClass('none');
+		// 	}
+		// });
+
+		$('#video-media-up').on('click', function() {
+			$(this).addClass('up-loading');
+			UPYun.upload(function(detail) {
+				$('#video-media-up').removeClass('up-loading');
+				$('#video-media').val(detail.host + detail.path);
+			});
+		});
+
+		$(this).on('submit', function() {
+			if($('a.up-loading', this).length > 0) {
+				App.alert('图片正在上传，请等待图片上传完成。');
+			} else if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

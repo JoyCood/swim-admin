@@ -1,0 +1,40 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#course-trash-btn" /></th>
+			<th width="60">封面</th>
+			<th>标题</th>
+			<th width="120">分类</th>
+			<th width="60" style="text-align: right;">价格</th>
+			<th width="40">状态</th>
+			<th width="40" style="text-align: right;">顺序</th>
+			<th width="90">最后更新</th>
+			<th width="33"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="course" value="{{item._id}}" /></td>
+			<td>{% if item.cover %}<img src="{{item.cover}}" class="course-icon" />{% endif %}</td>
+			<td>{{item.title}}</td>
+			<td>
+				{% for cat in item.belong %}
+					{% if cat.cate_id %}
+						{% if loop.index > 1 %}, {% endif %}
+						{{cat.cate_name}}
+					{% endif %}
+				{% endfor %}
+			</td>
+			<td align="right">{{item.price|number_format(2)}}</td>
+			<td>{{item.statu|status}}</td>
+			<td style="text-align: right;">{{item.priority}}</td>
+			<td>{{item.modified_on? item.modified_on|date('Y-m-d H:i:s'): item.create_time|date('Y-m-d H:i:s')}}</td>
+			<td class="table-action">
+				<a href="javascript:;" class="fa fa-bars" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

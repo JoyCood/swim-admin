@@ -1,0 +1,349 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelNatatoriumMain
+{
+    const ES_MAP = 'natatorium';
+
+    private $fields = array(
+        "title"     => "", 
+        "address"   => "", 
+        "coords"    => array(
+            "type"  => "Point", 
+            "coordinates" => array(),
+        ), 
+        "district"  => '',
+        "create_time" => '',
+        "detail"    => null, 
+        "rates"     => 5, 
+        "open_time" => null, 
+        "hall"      => null, 
+        "price"     => null, 
+        "photos"    => null, // array 
+        "icon"      => null, 
+        "cover"     => null, 
+        "tel"       => null,
+		"remark"	=> null,
+        "score"     => 0,
+        "guest_counter"     => null,
+        "willer_counter"    => null,
+        "favorites"         => null,
+		"region" => array()
+    );
+
+    /**
+     * 添加游泳馆
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     *
+     * @return false | string
+     */
+    public function insert($data) {
+        $collection = $this->collection();
+        $data['create_time'] = time();
+        if(isset($data['coordinates'])) {
+            $coords = explode(',', $data['coordinates']);
+            $data['coords'] = array(
+                'type' => 'Point',
+                'coordinates' => array(
+                    trim($coords[0]) * 1,
+                    trim($coords[1]) * 1
+                )
+            );
+        }
+        $data = array_intersect_key($data, $this->fields);
+        $data['score']       = Helper::uint($data['rates']);
+        $data['cover']       = isset($data['icon'])? $data['icon']: '';
+        $data['create_time'] = $data['create_time']? $data['create_time']: time();
+        $data['created_by']  = $_SESSION[S_USER];
+        $result = $collection->insert($data);
+        if($result) {
+            try {
+                $data['id'] = (string)$data['_id'];
+                $this->addElasticSearch($data);
+            } catch(Exception $e) {
+
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 把数据添加到搜索引擎
+     *
+     * @author joy.cood
+     *
+     * @param $item  array
+     *
+     * @return bool
+     */
+    public function addElasticSearch($item) {
+        $params = array();
+        $params['index'] = Config::$elastic['index'];
+        $params['type']  = self::ES_MAP;
+        $params['id']    = $item['id'];
+
+        $params['body'] = array(
+            'title'    => $item['title'],
+            'coords'   => $item['coords']['coordinates'],
+            'district' => $item['district'],
+            'score'    => $item['score']
+        );
+        return SwimAdmin::elastic()->index($params);
+    }
+
+    /**
+     * 修改游泳馆
+     *
+     * @author joy.cood
+     *
+     * @param $data  array
+     * @param $id  string
+     *
+     * @return bool
+     */
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        if(isset($data['coordinates'])) {
+            $coords = explode(',', $data['coordinates']);
+            $data['coords'] = array(
+                'type' => 'Point',
+                'coordinates' => array(
+                    trim($coords[0]) * 1,
+                    trim($coords[1]) * 1
+                )
+            );
+        }
+        $data = array_intersect_key($data, $this->fields);
+        $data['score']       = Helper::uint($data['rates']);
+        $data['cover']       = isset($data['icon'])? $data['icon']: '';
+        $data['create_time'] = $data['create_time']? $data['create_time']: time();
+        $data['modified_on'] = time();
+        $data['modified_by'] = $_SESSION[S_USER];
+        $result = $collection->update(array('_id' => $id), array(
+            '$set' => $data
+        ));
+
+        try {
+            $this->updateElasticSearch($data, $id);
+        } catch(Exception $e) {}
+
+        return $result;
+    }
+
+
+    public function freshScore($id)
+    {
+        $res = SwimAdmin::db('natatorium_score')->aggregate([
+            ['$match'  => ['natatorium_id' => $id]],
+            ['$group'  => ['_id' => null, 'avgScore'=>['$avg'=>'$score']]],
+            ['$project'=> ['avgScore' => ['$multiply' => ['$avgScore', 0.1]]]]
+        ]);
+
+        //有用户评分
+        if(isset($res['result'][0]))
+        {
+            $id = new MongoId($id);
+            $macher = array('_id' => $id);
+
+            $natatorium = $this->collection()->findOne($macher);
+
+            if(!$natatorium OR !isset($natatorium['score']))
+            {
+                SwimAdmin::error('找不到泳馆。');
+                return FALSE;
+            }
+         
+            //后台没有评分
+            if(!isset($natatorium['rates']) OR $natatorium['rates']==0)
+            {
+                $res = SwimAdmin::db('natatorium_score')->aggregate([
+                    ['$match' => ['natatorium_id' => $id]],
+                    ['$group' => ['_id' => null, 'avgScore'=>['$avg'=>'$score']]]
+                ]);
+
+                $score = $res['result'][0]['avgScore'];
+            }
+            
+            else
+            {
+                $rates = Helper::uint($natatorium['rates']);
+                $score = $res['result'][0]['avgScore'] + ($rates * 0.9);
+            }
+
+            $update = array('$set' => array('score' => $score));
+
+            $this->collection()->update($macher, $update);
+            
+            return $score;  
+        }
+
+        return 0;
+    }
+
+    /**
+     * 更新搜索引擎中的数据
+     *
+     * @author joy.cood
+     *
+     * @param $data array
+     * @param $id   string
+     *
+     * @return unknow
+     */
+    public function updateElasticSearch($data, $id)
+    {
+        $score = $this->freshScore($id);
+        $data['score'] = $score>0 ? $score : $data['score'];
+
+        $params = array();
+        $params['index'] = Config::$elastic['index'];
+        $params['type']  = self::ES_MAP;
+        $params['id']    = (string)$id;
+
+        $params['body']['doc'] = array(
+            'title'    => $data['title'],
+            'coords'   => $data['coords']['coordinates'],
+            'district' => $data['district'],
+            'score'    => $data['score']
+        );
+
+        return SwimAdmin::elastic()->update($params);        
+    }
+
+    /**
+     * 删除游泳馆
+     *
+     * @author joy.cood
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+
+        $this->deleteElasticSearch($ids);
+        
+        return $result;
+    }
+
+    /**
+     * 删除搜索引擎中的泳馆数据
+     *
+     * @author joy.cood
+     *
+     * @param $ids array
+     *
+     * @return void
+     */
+    public function deleteElasticSearch($ids)
+    {
+        $params = array();
+        $params['index'] = Config::$elastic['index'];
+        $params['type']  = self::ES_MAP;
+
+        foreach($ids as $id)
+        {
+            $params['id'] = (string)$id;
+
+            SwimAdmin::elastic()->delete($params);
+        }
+    }
+
+    /**
+     * 查询游泳馆
+     *
+     * @author joy.cood
+     *
+     * @param $params  array
+     *
+     * @return array
+     */
+    public function find($params = array()) {
+        $collection = $this->collection();
+        return $collection->find($params)->sort(array('create_time' => -1));
+    }
+
+    /**
+     * 根据id查找
+     *
+     * @author joy.cood
+     *
+     * @param string $id
+     *
+     * @return false | array
+     */
+    public function findOneById($id)
+    {
+        try
+        {
+            $id = new MongoId($id);
+            $matcher = array('_id' => $id);
+
+            $item = $this->collection->findOne($matcher);
+
+            if($item)
+            {
+                $item['id'] = $item['_id'];
+
+                unset($item['_id']);
+
+                return $item;
+            }
+        }
+        catch(MongoException $e)
+        {
+
+        }
+
+        return FALSE;
+    }
+
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'up_time');
+        $order   = Helper::popValue($params, 'order', -1);
+
+		$filters = array();
+		$region = Helper::getValue($params, 'region', '');
+		if($region) {
+		    $filters['region.id'] = $region;
+		}
+        return SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1, 'create_time' => -1)
+        );
+    }
+    
+    /**
+     * 返回collection
+     *
+     * @author joy.cood
+     *
+     * @return object
+     */
+    public function collection() {
+        return SwimAdmin::db('natatorium');
+    }
+}

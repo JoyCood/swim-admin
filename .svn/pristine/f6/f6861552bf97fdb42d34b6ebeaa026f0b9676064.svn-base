@@ -1,0 +1,113 @@
+{% import "_macro.html" as macro %}
+<form id="category-form" action="school/teaching/category/form.html" target="#category-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>{{_Caption}}分类</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="70">名称：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="category-name" class="form-control" value="{{cat.name}}" placeholder="请输入分类名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th width="70">Type：</th>
+						<td colspan="2">
+							<select id="category-type" name="type" class="form-control">
+							{% for type, txt in types %}
+								<option value="{{type}}"{{cat.type==type? ' selected': ''}}>{{type}} ({{txt}})</option>
+							{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+                        <th width="70">Tab: </th>
+						<td colspan="2">
+                            <select name="tab[]" id="tab" multiple="multiple" class="chosen-select form-control" data-placeholder="请选择Tab">
+								{% for tab in tabs %}
+								<option value="{{tab.title}}" {{tab.selected? ' selected':''}}>{{tab.title}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>封面：</th>
+						<td colspan="2">
+							{{ macro.thumb('cover', cat.cover) }}
+							{{ macro.upload('category-cover', 'cover', 'default', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>图片：</th>
+						<td colspan="2">
+							{% for photo in cat.banner %}
+							{{ macro.thumb('banner[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+							{% endfor %}
+							{{ macro.upload('category-banner', 'banner[]') }}
+						</td>
+					</tr>
+					<tr>
+						<th>轻器械：</th>
+						<td colspan="2">
+							{{ macro.thumb('light', cat.light) }}
+							{{ macro.upload('category-light', 'light', 'default', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>无器械：</th>
+						<td colspan="2">
+							{{ macro.thumb('nothing', cat.nothing) }}
+							{{ macro.upload('category-nothing', 'nothing', 'default', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td width="120"><input type="text" name="priority" id="category-priority" value="{{cat.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>难度系数：</th>
+						<td width="120"><input type="text" name="difficulty" id="category-difficulty" value="{{cat.difficulty}}" class="form-control" placeholder="难度系数" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="category-status" value="1"{{not cat._id or cat.status? ' checked': ''}} />
+							<label for="category-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{cat._id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script>
+$(function() {
+	$('#category-form').on('init', function() {
+		$('#tab').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

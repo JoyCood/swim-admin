@@ -1,0 +1,48 @@
+
+<form id="delete-form" action="order/delete" target="#order-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>确认删除</h3>
+		</div>
+		<div class="box-content">
+			<div style="font-size: 14px; color: #369; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+				<input type="checkbox" id="delete-checkbox" checked value="1" />
+				<label for="delete-checkbox">&nbsp;确定删除订单</label>
+			</div>
+			<div id="delete-order-detail" style="width: 600px; height: 380px; overflow: auto;">
+				{% include 'order/order-detail.html' %}
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="orderId" value="{{order.order_id}}" />
+			{% if check_perm('orders', 'DELETE') %}<button type="submit" id="delete-submit" class="btn btn-primary">确定</button>{% endif %}
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#delete-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				var del = $('#delete-checkbox').prop('checked');
+				if(del) {
+					App.ajax({
+						form: this,
+						success: function(rs) {
+							App.Box.close();
+							App.Notific.success('订单已完成删除。');
+						}
+					});
+				} else {
+					App.Notific.warning('请选中“确定删除订单”。');
+				}
+			}
+			return false;
+		});
+		$('#delete-order-detail').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

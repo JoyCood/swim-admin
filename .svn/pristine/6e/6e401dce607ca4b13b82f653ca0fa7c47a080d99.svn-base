@@ -1,0 +1,88 @@
+{% import "_macro.html" as macro %}
+<form id="columnist-form" action="news/columnist/form.html" target="#columnist-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>专栏分类</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form" style="width: 500px">
+					<tr>
+						<th width="60">专栏名：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="columnist-name" class="form-control" value="{{columnist.name}}" placeholder="请输入专栏名" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th width="50">专栏简介：</th>
+						<td colspan="2">
+							<input type="text" name="cintro" id="columnist-cintro" class="form-control" value="{{columnist.cintro}}" placeholder="请输入专栏简介" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+                        <th>专栏封面：</th>
+					    <td>
+						    {{ macro.thumb('columnist-cover', columnist.cover) }}
+							{{ macro.upload('columnist-cover', 'columnist-cover', 'default', false) }}
+						</td>	
+					</tr>
+					<tr>
+						<th width="50">作者名：</th>
+						<td colspan="2">
+							<input type="text" name="auname" id="columnist-auname" class="form-control" value="{{columnist.auname}}" placeholder="请输入作者名" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th width="50">作者简介：</th>
+						<td colspan="2">
+							<input type="text" name="aintro" id="columnist-aintro" class="form-control" value="{{columnist.aintro}}" placeholder="请输入作者简介" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+                        <th>作者头像：</th>
+					    <td>
+						    {{ macro.thumb('columnist-icon', columnist.icon) }}
+							{{ macro.upload('columnist-icon', 'columnist-icon', 'default', false) }}
+						</td>	
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td width="120"><input type="text" name="priority" id="columnist-priority" value="{{columnist.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="columnist-status" value="1"{{not columnist._id or columnist.status? ' checked': ''}} />
+							<label for="columnist-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{columnist._id}}" />
+			<button type="submit" id="columnist-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#columnist-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

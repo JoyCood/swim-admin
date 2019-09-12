@@ -1,0 +1,24 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#area-trash-btn" /></th>
+			<th>分类名称</th>
+			<th width="50">次序</th>
+			<th width="50">开放</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for area in areaList %}
+		<tr area-id="{{area._id}}">
+			<td><input type="checkbox" name="area" value="{{area._id}}" /></td>
+			<td>{{area.city}}</td>
+			<td>{{area.priority}}</td>
+			<td>{{area.statu|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

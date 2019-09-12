@@ -1,0 +1,46 @@
+<div class="text-right bar">
+	{% if check_perm('main-content', 'ADD') %}<button id="tweet-group-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建版块</button>{% endif %}
+	{% if check_perm('main-content', 'DELETE') %}<button id="tweet-group-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+	{#
+	&nbsp; &nbsp;
+	<button id="tweet-group-add-recommand-btn" class="btn btn-info disabled" btn-style="info" data-val="1">推荐</button>
+	<button id="tweet-group-remove-recommand-btn" class="btn disabled" btn-style="warning" data-val="">删除推荐</button>
+	#}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#tweet-group-trash-btn,#tweet-group-add-recommand-btn,#tweet-group-remove-recommand-btn" /></th>
+			<th width="120">ID#</th>
+			<th>组名</th>
+			<th width="80">封面</th>
+			<th width="60">人数</th>
+			<th width="60">帖子数</th>
+			<th width="60">热度</th>
+			<th width="60">顺序</th>
+			<th width="60">启用</th>
+			<th width="90">最后更新</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="tgroup" value="{{item._id}}" /></td>
+			<td>{{item._id}}</td>
+			<td>{{item.title}}</td>
+			<td><div class="tweet-group-cover">
+				{% if item.cover %}<img src="{{item.cover}}" />{% else %}<i class="fa fa-image"></i>{% endif %}
+			</div></td>
+			<td>{{item.member_num|number_format}}</td>
+			<td>{{item.tweet_num|number_format}}</td>
+			<td>{{item.hot}}</td>
+			<td>{{item.priority}}</td>
+			<td>{{item.statu|status}}</td>
+			<td>{{item.update_time|date('Y-m-d H:i:s')}}</td>
+			<td class="table-action"><a class="fa icon-edit" app-bubble="false"></a></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

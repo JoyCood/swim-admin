@@ -1,0 +1,6 @@
+<nav>
+	<a href="tweet/index.html"{{_Action=='index'? ' class="slted"': ''}}><b class="fa  fa-life-ring"></b>泳圈</a>
+	<a href="tweet/group.html"{{_Action=='group'? ' class="slted"': ''}}><b class="fa fa-folder-o"></b>版块管理</a>
+	<a href="tweet/tag.html"  {{_Action=='tag'? ' class="slted"': ''}}><b class="fa fa-folder-o"></b>标签管理</a>
+	<a href="tweet/topic.html"  {{_Action=='topic'? ' class="slted"': ''}}><b class="fa fa-folder-o"></b>话题管理</a>
+</nav>

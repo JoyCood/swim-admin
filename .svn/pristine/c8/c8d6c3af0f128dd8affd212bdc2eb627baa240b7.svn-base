@@ -1,0 +1,54 @@
+<table class="form">
+	<tr><th>优惠券名称：</th><td>{{courpon.title}}</td></tr>
+	<tr><th>优惠金额：</th><td>{{courpon.coupon_val}}</td></tr>
+	<tr><th>分类：</th><td>
+        {% if courpon.coupon_type == 1 %}
+        课程减免券
+        {% endif %}
+        {% if courpon.coupon_type == 2 %}
+        积分兑换券
+        {% endif %}
+        {% if courpon.coupon_type == 3 %}
+        活动优惠券
+        {% endif %}
+    </td></tr>
+	<tr><th>领取限制：</th><td>
+        {% if courpon.restriction == 0 %}
+        不限制
+        {% endif %}
+        {% if courpon.restriction == 1 %}
+        限张数：({{courpon.restrict_value}})张
+        {% endif %}
+        {% if courpon.restriction == 2 %}
+        限次数：({{courpon.restrict_nums}})次
+        {% endif %}
+    </td></tr>
+    <br />
+	<tr><th>总数量：</th><td>{{courpon.coupon_total}}</td></tr>
+	<tr><th>库存剩余：</th><td>{{courpon.coupon_stock}}</td></tr>
+	<tr><th>领取人/次：</th><td>{{courpon.get_coupon_nums}}</td></tr>
+	<tr><th>已使用：</th><td>{{courpon.get_coupon_nums}}</td></tr>
+    <br />
+	<tr><th>生效时间：</th><td>{{courpon.effect_time}}</td></tr>
+	<tr><th>失效时间：</th><td>{{courpon.expire_time}}</td></tr>
+    <br />
+	<tr><th>使用限制：</th><td>
+        {% if courpon.is_condition == 0 %}
+        无条件
+        {% endif %}
+        {% if courpon.is_condition == 1 %}
+        满{{courpon.condition_value}}元可使用
+        {% endif %}
+    </td></tr>
+    <br />
+	<tr><th>优惠券状态：</th>
+        <td>
+            {% if courpon.status == 1 %}
+            启用
+            {% endif %}
+            {% if courpon.status == 2 %}
+            禁用
+            {% endif %}
+        </td>
+    </tr>
+</table>

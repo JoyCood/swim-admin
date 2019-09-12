@@ -1,0 +1,143 @@
+{% import "_macro.html" as macro %}
+<form id="teacher-form" action="lbs/teacher/form.html" target="#teacher-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>教练资料{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="teacher-form-contet" class="box-content">
+			<div id="teacher-form-main">
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td>
+							<input type="text" name="nick" id="teacher-name" class="form-control" value="{{data.nick}}" placeholder="请输入教练名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>性别：</th>
+						<td>
+							<select name="sex" class="form-control">
+								<option value=""></option>
+								<option value="男"{{data.sex=='男'? ' selected':''}}>男</option>
+								<option value="女"{{data.sex=='女'? ' selected':''}}>女</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>头像：</th>
+						<td>
+							{{ macro.thumb('avatar_small', data.avatar_small) }}
+							{{ macro.upload('teacher-avatar', 'avatar_small', 'avatar', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>祥情图片：</th>
+						<td colspan="5">
+							{% for photo in data.photos %}
+							{{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+							{% endfor %}
+							{{ macro.upload('teacher-photos', 'photos[]', 'teacher') }}
+						</td>
+					</tr>
+					<tr>
+						<th>地区：</th>
+						<td>
+							<input type="text" name="district" id="teacher-district" class="form-control" value="{{data.district}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>教学时间：</th>
+						<td>
+							<input type="text" id="teacher-service-time" name="service_time" class="form-control" value="{{data.service_time}}"  autocomplete="off"/>
+						</td>
+					</tr>
+					<tr>
+						<th>教学位置：</th>
+						<td>
+							<input type="text" name="coordinates" id="teacher-coordinates" class="form-control" value="{{data.coords.coordinates|join(',')}}" placeholder='坐标请以","分隔' autocomplete="off" app-pattern="[\d\.]+,[\d\d]+" app-required="on" />
+						</td>
+					</tr>
+					<tr>
+						<th>教学地址：</th>
+						<td>
+							<input type="text" id="teacher-address" name="teacher_address" class="form-control" value="{{data.teacher_address}}"  autocomplete="off"/>
+						</td>
+					</tr>
+					<tr>
+						<th>人均价格：</th>
+						<td>
+							<input type="text" name="price" id="teacher-price" class="form-control" value="{{data.price}}" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>评分：</th>
+						<td>
+							<select class="form-control" id="teacher-rates" name="rates">
+								{% set rates = data.rates? data.rates: 5 %}
+								{% for i in range(0,10) %}
+								<option value="{{i}}"{{rates==i? ' selected': ''}}>{{i}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>电话：</th>
+						<td>
+							<input type="text" name="phone" id="teacher-phone" class="form-control" value="{{data.phone}}" placeholder='请输入移动电话号码' autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>座机：</th>
+						<td>
+							<input type="text" name="tel" id="teacher-tel" class="form-control" value="{{data.tel}}" placeholder='请输入固定电话号码' autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>创建时间：</th>
+						<td>
+							<input type="text" id="teacher-create-time" name="create_time" class="form-control" value="{% if 'create_time' in data %}{{data.create_time|date('Y-m-d H:i:s')}}{% endif %}" placeholder="年-月-日 时:分:秒(留空即为当前时间)" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>备注：</th>
+						<td>
+							<textarea id="teacher-remark" name="remark" class="form-control" placeholder="备注" autocomplete="off">{{data.remark}}</textarea>
+						</td>
+					</tr>
+					<tr>
+						<th>认证：</th>
+						<td>
+							<input type="checkbox" id="teacher-cert" name="cert" value="1"{{not data or data.cert? ' checked': ''}} />
+							<label for="teacher-cert">实名认证</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" id="teacher-id" name="id" value="{{id}}" />
+			<button type="submit" id="teacher-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#teacher-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+		$('#teacher-form-contet').mousewheelStopPropagation();
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

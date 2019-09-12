@@ -1,0 +1,21 @@
+tweet_group = {
+	leader = '圈主id',
+    title = '圈子名称',
+    description = '描述',
+    cover = '封面',
+    hot = '热度',
+    priority = '排序',(值越大越靠前)
+    member_num = '人数',
+    tweet_num = '帖子数量',
+    create_time = '创建时间'
+}
+
+tweet = {
+    ...,
+    hot = '是否热帖', (0不是, 1是)
+    top = '是否置顶',   (0不置顶, 1置顶)
+    recommand = '是否精华帖', (0不是, 1是)
+    group_id = '泳圈版块id',
+    type='帖子类型', (0普通帖子，1泳圈公告)
+    ... 
+}

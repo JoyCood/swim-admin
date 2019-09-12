@@ -1,0 +1,89 @@
+{% set _Title = '赛事' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#match-form { width: 720px; }
+#match-form-contet { height: 520px; overflow: auto; }
+#match-form-main { width:680px; padding-bottom: 30px; }
+#match-contents textarea { height: 80px; resize: none; }
+.match-icon { max-height: 60px; max-width: 60px; }
+.match-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.match-actions { text-align: left; }
+.match-actions>a.fa { padding: 3px; }
+.left{float: left;}
+.top{margin-bottom: 25px;}
+.span{font-size: 18px;margin-top: 5px;}
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>{{_Title}}</small></h1>
+	{% include 'match/match_nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>赛事列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="match-list">
+			{% include 'match/match_list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#match-list').on('click', '#match-add-list-btn', function() {
+		App.Box.open('home/match/match_import.html');
+	});
+	$('#match-list').on('click', '#match-add-one-btn', function() {
+		App.Box.open('home/match/match_form.html');
+	}).on('click', 'input', function() {
+	}).on('click', '#match-member-trash-btn', function() {
+		var slted = $('#match-list input[name="tgroup"]:checked');
+		if(slted.length == 0) {
+			App.alert('请选中最少一个记录。');
+		} else {
+			var items = [];
+			slted.each(function() {
+				items.push(this.value);
+				this.checked = false;
+			});
+			App.ajax({
+				url: 'home/match/match-member/delete.html',
+				type: 'post',
+				data: {'items[]': items},
+				dataType: 'html',
+				target: '#match-member',
+				success: function() {
+					location.reload();
+				}
+			});
+		}
+	}).on('click', 'a.icon-edit', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('home/match/match_form.html?id=' + id);
+	})
+});
+</script>
+{% endblock %}

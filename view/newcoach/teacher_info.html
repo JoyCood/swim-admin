@@ -1,0 +1,195 @@
+
+<form id="match-member-form" action="newcoach/teacher_info.html" target="#match-member-list">
+	<div class="box" style="width:920px">
+		<div class="box-title">
+			<h3>教练详情</h3>
+		</div>
+		<div id="course-form-main"  style="float:left;width:460px;padding-bottom:30px;padding-left:10px;padding:20px 0">
+			<h1 style="font-size:30px;padding-left:150px;">基本信息</h1>
+			<div id="member-tags-form-main" style="width: 400px; padding-right: 30px; overflow: hidden;">
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">姓名：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.name}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">性别：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.sex}}</label>
+				
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">电话号码：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.phone}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">身份证号：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.id_card}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">出生日期：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.birthday}}</label>
+				
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">婚姻状况：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.marriage}}</label>
+				
+					</div>
+																														
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">教育水平：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.education}}</label>
+				
+					</div>
+
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">城市：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.city}}</label>
+					</div>
+
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">地址：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.address}}</label>
+	
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">邮箱 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.email}}</label>
+		
+					</div>
+
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">微信号 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.wechat}}</label>
+				
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">推荐人姓名 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.recommend_name}}</label>
+			
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">推荐人手机号 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.recommend_phone}}</label>
+					
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">时间 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.create_time? data.create_time|date('Y-m-d H:i:s'): '-'}}</label>
+					
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="course-form-main" style="float:left;width:460px;padding-bottom:30px;padding-left:10px;padding:20px 0" >
+			<h1 style="font-size:30px;padding-left:150px;">教练信息</h1>
+			<div id="member-tags-form-main" style="width: 400px; padding-right: 30px; overflow: hidden;">
+			<div class="form-horizontal">		
+			
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">编制类型 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.jobtype}}</label>
+			
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">工龄 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.working_age}}</label>
+				
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">加分项1 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.backdrop1}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">加分项2 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.backdrop2}}</label>
+				
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">加分项3 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.backdrop3}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">加分项4 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.backdrop4}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">加分项5 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.backdrop5}}</label>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-3">救生员证和教练证 ：</label>
+						<div class="col-sm-9">
+						        <a  target="_blank" href="{{data.coachinfo.soscard_img}}" id="zoom1" class="MagicZoom MagicThumb" ><img id="sim659203" src="{{data.coachinfo.soscard_img}}" height="100" width="100" >
+								<a  target="_blank" href="{{data.coachinfo.coachcard_img}}" id="zoom1" class="MagicZoom MagicThumb" ><img id="sim659203" src="{{data.coachinfo.coachcard_img}}" height="100" width="100" ></a>
+						</div>
+					</div>
+					<div class="form-group" style="color:#333">
+						<label for="tgroup-title" class="control-label col-sm-3">入职时间  ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.takingwork_time}}</label>
+				
+					</div>
+					<div class="form-group" style="color:#333">
+						<label for="tgroup-title" class="control-label col-sm-3">入职地点 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.takingwork_city}}</label>
+			
+					</div>
+					<div class="form-group" style="color:#333">
+						<label for="tgroup-title" class="control-label col-sm-3">教练备注 ：</label>
+						<label for="tgroup-title"  style="border:1px solid #ccc;text-align:left;padding:7px;width:285px" class="control-label col-sm-3">{{data.coachinfo.takingwork_remark}}</label>
+					</div>																																													
+																												
+				</div>
+			</div>
+		</div>
+		
+<div style="width:100%;clear:both" style="color:#333">
+			<div style="float:left;width:40%; margin-bottom:20px;margin-left:20px;color:#333" >
+				审核 ：<input type="radio" name="status" value="0"  checked="checked">审核中
+				<input type="radio" name="status" value="1" ">审核通过 
+				<input type="radio" name="status" value="2" >审核失败
+			</div>
+			<input type="text" name="remark" id="tgroup-number" class="form-control" value="{{data.remark}}" placeholder="请输入审核备注" autofocus="on" autocomplete="off"  style="margin-bottom:80px;width:50%;float:left;margin-left:20px" />
+</div>
+		
+
+		<div id="match-member-form-foot" class="box-footer">
+			<input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<input type="hidden" id="tgroup-id" name="phone" value="{{data.phone}}" />
+			<button type="submit" id="tgroup-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	
+	</div>
+</form>
+
+<script>
+
+
+$("input:radio").click(function(){
+	 $("input:radio").removeAttr("checked");  
+	$(this).prop( "checked", true );
+});
+
+
+
+$(function() {
+	$('#match-member-form').on('init', function() {      
+		$('#match-tab').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+						location.reload();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+ 	});
+});
+</script>

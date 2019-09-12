@@ -1,0 +1,166 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelMemberTags
+{
+    const MEMBER_REAL    = 0; // 会员
+    const MEMBER_TEACHER = 1; // 教练
+    const MEMBER_FAKE    = 2; // 马甲
+    public function collection() {
+        return SwimAdmin::db('member_tags');
+    }
+
+    /**
+     * 添加马甲分类
+     *
+     * @param $data  array
+     *
+     * @return false | array
+     */
+    public function insert(array $data)
+    {
+        $allowKeys  = array( 'title', 'statu'); 
+        $data = Helper::allowed($data, $allowKeys);
+
+        if(sizeof($data)==0)
+        {
+            return FALSE;
+        }
+        $data['title']       = trim($data['title']);
+        $data['statu']       = Helper::uint($data['statu']);
+        
+        return $this->collection()->insert($data);
+    }
+    /**
+     * 分页查询
+     * @param  $pn      integer 页码
+     * @param  $filters array   过滤条件
+     * @param  $sort    array   排序
+     * @return array
+     */
+     public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $order   = Helper::popValue($params, 'order', -1);
+        $filters = array();
+
+        $query = Helper::getValue($params, 'query', '');
+        if($query) {
+            $filters['title'] = new MongoRegex('/'.$query.'/');
+        }
+
+        $data = SwimAdmin::pagination($url, $this->collection(), is_null($pnValue)? $pn: $pnValue, $filters, array(
+            'block'    => 1,
+            'type'     => self::MEMBER_TEACHER,
+            'reg_time' => -1
+        ));
+
+        $ids     = array();
+        $members = array();
+        foreach($data['items'] as $item) {
+            $item        = (array)$item;
+            $item['_id'] = (string)$item['_id'];
+            $ids[]       = $item['_id'];
+            $members[]   = $item;
+        }
+        $recoCollection = SwimAdmin::db('member_recommand');
+        $recommands     = array();
+        $result         = $recoCollection->find(array('user_id' => array('$in' => $ids)));
+        foreach($result as $item) {
+            $recommands[$item['user_id']] = $item;
+        }
+        foreach($members as & $item) {
+            $item['recommand'] = isset($recommands[$item['_id']])? $recommands[$item['_id']]: array();
+        }
+        $data['items'] = $members;
+
+        $data['params'] = $params;
+
+        return $data;
+    }
+
+    public function find($params = array()) {
+        if(isset($params['title'])) {
+            $params['belong'] = array('$in' => array(trim($params['title'])));
+            unset($params['title']);
+        }
+        $collection = $this->collection();
+        return $collection->find($params)->sort(array('order' => -1));
+    }
+    public function findAll() 
+    {
+        $groups = array();
+        $query  = array('statu' => 1);
+        $cursor = $this->collection()->find($query);
+        $cursor->sort(array('priority' => -1, 'create_time' => -1));
+        foreach($cursor as $row) {
+            $row['_id'] = (string)$row['_id'];
+            $groups[]   = $row;
+        }
+        return $groups;
+    }
+    /**
+     * 删除圈子
+     *
+     * @param $id  string | array
+     *
+     * @return bool
+     */
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+     public function getGroups() {
+        $groups = array();
+        $cursor = $this->collection()->find();
+        foreach($cursor as $row) {
+            $id          = (string)$row['_id'];
+            $groups[$id] = $row['title'];
+        }
+        return $groups;
+    }
+
+    public function findOneById($id)
+    {
+        try
+        {
+            $matcher = array('_id'=>new MongoId($id));
+
+            return $this->collection()->findOne($matcher);
+        }
+        catch(MongoException $e)
+        {
+            return FALSE;
+        }
+    }
+    /**
+     * 更新泳圈版块
+     *
+     * @param $data  array 
+     * @param $id    string
+     *
+     * @return array | false
+     */
+    public function update($data, $id)
+    {
+        $allowKeys  = array( 'title', 'statu'); 
+        $data = Helper::allowed($data, $allowKeys);
+
+        if(sizeof($data)==0)
+        {
+            return FALSE;
+        }
+        $data['title']       = trim($data['title']);
+        $data['statu']       = Helper::uint($data['statu']);
+        
+        $matcher = array('_id' => new MongoId($id));
+        $update  = array('$set' => $data);
+        return $this->collection()->update($matcher, $update);
+    }
+}

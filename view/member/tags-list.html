@@ -1,0 +1,27 @@
+<div class="text-right bar">
+	{% if check_perm('members', 'ADD') %}<button id="member-tags-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建标签</button>{% endif %}
+	{% if check_perm('members', 'DELETE') %}<button id="member-tags-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#member-tags-trash-btn" /></th>
+			<th width="120">ID#</th>
+			<th>标签名称</th>
+			<th width="60">启用</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}" class="{{class}}{{item.block?' disabled':''}}">
+			<td><input type="checkbox" name="tgroup" value="{{item._id}}" /></td>
+			<td>{{item._id}}</td>
+			<td>{{item.title}}</td>
+			<td>{{item.statu|status}}</td>
+			<td class="table-action"><a class="fa icon-edit" app-bubble="false"></a></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

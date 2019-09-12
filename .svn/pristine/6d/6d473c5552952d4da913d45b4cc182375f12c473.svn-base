@@ -1,0 +1,73 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<!-- <th width="30"><input type="checkbox" rel="#news-trash-btn" /></th> -->
+			<th width="60">订单号</th>
+			<th>商品</th>
+            <th>渠道</th>
+            <th>姓名/电话</th>
+            <th>用户备注</th>
+            <th>商家备注</th>
+			<th width="120" style="text-align: right;">单价/数量</th>
+			<th width="90">下单时间</th>
+			<th width="70">订单状态</th>
+			<th width="70" style="text-align: right;">实付金额</th>
+			<th width="60">排课</th>
+			<th width="80">退款</th>
+			<th width="33"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% set courses = data.courses %}
+		{% for item in data.items %}
+		{% set course = courses[item.course_id] %}
+		<tr data-id="{{item.order_id}}">
+			<!-- <td><input type="checkbox" name="news" value="{{item._id}}" /></td> -->
+			<td><a href="order/detail.html?id={{item.order_id}}"> {{item.order_id}}</a></td>
+			<td>
+				{{item.course.title}}
+				{% if item.teacher_name %}<p class="teacher-name">{{item.teacher_name}} ({{item.teacher_phone}})</p>{% endif %}
+			</td>
+            <td>{{item.channel}}</td>
+            <td>{{item.demanded.name}}/{{item.demanded.phone|length>11 ? item.demanded.phone[3:] : item.demanded.phone}}</td>
+            <td>{{item.custome_note}}</td>
+            <td>{{item.note}}</td>
+			<td style="text-align: right;">{{item.price|number_format(2)}} ({{item.quantity}}件)</td>
+			<td>{{item.create_time|date('Y-m-d H:i:s')}}</td>
+			<td>
+				{% if item.platform == 'weixin' %}
+					<i class="fa fa-weixin" title="weixin"></i>
+				{% elseif item.platform == 'alipay' %}
+					<i class="fa fa-adn" title="alipay"></i>
+				{% endif %}
+				{{item.order_status == 1? '已支付': '待付款'}}
+			</td>
+			<td style="text-align: right;">{{item.total_fee|number_format(2)}}</td>
+			<td>
+				{% if item.train_status == 0 %}
+					排课中
+				{% elseif item.train_status == 1 %}
+					上课中
+				{% else %}
+					已毕业
+				{% endif %}
+			</td>
+			<td>{{item|order_process_status}}</td>
+			<td class="table-action">
+				<a href="javascript:;" class="fa fa-bars"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}
+{% if orderIds %}
+<script>
+var list = [];
+{% for orderId in orderIds %}
+list.push('<a>{{orderId}}</a>');
+{% endfor %}
+$('#order-active>dl>dd').html(list.join(''));
+$('#order-active>dl').show();
+</script>
+{% endif %}

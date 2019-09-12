@@ -1,0 +1,159 @@
+{% import "_macro.html" as macro %}
+<form id="course-form" action="course/pintuan-form.html" target="#course-list"{% if not check_perm('main-contents', data._id? 'EDIT': 'ADD') %} class="readonly_form"{% endif %}>
+    <div class="box">
+        <div class="box-title">
+            <h3>发起拼团{{data._id? ' - ' ~ data._id: ''}}</h3>
+        </div>
+        <div id="course-form-contet" class="box-content">
+            <div>
+                <div id="course-form-main">
+                    <table class="form">
+                        <tr>
+                            <th width="60">标题：</th>
+                            <td colspan="3">
+                                <input type="text" name="title" id="course-title" class="form-control" value="{{data.title}}" placeholder="请输入标题" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" disabled />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>马甲：</th>
+                            <td colspan="3">
+                                <select id="course-type" name="user" class="form-control" >
+                                    {% for user in users %} 
+                                    <option value="{{user._id}}">{{user.nick}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>场馆：</th>
+                            <td colspan="3">
+                                <select id="course-type" name="natatorium" class="form-control" >
+                                    {% for natatorium in data.space.natatorium %} 
+									<option value="{{natatorium.id}}::{{natatorium.name}}">{{natatorium.name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>规格：</th>
+                            <td colspan="3">
+                                <select id="course-type" name="guige" class="form-control">
+						{% for id, val in property[3].values %}
+								<option value="{{id}}">{{val}}</option>
+                        {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>校区：</th>
+                            <td colspan="3">
+                                <select id="course-region" class="form-control" name="region[]" multiple disabled>
+                                    <option value=""></option>
+                                    {% for region in regions %} {% set rid = region._id ~ '' %}
+                                    <option value="{{rid}}::{{region.name}}" {{slted.region[rid] is defined? ' selected': ''}}>{{region.name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="vertical-align:top;">价格组合：</th>
+                            <td colspan="3">
+                                <div id="price-group">
+                                    <div style="display: block;">
+                                        <label style="width: 80px; background-color: #ccc; border-color: #ccc;">校区</label>
+                                        <label style="width: 120px; background-color: #ccc; border-color: #ccc;">种类</label>
+                                        <label style="width: 50px; background-color: #ccc; border-color: #ccc;">规格</label>
+                                        <input type="text" value="价格" disabled="disabled" style="background-color: #ccc; border-color: #ccc;" />
+                                        <input type="text" value="选择" disabled="disabled" style="background-color: #ccc; border-color: #ccc;" />
+                                    </div>
+                                {% for id, val in property[0].values %}
+                                    {% for id2, val2 in property[1].values %}
+                                        {% for id3, val3 in property[2].values %}
+                                        <div name="{{id}}" data-name="price-group">
+                                            <label style="width: 80px;" title="{{val}}">{{val}}</label>
+                                            <label style="width: 120px;" title="{{val2}}">{{val2}}</label>
+                                            <label style="width: 50px;" title="{{val3}}">{{val3}}</label>
+                                            <input type="text" name="pg[{{id}}][{{id2}}][{{id3}}][value]" value="{{data.price_group[id][id2][id3]['value']>0? data.price_group[id][id2][id3]['value'] : 0}}" placeholder="价格" data-name="price" disabled/>
+											<input type="radio" name="property" value="{{id}}-{{id2}}-{{id3}}" />
+                                        </div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endfor %}
+                                    <div style="padding: 0;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+        </div>
+    </div>
+    <div class="box-footer">
+		{#
+        <span style="margin-left: 60px; float: left;">
+			<input type="checkbox" id="course-status" name="status" value="1"{{not data or data.statu? ' checked': ''}} />
+			<label for="course-status">启用</label>
+			</span>
+        <span style="margin-left: 60px; float: left;">
+			<input type="checkbox" id="course-promotion" name="promotion" value="1"{{not data or data.promotion? ' checked': ''}} />
+			<label for="course-status">首页展示</label>
+			</span>
+        <span style="margin-left: 60px; float: left;">
+			<input type="checkbox" id="course-tuangou" name="tuangou" value="1"{{data.is_tuangou? ' checked': ''}} />
+			<label for="course-status">团购</label>
+			</span>
+			#}
+        <input type="hidden" id="course-id" name="id" value="{{id}}" />
+        <button type="submit" id="course-submit" class="btn btn-primary">确定</button>
+        <button type="button" class="btn" app-state="cancel">取消</button>
+    </div>
+    </div>
+</form>
+<script>
+
+$(function() {
+    $('#course-form').on('init', function() {
+        $('#course-service-area, #course-natatorium, #course-comment-user-id, #course-category').chosen();
+        $('#course-region').chosen().change(function() {
+            var pg   = $('#price-group');
+            var vals = $(this).val();
+            pg.children('div[name]').hide();
+            pg.find('input[type="text"]').prop('disabled', true);
+            if(vals && vals.length > 0) {
+                $.each(vals, function() {
+                    var region = (this + '').split('::');
+                    $('#course-form').find('div[name="' + region[0] + '"]').show().find("input[type='text']").prop('disabled', true);
+                });
+            }
+        }).trigger('change');
+
+
+        $('#course-form-contet').mousewheelStopPropagation();
+
+        $(this).on('submit', function() {
+            $('#price-group div[data-name="price-group"]').each(function() {
+                var p = $(this).find('input[data-name="price"]');
+                var price = $.trim(p.val());
+                if(price == '') {
+                    p.prop('disabled', true);
+                } else {
+                    console.log(p.attr('id'));
+                    p.val(price * 1 || 0);
+                }
+            });
+            if ($('a.up-loading', this).length > 0) {
+                App.alert('图片正在上传，请等待图片上传完成。');
+            } else if (App.checkValidity(this)) {
+                App.ajax({
+                    form: this,
+                    success: function() {
+                        App.Box.close();
+                    }
+                });
+            }
+            return false;
+        });
+    }).on('close', function(event, box, state) {
+
+    });
+});
+</script>

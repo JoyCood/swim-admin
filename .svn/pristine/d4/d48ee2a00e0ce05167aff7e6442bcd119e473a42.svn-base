@@ -1,0 +1,37 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#region-trash-btn" /></th>
+			<th width="70">图标</th>
+			<th>名称</th>
+			<th width="90">坐标</th>
+			<th width="60">城市</th>
+			<th width="70" style="text-align: right;">价格</th>
+			<th width="50">次序</th>
+			<th width="50">状态</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for region in regionList %}
+		<tr region-id="{{region._id}}">
+			<td><input type="checkbox" name="region" value="{{region._id}}" /></td>
+			<td>{% if region.cover %}<img src="{{region.cover}}" style="max-width: 60px;" />{% endif %}</td>
+			<td>
+				{{region.name}}
+				{% if region.subtitle %}<br />
+				<i style="color: #888;">{{region.subtitle}}</i>
+				{% endif %}
+			</td>
+			<td>{{region.coords.coordinates|join(',')}}</td>
+			<td>{{region.city.name}}</td>
+			<td align="right">{{region.price|number_format(2)}}</td>
+			<td>{{region.priority}}</td>
+			<td>{{region.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

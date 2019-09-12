@@ -1,0 +1,67 @@
+<form id="category-form" action="news/category/form.html" target="#category-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>资讯分类</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="50">名称：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="category-name" class="form-control" value="{{cat.name}}" placeholder="请输入分类名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>专栏：</th>
+						<td>
+							<select name="columnist[]" id="category-columnist" style="width:230px;" class="form-control chosen-select" multiple>
+								<option></option>
+								{% for columnist in columnist %}
+                                <option value="{{columnist._id}}:{{columnist.name}}" {{columnist.selected ? ' selected':''}}>{{columnist.name}}</option>
+								{% endfor %}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td width="120"><input type="text" name="priority" id="category-priority" value="{{cat.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="category-status" value="1"{{not cat._id or cat.status? ' checked': ''}} />
+							<label for="category-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{cat._id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#category-form').on('init', function() {
+        $('#category-columnist').chosen();
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

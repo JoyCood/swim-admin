@@ -1,0 +1,5 @@
+<nav>
+	<a href="home/match/match_import.html"{{_Action=='import'? ' class="slted"': ''}}><b class="fa fa-download"></b>导入</a>
+	&nbsp;
+	<a href="home/match/match.html"{{_Action=='index'? ' class="slted"': ''}}><b class="fa fa-list-alt"></b>列表</a>
+</nav>

@@ -1,0 +1,108 @@
+{% import "_macro.html" as macro %}
+<form id="tweet-topic-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="tweet/topic-form.html" target="#tweet-topic-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>话题详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+		</div>
+		<div id="tweet-group-form-contet" class="box-content">
+			<div id="tweet-group-form-main" style="width: 500px; padding-right: 20px; overflow: hidden;">
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-2">类型：</label>
+						<div class="col-sm-10">
+							<select id="tgroup-type" name="type" class="form-control">
+								<option value="topic"{{not data.type or data.type=='topic'? ' selected': ''}}>话题
+								</option>
+								<option value="exper"{{data.type=='exper'? ' selected': ''}}>经验
+								</option>
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-title" class="control-label col-sm-2">话题：</label>
+						<div class="col-sm-10">
+							<input type="text" name="title" id="tgroup-title" class="form-control" value="{{data.title}}" placeholder="请输入话题名称" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-desc" class="control-label col-sm-2">描述：</label>
+						<div class="col-sm-10">
+							<textarea id="tgroup-desc" name="description" class="form-control">{{data.description}}</textarea>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="topic-cover" class="control-label col-sm-2">封面：</label>
+						<div class="col-sm-10">
+							{{ macro.thumb('cover', data.cover)}}
+							{{ macro.upload('topic-cover', 'cover', 'cover', false) }}
+						</div>
+					</div>
+					<div id="topic-type" class="form-group" style="display: {{data.type=='exper'? 'block': 'none'}};">
+						<label for="topic-pic" class="control-label col-sm-2">大图：</label>
+						<div class="col-sm-10">
+							{{ macro.thumb('pic', data.pic)}}
+							{{ macro.upload('topic-pic', 'pic', 'pic', false) }}
+						</div>
+					</div>
+					<div class="form-group">
+                        <label for="topic-date" class="control-label col-sm-2">日期：</label>
+						<div class="col-sm-10">
+							<input type="text" name="date" id="topic-date" class="form-control" value="{{data.date? data.date|date('Y-m-d H:i:s'): ''}}" placeholder="年-月-日" />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="topic-priority" class="control-label col-sm-2">顺序：</label>
+						<div class="col-sm-4">
+							<input type="text" name="priority" id="topic-priority" class="form-control" value="{{data.priority}}" placeholder="数值越大越靠前" autocomplete="off" />
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-status" class="control-label col-sm-2">状态：</label>
+						<div class="col-sm-10">
+							<input type="checkbox" id="tgroup-status" name="statu" value="1"{{not data or data.statu? ' checked': ''}} />
+							<label for="tgroup-status">启用</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="tgroup-recommand" class="control-label col-sm-2">精选：</label>
+						<div class="col-sm-10">
+                            <input type="checkbox" id="tgroup-recommand" name="recommand" value="1"{{ data.recommand? ' checked': ''}} />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="tweet-group-form-foot" class="box-footer">
+			<input type="hidden" id="tgroup-id" name="id" value="{{data._id}}" />
+			<button type="submit" id="tgroup-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+
+<script>
+$(function() {
+	$('#tweet-topic-form').on('init', function() {
+		$('#tgroup-type').on('change', function() {
+			if(this.value == 'exper') {
+				$('#topic-type').css('display', 'block');
+			} else {
+				$('#topic-type').css('display', 'none');
+			}
+		});
+		$(this).on('submit', function() {
+			App.ajax({
+				url      : 'tweet/topic-form.html',
+				data     : $(this).serialize(),
+				dataType : 'html',
+				type     : 'post',
+				target   : '#tweet-topic-list',
+				success: function(response, status, xhr) {
+					App.Box.close();
+				}
+			});
+			return false;
+		});
+	});
+});
+</script>

@@ -1,0 +1,78 @@
+.caption {
+	padding: 20px 20px 10px;
+	border: 1px solid #ACD5F9; 
+	background-color: #E5F5FC;
+}
+.training .caption {
+	border: 1px solid #d6e9c6;
+	background-color: #dff0d8;
+}
+.content {
+	padding: 20px 20px 10px;
+	border: 1px solid #ACD5F9; border-top: none;
+}
+.training .content {
+	border-color: #d6e9c6;
+}
+
+#category-form {
+	width: 480px;
+}
+#category-text {
+	float: left; width: 40%;
+	min-width: 280px;
+}
+
+#teaching-form { position: relative; margin-left: 100px; }
+#teaching-form textarea {
+	resize: vertical;
+	height: 80px;
+}
+
+#teaching-nav {
+	position: fixed; top: 140px; left: 11px; width: 100px;
+	background-color: #E5F5FC;
+	border: 1px solid #ACD5F9;
+}
+.training #teaching-nav {
+	border: 1px solid #d6e9c6;
+	background-color: #dff0d8;
+}
+#teaching-nav>a:first-child { border-top: none; }
+#teaching-nav>a {
+	display: block; border-top: 1px solid #ACD5F9;
+	line-height: 30px; padding: 0 10px;
+	text-decoration: none;
+}
+#teaching-nav>a.actived {
+	background-color: #fff; color: #333;
+	padding: 0 10px 0 7px;
+	border-left: 3px solid #ACD5F9;
+}
+.training #teaching-nav>a { border-color: #d6e9c6; color: #3c763d; }
+#teaching-file { position: absolute; visibility: hidden; }
+.teaching-step-dot, .teaching-notice-dot {
+	display: inline-block;
+	border-radius: 20px;
+	width: 30px; height: 30px; line-height: 30px;
+	text-align: center;
+	background-color: #368EE0; color: #fff;
+}
+.training .teaching-step-dot, .training .teaching-notice-dot { background-color: #3c763d; }
+.teaching-notice-dot { width: 10px; height: 10px; line-height: 10px; }
+.teaching-actions>a {
+	display: block; line-height: 20px;
+	color: #999;
+}
+
+.teaching-cat-cover { max-width: 120px; max-height: 60px; }
+
+#video-form-contet { height: 450px; overflow: auto; }
+#video-form { width: 640px; }
+#video-form .video-text { height: 36px; margin-top: 3px; margin-bottom: 2px; }
+.video-actions { display: inline-block; vertical-align: top; }
+.video-actions>a.fa { display: 2px; margin: 0 3px; }
+.video-text-row { padding-bottom: 2px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+.video-text-row>div, .video-text>div { padding: 0; }
+.video-list-cover { max-width: 80px; max-height: 50px; }
+

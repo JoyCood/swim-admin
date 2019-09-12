@@ -1,0 +1,27 @@
+<div class="text-right bar">
+	{% if check_perm('main-contents', 'ADD') %}<button id="match-category-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建赛事</button>{% endif %}
+	{% if check_perm('main-contents', 'DELETE') %}<button id="match-category-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#match-category-trash-btn" /></th>
+			<th width="120">ID#</th>
+			<th>赛事名称</th>
+			<th width="60">启用</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}" class="{{class}}{{item.block?' disabled':''}}">
+			<td><input type="checkbox" name="tgroup" value="{{item._id}}" /></td>
+			<td>{{item._id}}</td>
+			<td>{{item.name}}</td>
+			<td>{{item.statu|status}}</td>
+			<td class="table-action"><a class="fa icon-edit" app-bubble="false"></a></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

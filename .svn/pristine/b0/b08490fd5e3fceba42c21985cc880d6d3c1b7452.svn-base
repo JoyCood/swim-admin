@@ -1,0 +1,55 @@
+{% import "_macro.html" as macro %}
+<form id="region-form" action="course/region/form.html" target="#region-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>开放校区{{region._id? ' - ' ~ region._id: ''}}</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td>
+							<input type="text" name="name" id="region-name" class="form-control" value="{{region.name}}" placeholder="请输入校区名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td><input type="text" name="priority" id="region-priority" value="{{region.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td>
+							<input type="checkbox" name="status" id="region-status" value="1"{{not region._id or region.status? ' checked': ''}} />
+							<label for="region-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{region._id}}" />
+			<button type="submit" id="region-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#region-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

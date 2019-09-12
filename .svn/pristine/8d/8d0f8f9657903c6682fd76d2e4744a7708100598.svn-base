@@ -1,0 +1,651 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+$app->get('/interview/list.html', function() use($app) {
+	$interview = SwimAdmin::model('interview.main');
+	$data = $interview->pagination();
+	$app->view()->addGlobal('_MOD', 'discover');
+	$app->render('interview/index.html', array(
+		'data'         => $data,
+		'type'         => $app->request->get('type'),
+		'content_type' => $app->request->get('content_type')
+	));
+});
+
+// 修改界面
+$app->get('/interview/form.html', function() use($app) {
+	$id = $app->request->get('id', '');
+	$data = array(
+		'date' => date('Y-m-d')
+	);
+	if($id) {
+		$interview = SwimAdmin::model('interview.main');
+		$data = $interview->collection()->findOne(array('_id' => new MongoId($id)));
+	}
+	if(!isset($data['contents']) || !$data['contents']) {
+		$data['contents'] =array(
+			array('text' => '', 'media' => array())
+		);
+	}
+	$category = $interview = SwimAdmin::model('interview.category');
+	$dataCats = array();
+	if(isset($data['category'])) {
+		foreach($data['category'] as $belong) {
+			$cid = (string)$belong['cateId'];
+			$dataCats[$cid] = $belong['cate'];
+		}
+	}
+	$catsList = $category->find();
+	$cats = array();
+	foreach($catsList as $cat) {
+		$cid = (string)$cat['_id'];
+		$cat['_id'] = $cid;
+		$cat['selected'] = isset($dataCats[$cid]);
+		$cats[] = $cat;
+	}
+	$app->render('interview/form.html', array(
+		'id' => $id,
+		'data' => $data,
+		'cats' => $cats
+	));
+});
+$app->post('/interview/form.html', function() use($app) {
+	$interview = SwimAdmin::model('interview.main');
+
+	$id = $app->request->post('id', '');
+	$cats = $app->request->post('category', array());
+	$category = array();
+	foreach($cats as $cat) {
+		$tmp = explode(':', $cat);
+		$cid = array_shift($tmp);
+		$cat = join(':', $tmp);
+		$category[] = array(
+			'cateId' => $cid,
+			'cate' => $cat
+		);
+	}
+	$date        = strtotime($app->request->post('date'));
+	$contents    = array();
+	$texts       = $app->request->post('content', array());
+	$photos      = $app->request->post('contentThumbs', array());
+	$sizeOfSteps = $app->request->post('size_of_contentThumbs', array());
+
+	foreach($texts as $idx => $txt) {
+		$content = array(
+			'text'  => $txt,
+			'media' => array()
+		);
+		if(isset($photos[$idx]) && $photos[$idx]) {
+			$sizeOfPhotos = isset($sizeOfSteps[$idx])? $sizeOfSteps[$idx]: array();
+			foreach($photos[$idx] as $n => $url) {
+				$size = explode(',', isset($sizeOfPhotos[$n]) && $sizeOfPhotos[$n]? $sizeOfPhotos[$n]: '');
+				$content['media'][] = array(
+					'type' => 'photo',
+					'url'  => $url,
+					'w'    => intval($size[0]),
+					'h'    => intval($size[1])
+				);
+			}
+		}
+		$contents[] = $content;
+	}
+
+	if($date)
+	{
+        $time = date('H:i:s', $date);
+
+        if($time=='00:00:00')
+        {
+        	$date = mktime(date('H'), date('i'), date('s'), date('n', $date), date('j', $date), date('Y', $date));
+        }
+    }
+    
+	$type = trim($app->request->post('type'));
+	$content_type = trim($app->request->post('content_type'));
+    $prom = intval($app->request->post('promotion', '0'));
+	$doc  = array(
+		'title'        => trim($app->request->post('title')),
+		'author'       => trim($app->request->post('author')),
+		'summary'      => trim($app->request->post('summary')),
+		'type'         => in_array($type, array('interview', 'equipment', 'olympics'))? $type: 'interview',
+		'content_type' => in_array($content_type, array('native', 'link'))? $content_type: 'native',
+		'promotion'    => $prom? 1: 0,
+		'link'         => trim($app->request->post('link')),
+		'photos'       => array(),
+		'date'         => $date? $date: time(),
+		'icon'         => $app->request->post('icon'),
+		'res_type'     => intval($app->request->post('res_type')),
+		'category'     => $category,
+		'contents'     => $contents,
+		'video'        => trim($app->request->post('video')),
+		'video_time'   => trim($app->request->post('video_time'))
+	);
+	$photos       = $app->request->post('photos', array());
+	$sizeOfPhotos = $app->request->post('size_of_photos', array());
+	foreach($photos as $idx => $photo) {
+		$size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+		$doc['photos'][] = array(
+			'url' => $photo,
+			'w'   => intval($size[0]),
+			'h'   => intval($size[1])
+		);
+	}
+	$image        = $app->request->post('cover', '');
+	$doc['cover'] = $image;
+	// $sizeOfImage  = $app->request->post('size_of_cover', array());
+	// $size         = explode(',', $sizeOfImage? $sizeOfImage: '');
+	// $doc['cover'] = array(
+	// 	'url' => $image,
+	// 	'w'   => intval(@$size[0]),
+	// 	'h'   => intval(@$size[1])
+	// );
+	if(!$doc['title']) {
+		SwimAdmin::error('请输入标题。');
+	}
+
+	if(!$id) {
+		$interview->insert($doc);
+	} else {
+		$interview->update($doc, $id);
+	}
+	// echo '<pre>'; var_export($doc); echo '</pre>'; exit;
+	$app->render('interview/list.html', array(
+		'id' => $id,
+		'data' => $interview->pagination($app->request->post('__url'))
+	));
+});
+
+// 删除
+$app->post('/interview/delete.html', function() use($app) {
+	$interview = SwimAdmin::model('interview.main');
+	$items 	= $app->request->post('items', array());
+	$interview->deleteById($items);
+	$app->view()->renderJSON(array('result' => true));
+});
+
+$app->get('/interview/category.html', function() use($app) {
+	$cat 	= SwimAdmin::model('interview.category');
+	$list 	= $cat->find();
+	$app->view()->addGlobal('_MOD', 'discover');
+	$app->render('interview/category.html', array(
+		'categoryList' => $list
+	));
+});
+// 分类表单
+$app->get('/interview/category/form.html', function() use($app) {
+	$id 	= $app->request->get('id');
+	$cat 	= SwimAdmin::model('interview.category');
+	$data 	= array();
+	if($id) {
+		$data = $cat->collection()->findOne(array('_id' => new MongoId($id)));
+	}
+	$app->render('interview/category-form.html', array(
+		'cat' => $data
+	));
+});
+// 处理分类表单
+$app->post('/interview/category/form.html', function() use($app) {
+	$id 	= $app->request->post('id', '');
+	$cat 	= SwimAdmin::model('interview.category');
+	$data 	= array(
+		'name' 		=> trim($app->request->post('name', '')),
+		'priority' 	=> intval($app->request->post('priority')),
+		'status' 	=> intval($app->request->post('status'))
+	);
+	if(!$data['name']) {
+		SwimAdmin::error('请输入分类名称。');
+	}
+	if(!$id) {
+		$cat->insert($data);
+	} else {
+		$cat->update($data, $id);
+	}
+	$app->render('interview/category-list.html', array(
+		'categoryList' => $cat->find()
+	));
+});
+// 删除分类
+$app->post('/interview/category/delete.html', function() use($app) {
+	$cat 	= SwimAdmin::model('interview.category');
+	$items 	= $app->request->post('items', array());
+	$cat->deleteById($items);
+	$app->render('interview/category-list.html', array(
+		'categoryList' => $cat->find()
+	));
+});
+
+// 赛事活动
+$app->get('/match/list.html', function() use($app) {
+	$match = SwimAdmin::model('match.main');
+	$data = $match->pagination();
+	$app->view()->addGlobal('_MOD', 'City');
+	$app->render('match/index.html', array(
+		'data' => $data,
+		'type' => $app->request->get('type')
+	));
+});
+// 赛事活动表单
+$app->get('/match/form.html', function() use($app) {
+	$id   = $app->request->get('id', '');
+	$data = array(
+		'date' => date('Y-m-d')
+	);
+	if($id) {
+		$match = SwimAdmin::model('match.main');
+		$data  = $match->collection()->findOne(array('_id' => new MongoId($id)));
+	}
+	if(!isset($data['contents']) || !$data['contents']) {
+		$data['contents'] = array(
+			array('text' => '', 'media' => array())
+		);
+	}
+	$category = $match = SwimAdmin::model('match.category');
+	$dataCats = array();
+	if(isset($data['category'])) {
+		foreach($data['category'] as $belong) {
+			$cid            = (string)$belong['cateId'];
+			$dataCats[$cid] = $belong['cate'];
+		}
+	}
+	$catsList = $category->find(array('status' => 1));
+	$cats     = array();
+	foreach($catsList as $cat) {
+		$cid             = (string)$cat['_id'];
+		$cat['_id']      = $cid;
+		$cat['selected'] = isset($dataCats[$cid]);
+		$cats[]          = $cat;
+	}
+	$citiesCourse = SwimAdmin::model('course.area')->find(array('statu' => 1));
+	$cities       = array();
+	if($citiesCourse) {
+		foreach($citiesCourse as $city) {
+			$cid          = (string)$city['_id'];
+			$cities[$cid] = array(
+				'_id'      => $cid,
+				'city'     => $city['city'],
+				'selected' => false
+			);
+		}
+	}
+	unset($citiesCourse);
+	if(isset($data['region']) && $data['region']) {
+		foreach($data['region'] as $region) {
+			$cid = $region['city_id'];
+			if(isset($cities[$cid])) {
+				$cities[$cid]['selected'] = true;
+			}
+		}
+	}
+	$app->render('match/form.html', array(
+		'id'     => $id,
+		'data'   => $data,
+		'cats'   => $cats,
+		'cities' => $cities,
+	));
+});
+// 处理赛事活动表单
+$app->post('/match/form.html', function() use($app) {
+	$match = SwimAdmin::model('match.main');
+
+	$id = $app->request->post('id', '');
+	$cats = $app->request->post('category', array());
+	$category = array();
+	foreach($cats as $cat) {
+		$tmp = explode(':', $cat);
+		$cid = array_shift($tmp);
+		$cat = join(':', $tmp);
+		$category[] = array(
+			'cateId' => $cid,
+			'cate' => $cat
+		);
+	}
+	$date        = strtotime($app->request->post('date'));
+	$contents    = array();
+	$texts       = $app->request->post('content', array());
+	$photos      = $app->request->post('contentThumbs', array());
+	$sizeOfSteps = $app->request->post('size_of_contentThumbs', array());
+	foreach($texts as $idx => $txt) {
+		$content = array(
+			'text'  => $txt,
+			'media' => array()
+		);
+		if(isset($photos[$idx]) && $photos[$idx]) {
+			$sizeOfPhotos = isset($sizeOfSteps[$idx])? $sizeOfSteps[$idx]: array();
+			foreach($photos[$idx] as $n => $url) {
+				$size = explode(',', isset($sizeOfPhotos[$n]) && $sizeOfPhotos[$n]? $sizeOfPhotos[$n]: '');
+				$content['media'][] = array(
+					'type' => 'photo',
+					'url'  => $url,
+					'w'    => intval($size[0]),
+					'h'    => intval($size[1])
+				);
+			}
+		}
+		$contents[] = $content;
+	}
+
+	if($date)
+	{
+        $time = date('H:i:s', $date);
+
+        if($time=='00:00:00')
+        {
+        	$date = mktime(date('H'), date('i'), date('s'), date('n', $date), date('j', $date), date('Y', $date));
+        }
+    }
+    
+    $type = trim($app->request->post('type'));
+    $prom = intval($app->request->post('promotion', '0'));
+	$doc  = array(
+		'title' 	=> trim($app->request->post('title')),
+		'author' 	=> trim($app->request->post('author')),
+		'summary' 	=> trim($app->request->post('summary')),
+		'type'		=> in_array($type, array('native', 'link'))? $type: 'native',
+		'promotion' => $prom? 1: 0,
+		'link' 		=> trim($app->request->post('link')),
+		'photos' 	=> array(),
+		'date' 		=> $date? $date: time(),
+		'icon' 		=> $app->request->post('icon'),
+		'res_type' 	=> intval($app->request->post('res_type')),
+		'category' 	=> $category,
+		'contents' 	=> $contents,
+		'region'    => array(),
+	);
+	$photos       = $app->request->post('photos', array());
+	$sizeOfPhotos = $app->request->post('size_of_photos', array());
+	foreach($photos as $idx => $photo) {
+		$size = explode(',', isset($sizeOfPhotos[$idx]) && $sizeOfPhotos[$idx]? $sizeOfPhotos[$idx]: '');
+		$doc['photos'][] = array(
+			'url' => $photo,
+			'w'   => intval($size[0]),
+			'h'   => intval($size[1])
+		);
+	}
+	$image        = $app->request->post('cover', '');
+	$doc['cover'] = $image;
+	// $sizeOfImage  = $app->request->post('size_of_cover', array());
+	// $size         = explode(',', $sizeOfImage? $sizeOfImage: '');
+	// $doc['cover'] = array(
+	// 	'url' => $image,
+	// 	'w'   => intval(@$size[0]),
+	// 	'h'   => intval(@$size[1])
+	// );
+	$cities = $app->request->post('region');
+	if($cities) {
+		foreach((array)$cities as $city) {
+			$city = trim($city);
+			if($city) {
+				$exp = explode('::', $city);
+				$doc['region'][] = array(
+					'city_id'   => $exp[0],
+					'city_name' => $exp[1]
+				);
+			}
+		}
+	}
+	if(!$doc['title']) {
+		SwimAdmin::error('请输入标题。');
+	}
+
+	if(!$id) {
+		$match->insert($doc);
+	} else {
+		$match->update($doc, $id);
+	}
+	$app->render('match/list.html', array(
+		'id' => $id,
+		'data' => $match->pagination($app->request->post('__url'))
+	));
+});
+// 删除赛事
+$app->post('/match/delete.html', function() use($app) {
+	$match = SwimAdmin::model('match.main');
+	$items 	= $app->request->post('items', array());
+	$match->deleteById($items);
+	$app->view()->renderJSON(array('result' => true));
+});
+
+// 赛事分类管理
+$app->get('/match/category-list.html', function() use($app) {
+	$cat 	= SwimAdmin::model('match.category');
+	$list 	= $cat->find();
+	$app->view()->addGlobal('_MOD', 'City');
+	$app->render('match/category.html', array(
+		'categoryList' => $list
+	));
+});
+// 赛事分类表单
+$app->get('/match/category/form.html', function() use($app) {
+	$id 	= $app->request->get('id');
+	$cat 	= SwimAdmin::model('match.category');
+	$data 	= array();
+	if($id) {
+		$data = $cat->collection()->findOne(array('_id' => new MongoId($id)));
+	}
+	$app->render('match/category-form.html', array(
+		'cat' => $data
+	));
+});
+// 处理赛事分类表单
+$app->post('/match/category/form.html', function() use($app) {
+	$id 	= $app->request->post('id', '');
+	$cat 	= SwimAdmin::model('match.category');
+	$data 	= array(
+		'name' 		=> trim($app->request->post('name', '')),
+		'priority' 	=> intval($app->request->post('priority')),
+		'status' 	=> intval($app->request->post('status'))
+	);
+	if(!$data['name']) {
+		SwimAdmin::error('请输入分类名称。');
+	}
+	if(!$id) {
+		$cat->insert($data);
+	} else {
+		$cat->update($data, $id);
+	}
+	$app->render('match/category-list.html', array(
+		'categoryList' => $cat->find()
+	));
+});
+// 删除赛事分类
+$app->post('/match/category/delete.html', function() use($app) {
+	$cat 	= SwimAdmin::model('match.category');
+	$items 	= $app->request->post('items', array());
+	$cat->deleteById($items);
+	$app->render('match/category-list.html', array(
+		'categoryList' => $cat->find()
+	));
+});
+//成绩录入
+$app->get('/match/match.html', function() use($app) {
+	$app->view()->addGlobal('_MOD', 'match');
+	$app->view()->addGlobal('_Action', 'index');
+	$match  = SwimAdmin::model('match.list');
+	$lists  = $match->findAll();
+	$member = SwimAdmin::model('match.member');
+	$data   = $member->pagination();
+	$app->render('match/match.html', array(
+		'match' => Helper::getValue($data['params'], 'match', ''),
+		'data' => $data,
+		'lists' => $lists,
+	));
+});
+$app->get('/match/match_form.html', function() use($app) {
+	$id 	= $app->request->get('id', '');
+	$match  = SwimAdmin::model('match.list');
+	$lists  = $match->findAll();
+	$match 	= SwimAdmin::model('match.member');
+	$data   = array();
+	if ($id) {
+		$data = $match->findOneById($id);
+	}
+	$app->view()->addGlobal('_MOD', 'match');
+	$app->render('match/match_form.html', array(
+		'data' => $data,
+		'lists' => $lists,
+	));
+});
+$app->post('/match/match_form.html', function() use($app) {
+	$id 	= $app->request->post('id', '');
+	$match 	= SwimAdmin::model('match.member');
+	$data 	= array(
+		'match' 	=> trim($app->request->post('match', '')),
+		'project' 	=> trim($app->request->post('project', '')),
+		'group' 	=> trim($app->request->post('group', '')),
+		'rank' 		=> trim($app->request->post('rank', '')),
+		'mark' 		=> trim($app->request->post('mark', '')),
+		'name' 		=> trim($app->request->post('name', '')),
+		'number' 	=> trim($app->request->post('number', ''))
+	);
+	if(!$data['match']) {
+		SwimAdmin::error('请选择赛事。');
+	}
+	if(!$data['project']) {
+		SwimAdmin::error('请输入项目。');
+	}
+	if(!$data['group']) {
+		SwimAdmin::error('请输入组别。');
+	}
+	if(!$data['rank']) {
+		SwimAdmin::error('请输入名次。');
+	}
+	if(!$data['mark']) {
+		SwimAdmin::error('请输入成绩。');
+	}
+	if(!$data['name']) {
+		SwimAdmin::error('请输入姓名。');
+	}
+	if(!$data['number']) {
+		SwimAdmin::error('请输入参赛编号。');
+	}
+	if(!$id) {
+		$match->insert($data);
+	} 
+	else {
+		$match->update($data, $id);
+	}
+	$app->render('match/category-list.html', array(
+		'data' => $match->pagination()
+	));
+});
+$app->post('/match/match-member/delete.html', function() use($app) {
+	$match = SwimAdmin::model('match.member');
+	$items = $app->request->post('items', array());
+	$match -> deleteById($items);
+	$app->render('match/match_list.html', array(
+		'data' => $match->pagination()
+	));
+});
+//批量导入
+$app->get('/match/match_import.html', function() use($app) {
+	$app->view()->addGlobal('_Action', 'import');
+	$app->view()->addGlobal('_MOD', 'match');
+	$app->render('match/match_import.html', array(
+	));
+});
+$app->post('/match/match_import.html', function() use($app) {
+	$upfile = isset($_FILES['upfile'])? $_FILES['upfile']: null;
+	// 判断文件是否有效
+	if($upfile && !$upfile['error'] && strpos($upfile['type'], 'text') === 0) {
+		// 读取文件内容
+		$contents = preg_split('/[\r|\n|\r\n]/', file_get_contents($upfile['tmp_name']));
+		$data = array();
+		foreach($contents as $row) {
+			$item = explode(',', $row);
+			if($item) {
+				$title = trim($item[0]);
+				if($title) {
+					// 游泳馆信息
+					$data[] = array(
+						'match' 	=> iconv("gb2312", "utf-8", isset($item[0])? trim($item[0]): ''),
+						'project' 	=> iconv("gb2312", "utf-8", isset($item[1])? trim($item[1]): ''),
+						'group' 	=> iconv("gb2312", "utf-8", isset($item[2])? trim($item[2]): ''),
+						'rank' 	=> iconv("gb2312", "utf-8", isset($item[3])? trim($item[3]): ''),
+						'mark' 	=> iconv("gb2312", "utf-8", isset($item[4])? trim($item[4]): ''),
+						'name' 	=> iconv("gb2312", "utf-8", isset($item[5])? trim($item[5]): ''),
+						'number' 	=> iconv("gb2312", "utf-8", isset($item[6])? trim($item[6]): ''),
+					);
+				}
+			}
+		}		
+		if($data) {
+			try {
+				// 写入DB
+				$natatorium = SwimAdmin::model('match.member');
+				// $natatorium = SwimAdmin::db('natatorium');
+				foreach($data as $item) {
+					$natatorium->insert($item);
+				}
+			} catch(Exception $e) {
+				$app->log->error($e);
+				$app->view()->renderJSON(array(
+					'result' => false,
+					'error' => '导入失败，请检查坐标或文件格式是否正确。'
+				));
+				return;
+			}
+		}
+		$app->view()->renderJSON(array(
+			'result' 	=> true,
+			'num'		=> count($data) // 返回导入总数
+		));
+	} else {
+		$app->view()->renderJSON(array(
+			'result' => false,
+			'error' => '您上传了一个无法识别的文件。'
+		));
+	}
+});
+//赛事添加
+$app->get('/match/match_category.html', function() use($app) {
+	$match = SwimAdmin::model('match.list');
+	$list  = $match->pagination();
+	$app->view()->addGlobal('_MOD', 'match');
+	$app->render('match/match_category.html', array(
+		'data' => $list,
+	));
+});
+$app->get('/match/match_category_list.html', function() use($app) {
+	$match = SwimAdmin::model('match.list');
+	$list  = $match->pagination();
+	$app->render('match/match_category_list.html', array(
+		'data' => $list
+	));
+});
+$app->get('/match/match_category_form.html', function() use($app) {
+	$id   = trim($app->request->get('id'));
+	$match = SwimAdmin::model('match.list');
+	$data = array();
+	if($id) {
+		$data   = $match->findOneById($id);
+	} 
+	$app->render('match/match_category_form.html', array(
+		'data' => $data,
+	));
+});
+$app->post('/match/match_category_form.html', function() use($app) {
+	$id 	= $app->request->post('id', '');
+	$match 	= SwimAdmin::model('match.list');
+	$data 	= array(
+		'name' 		=> trim($app->request->post('name', '')),
+		'statu' 	=> intval($app->request->post('statu'))
+	);
+	if(!$data['name']) {
+		SwimAdmin::error('请输入名称。');
+	}
+	if(!$id) {
+		$match->insert($data);
+	} 
+	else {
+		$match->update($data, $id);
+	}
+	$app->render('match/category-list.html', array(
+		'data' => $match->pagination()
+	));
+});
+$app->post('/match/match-list/delete.html', function() use($app) {
+	$match = SwimAdmin::model('match.list');
+	$items = $app->request->post('items', array());
+	$match -> deleteById($items);
+	$app->render('match/match_category_list.html', array(
+		'data' => $match->pagination()
+	));
+});

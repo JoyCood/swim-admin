@@ -1,0 +1,21 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+$app->get('/(index.html)', function() use($app) {
+	$report = SwimAdmin::model('report.main');
+	$app->view()->addGlobal('_MOD', 'fun');
+	$data = $report->pagination();
+	$app->render('report/index.html', array(
+		'data' => $data
+	));
+});
+
+// 更改状态
+$app->post('/status.html', function() use($app) {
+	$report = SwimAdmin::model('report.main');
+	$items 	= $app->request->post('items', array());
+	$statu 	= intval($app->request->post('statu'));
+	$report->updateStatus($items, $statu);
+	$app->view()->renderJSON(array(
+		'result' => true
+	));
+});

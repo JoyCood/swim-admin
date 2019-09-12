@@ -1,0 +1,194 @@
+<?php
+class ControlUser {
+	public function __construct() {
+		$app  = SwimAdmin::app();
+		$view = $app->view();
+
+		$view->addGlobal('_MOD', 'admin');
+		$view->addGlobal('_Action', 'user');
+		$view->addGlobal('title', '系统');
+	}
+
+	public function indexAction() {
+		SwimAdmin::checkPermission('users', PERM_READ);
+
+		$app  = SwimAdmin::app();
+		$user = SwimAdmin::model('user.main');
+		$data = $user->pagination();
+		
+		$app->render('user/user.html', array(
+			'data' => $data
+		));
+	}
+
+	public function formAction() {
+		$app    = SwimAdmin::app();
+		$user   = SwimAdmin::model('user.main');
+		$perm   = SwimAdmin::model('permission.main');
+		$groups = $perm->getGroups();
+		$data   = array();
+		$id     = $app->request->get('id');
+
+		foreach($groups as & $group) {
+			$group['selected'] = false;
+		}
+		if(empty($id)) {
+			$data['privilege'] = null;
+			$data['active']    = true;
+		} else {
+			$data = $user->getOneById($id);
+			if(!$data) {
+				SwimAdmin::error('用户不存在，或已经被删除。');
+			}
+        }
+		$app->render('user/user-form.html', array(
+            'admin'      => ($_SESSION[S_USER] == 'admin'),
+			'data'		 => $data,
+			'groups'     => $groups,
+			'settings'   => $perm->getPermissionSettings(),
+            'dict' 		 => $perm->getPermissionDict(),
+            'types'      => $user::$privileges[$_SESSION[S_TYPE]]
+		));
+	}
+
+	public function permissionAction() {
+		$app    = SwimAdmin::app();
+		$groups = explode(',', $app->request->get('groups', ''));
+		$perm 	= SwimAdmin::model('permission.main');
+		$data   = array();
+		$gids   = array();
+
+		foreach($groups as $gid) {
+			$gid = trim($gid);
+			if($gid) {
+				$gids[] = new MongoId($gid);
+			}
+		}
+		$data['privilege'] = $perm->getPermissionByGids($gids);
+
+		$app->render('user/permission.html', array(
+			'data'		 => $data,
+			'settings'   => $perm->getPermissionSettings(),
+			'dict' 		 => $perm->getPermissionDict(),
+			'readonly'   => true
+		));
+	}
+    
+    //保存用户信息
+	public function saveAction() {
+		$app       = SwimAdmin::app();
+		$user      = SwimAdmin::model('user.main');
+		$rs        = true;
+		$id        = $app->request->post('id');
+		$pass      = $app->request->post('password');
+		$gids      = $app->request->post('group');
+        $userType  = intval($app->request->post('userType', 0));
+
+        if($_SESSION[S_USER]!='admin' && !$userType) {
+            SwimAdmin::error('请选择用户类型。');
+        }
+
+		$doc = array(
+			'name' 	 => trim($app->request->post('name')),
+			'active' => intval($app->request->post('active')),
+            'type'   => $userType,
+		);
+
+        $privilege = $app->request->post('privilege', array());
+        $perm = SwimAdmin::model('permission.main');
+        if(!empty($user::$privileges[$userType]['privilege'])) {            
+            $privilege = $user::$privileges[$userType]['privilege']; 
+        }
+
+        foreach($privilege as $key => $vals) {
+            $doc['privilege'][$key] = 0;
+            foreach($vals as $val) {
+                $doc['privilege'][$key] += $val;
+            }
+        }
+
+		$groups = array();
+		if(is_array($gids)) {
+			foreach($gids as $gid) {
+				$gid = trim($gid);
+				if($gid) {
+					$groups[] = $gid;
+				}
+			}
+		}
+		$doc['group'] = $groups;
+
+		if(empty($id)) {
+			SwimAdmin::checkPermission('users', PERM_ADD);
+			if(strlen($pass) < 8) {
+				SwimAdmin::error('密码不能少于8个字符，请重新输入。');
+			}
+			$doc['username'] = trim($app->request->post('username'));
+			$doc['password'] = $user->password($pass);
+			try {
+				$user->addUser($doc);
+			} catch(MongoDuplicateKeyException $e) {
+				SwimAdmin::error("帐号({$doc['username']})已经存在。");
+				$rs = false;
+			} catch(Exception $e) {
+				$rs = false;
+			}
+		} else {
+			SwimAdmin::checkPermission('users', PERM_EDIT);
+			$result = $user->getOneById($id);
+			if(!$result) {
+				SwimAdmin::error('用户不存在，或已经被删除。');
+			} else if($result['username'] != 'admin') {
+				if($pass !== '************') {
+					if(strlen($pass) < 8) {
+						SwimAdmin::error('密码不能少于8个字符，请重新输入。');
+					}
+					$doc['password'] = $user->password($pass);
+				}
+				if(!$user->update($doc, $id)) {
+					$rs = false;
+				}
+			}
+		}
+		$app->view()->renderJSON(array(
+			'result' => $rs
+		));
+	}
+
+	public function deleteAction() {
+		SwimAdmin::checkPermission('users', PERM_DELETE);
+		
+		$app   = SwimAdmin::app();
+		$user  = SwimAdmin::model('user.main');
+		$items = $app->request->post('items', array());
+		$user->deleteById($items);
+		$app->view()->renderJSON(array(
+			'result' => true
+		));
+	}
+
+	public function passwordAction() {
+		$app   = SwimAdmin::app();
+		if($app->request->isPost()) {
+			$admin = SwimAdmin::model('user.main');
+			$user  = $admin->getOneByName($_SESSION[S_USER]);
+			$opass = $app->request->post('old_pass');
+			$npass = $app->request->post('new_pass');
+			$cpass = $app->request->post('cfm_pass');
+			if($admin->password($opass) != $user['password']) {
+				SwimAdmin::error('旧密码不正确，请重新输入。');
+			} else if(strlen($npass) < 6) {
+				SwimAdmin::error('新密码不能少于6个字符，请重新输入。');
+			} else if($npass !== $cpass) {
+				SwimAdmin::error('两次输入的新密码不一致，请重新输入。');
+			} else {
+				$admin->changePassword($_SESSION[S_USER], $npass);
+				$app->view()->renderJSON(array(
+					'result' => true
+				));
+			}
+		} else {
+			$app->render('user/password.html');
+		}
+	}
+}

@@ -1,0 +1,55 @@
+<form id="area-form" class="{{check_perm('main-contents', data._id? 'EDIT': 'ADD')? '': 'readonly_form'}}" action="course/area/form.html" target="#area-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>服务城市</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="50">名称：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="area-name" class="form-control" value="{{area.city}}" placeholder="请输入分类名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>次序：</th>
+						<td width="120"><input type="text" name="priority" id="area-priority" value="{{area.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="area-status" value="1"{{not area._id or area.statu? ' checked': ''}} />
+							<label for="area-status">开放</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{area._id}}" />
+			<button type="submit" id="area-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#area-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

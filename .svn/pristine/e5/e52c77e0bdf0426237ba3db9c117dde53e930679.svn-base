@@ -1,0 +1,72 @@
+<table class="form">
+	<tr><th>订单号：</th><td>{{order.order_id}}</td></tr>
+	<tr><th>商品ID：</th><td>{{order.course.id}}</td></tr>
+	<tr><th>商品名称</th><td>{{order.course.title}}</td></tr>
+	<tr><th>下单时间：</th><td>{{order.create_time|date('Y-m-d H:i:s')}}</td></tr>
+	<tr><th>激活时间：</th><td>{{order.active_time? order.active_time|date('Y-m-d H:i:s'): '-'}}</td></tr>
+	<tr><th>&nbsp;</th><td></td></tr>
+	<tr><th>支付平台：</th><td>{{order.platform}}</td></tr>
+	<tr><th>状态：</th><td>{{order.order_status == 1? '已支付': '待付款'}}</td></tr>
+	<tr><th>类型：</th><td>{{order.course.is_tuangou? '团购': '普通'}}</td></tr>
+	{% if order.course.is_tuangou %}
+	<tr><th>要求人数/已参团人数：</th><td>{{order.course.tuangou_people|number_format(0)}}/{{order.course.tuangou_people_counter|number_format(0)}}</td></tr>
+	{% endif %}
+	<tr>
+		<th>单价：</th><td class="numeric">{{order.price|number_format(2)}}</td>
+	</tr>
+	<tr>
+        <th>优惠价格：</th> <td class="numeric">{{order.course.final_discount_price|number_format(2)}}
+	</tr>
+	<tr>
+        <th>优惠方式：</th> <td class="numeric">{{order.course.discount_type}}
+	</tr>
+	<tr>
+		<th>数量：</th><td class="numeric">{{order.quantity|number_format(0)}} (件)</td>
+	</tr>
+	<tr>
+		<th>支付总额：</th><td class="numeric">{{order.total_fee|number_format(2)}}</td>
+	</tr>
+	<tr>
+		<th>优惠金额：</th><td class="numeric">{{order.discount|number_format(2)}}</td>
+	</tr>
+	<tr><th>支付时间：</th><td>{{order.pay_time? order.pay_time|date('Y-m-d H:i:s'): '-'}}</td></tr>
+	<tr><th>&nbsp;</th><td></td></tr>
+	<tr><th>姓名：</th><td>{{order.demanded.name}}</td></tr>
+	<tr><th>性别：</th><td>{{order.demanded.sex}}</td></tr>
+	<tr><th>电话：</th><td>{{order.demanded.phone}}</td></tr>
+	<tr><th>用户类型：</th><td>{{buyer.type==2? '马甲': '会员'}}</td></tr>
+    <tr><th>校区：</th><td>{{order.demanded.xiaoquTitle}}</td></tr>
+    <tr><th>门票：</th><td>{{order.demanded.zhongleiTitle}}</td></tr>
+    <tr><th>规格：</th><td>{{order.demanded.guigeTitle}}</td></tr>
+	<tr><th>授课时间：</th><td>{{order.demanded.class_time}}</td></tr>
+	<tr><th>场馆：</th><td>{{order.demanded.natatorium}}</td></tr>
+	<tr><th>培训状态：</th><td>
+				{% if order.order_status == 1 and order.course.is_tuangou==1 and order.course.tuangou_people>order.course.tuangou_people_counter %}
+				    拼团中
+				{% elseif order.order_status == 0 and order.course.is_tuangou==1 %}
+				    拼团中
+				{% elseif order.train_status == 0 %}
+					排课中
+				{% elseif order.train_status == 1 %}
+					上课中
+				{% else %}
+					已毕业
+				{% endif %}
+	</td></tr>
+	<tr><th>课程有效期：</th><td>{{order.order_available_time|date('Y-m-d H:i:s')}}</td></tr>
+	<tr><th>&nbsp;</th><td></td></tr>
+	{#<tr><th>验证码：</th><td>{{order.code}}</td></tr>#}
+	<tr><th>教练ID：</th><td>{{order.teacher_id}}</td></tr>
+	<tr><th>教练名称：</th><td>{{order.teacher_name}}</td></tr>
+	<tr><th>教练电话：</th><td>{{order.teacher_phone}}</td></tr>
+	<tr><th>&nbsp;</th><td></td></tr>
+	<tr><th>退款申请：</th><td>{{order.buyer_process_status==2? '是': '否'}}</td></tr>
+	<tr><th>商户处理：</th><td>{{order.seller_process_status==2? '是': '否'}}</td></tr>
+	<tr><th>请求退款时间：</th><td>{{order.ask_refund_time? order.ask_refund_time|date('Y-m-d H:i:s'): '-'}}</td></tr>
+	<tr><th>退款单号：</th><td>{{order.refund_no? order.refund_no: '-'}}</td></tr>
+	<tr><th>退款金额：</th><td class="numeric">{{order.refund_fee|number_format(2)}}</td></tr>
+	<tr><th>团购成员：</th>
+		{% for item in orders %}
+		<td>{{buyers[item.user_id].nick}}/{{buyers[item.user_id].phone}}/{{buyers[item.user_id].type==2? '马甲': '会员'}}/{{buyers[item.user_id]._id ==order.user_id? '团主': '-'}}</td></tr>
+	    {% endfor %}
+</table>

@@ -1,0 +1,68 @@
+<div class="text-right">
+    <button id="tweet-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>
+    <button id="tweet-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+    <form action="local/tweet/index.html" method="GET" style="margin-top: -1px;">
+        <select name="tweet-type" class="form-control" style="float: left; width: 80px;" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+            <option value="">全部</option>
+            <option value="top" {{tweet_type=='top' ? 'selected': ''}}>热贴</option>
+            <option value="hot" {{tweet_type=='hot' ? 'selected': ''}}>置顶</option>
+            <option value="recommand" {{tweet_type=='recommand' ? 'selected': ''}}>推荐</option>
+        </select>
+        <select name="group-id" class="form-control" style="float: left; width: 150px;" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+            <option value="">版块</option>
+            {% for group in groups %}
+            <option value="{{group._id}}" {{group_id==group._id? ' selected': ''}}>{{group.title}}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="title" class="form-control" style="float: left; margin-left: 10px; width: 150px;" name="title" value="{{title}}" placeholder="请输入标题关键字" />
+        <button type="submit" class="btn btn-success" style="height: 34px;">查询</button>
+    </form>
+</div>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th width="30">
+                <input type="checkbox" rel="#tweet-trash-btn" />
+            </th>
+            <th>内容</th>
+            <th width="80">版块</th>
+            <th width="80">评论次数</th>
+            <th width="80">查看次数</th>
+            <th width="40"><i class="fa fa-image"></i></th>
+            <th width="40">推荐</th>
+            <th width="90">最后更新</th>
+            <th width="80"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in data.items %}
+        <tr data-id="{{item._id}}">
+            <td>
+                <input type="checkbox" name="tweet" value="{{item._id}}" />
+            </td>
+            <td>
+                <h5>{{item.content.title}}</h5>
+                <h6>ID#: {{item._id}}</h6>
+                <span class="push-text">{{item.content.text|nl2br}}</span>
+                <p style="color: #369;">
+                    {{item.hot? '热贴': ''}}&nbsp; {{item.top? '置顶': ''}}&nbsp; {{item.recommand? '精华': ''}}
+                </p>
+            </td>
+            <td>{{item.group_id and Sections[item.group_id]? Sections[item.group_id]: ''}}</td>
+            <td align="right">{{item.comments_counter|number_format}}</td>
+            <td align="right">{{item.views_counter|number_format}}</td>
+            <td><i class="fa fa-image" style="color: {{item.content.photos? '#369': '#efefef'}};"></i></td>
+            <td>
+                <input type="checkbox" class="chkbox" id="reco-{{item._id}}" {{item.recommand.status? ' checked': ''}} />
+                <label data-action="recommand"></label>
+            </td>
+            <td>{{item.modified_on? item.modified_on|date('Y-m-d H:i:s'): item.create_time|date('Y-m-d H:i:s')}}</td>
+            <td class="table-action">
+                <a class="fa icon-edit" app-bubble="false"></a>
+                <a href="javascript:;" class="fa fa-arrow-circle-o-up" data-action="push" data-mod="tweet" title="推送" app-bubble="false"></a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% include '_pagination.html' with data %}

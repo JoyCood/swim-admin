@@ -1,0 +1,31 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#category-trash-btn" /></th>
+			<th>分类名称</th>
+			<th width="120">封面</th>
+			<th width="80">Type</th>
+			<th width="80">难度系数</th>
+			<th width="50">次序</th>
+			<th width="50">状态</th>
+			<th width="66"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for cat in categoryList %}
+		<tr cat-id="{{cat._id}}" data-id="{{cat._id}}">
+			<td><input type="checkbox" name="cat" value="{{cat._id}}" /></td>
+			<td><span class="push-text">{{cat.name}}</span></td>
+			<td>{%if cat.cover%}<img src="{{cat.cover}}" class="teaching-cat-cover" />{% else %}暂无封面{% endif %}</td>
+			<td>{{cat.type? cat.type: '-'}}</td>
+			<td>{{cat.difficulty? cat.difficulty: '-'}}</td>
+			<td>{{cat.priority}}</td>
+			<td>{{cat.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+				<a href="javascript:;" class="fa fa-arrow-circle-o-up" data-action="push" data-mod="technicalCat" title="推送" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

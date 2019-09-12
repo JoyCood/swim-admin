@@ -1,0 +1,24 @@
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#category-trash-btn" /></th>
+			<th>分类名称</th>
+			<th width="50">次序</th>
+			<th width="50">状态</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for cat in categoryList %}
+		<tr cat-id="{{cat._id}}">
+			<td><input type="checkbox" name="cat" value="{{cat._id}}" /></td>
+			<td>{{cat.name}}</td>
+			<td>{{cat.priority}}</td>
+			<td>{{cat.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

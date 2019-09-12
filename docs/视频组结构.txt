@@ -1,0 +1,123 @@
+在原technical_category上修改
+technical_category = {
+	'_id'     : ID,
+	'name'    : '自由泳', //'专题名称'
+	'priority': 10, // 顺序，越大越前
+	'cover'   : 'http://xxxx.jpg', // 封面图片
+	'banner'  : [
+		{
+			url: '图片地址',
+			w: '宽度',
+			h: '高度'
+		}
+	]
+	'statu'     : 1,   // 状态, 1启用，2停用
+	'difficulty': 5, // 难度系数
+	'create_time': 0
+}
+
+增加视频组
+technical_video = {
+    '_id'         : ID,
+    'name'        : '基础练习',
+    'priority'    :  1, // 顺序
+    'study_num'   : 1, //基础学习人数
+    'course_num'  : 2, // 课程数,
+    'statu'       : 1 , // 状态, 1启用，2停用,
+    'create_time' : 0，
+	'category': [
+		{
+		catId: ID,
+		cate: '自由泳'
+		}
+	],
+	videos: [
+		{
+			'name'    : '身体知识',
+			'priority': 1, // 顺序，越大越前,
+			'statu'   : 1 , // 状态, 1启用，2停用,
+			'cover'   : URL, // 封面图片
+			'mediaType': 'gif', // gif 或 video
+			'media': URL, // 视频或gif地址
+			'contents': [
+				{
+					'title': '副标题',
+					'text': [
+						'内容1',
+						'内容2'
+					]
+				}
+			]
+		},
+		{
+			'name'    : '手臂知识',
+			'priority': 1, // 顺序，越大越前,
+			'statu'   : 1 , // 状态, 1启用，2停用,
+			'cover'   : URL, // 封面图片
+			'mediaType': 'gif', // gif 或 video
+			'media': URL, // 视频或gif地址
+			'contents': [
+				{
+					'title': '副标题',
+					'text': [
+						'内容1',
+						'内容2'
+					]
+				}
+			]
+		}
+	]
+}
+
+{
+    '_id'         : ID,
+    'name'        : '进阶练习',
+    'priority'    :  1, // 顺序
+    'study_num'   : 1, //基础学习人数
+    'course_num'  : 2, // 课程数,
+    'statu'       : 1 , // 状态, 1启用，2停用,
+    'create_time' : 0，
+	'category': [
+		{
+		catId: ID,
+		cate: '蝶泳'
+		}
+	],
+	videos: [
+		{
+			'name'    : '身体知识',
+			'priority': 1, // 顺序，越大越前,
+			'statu'   : 1 , // 状态, 1启用，2停用,
+			'cover'   : URL, // 封面图片
+			'mediaType': 'gif', // gif 或 video
+			'media': URL, // 视频或gif地址
+			'contents': [
+				{
+					'title': '副标题',
+					'text': [
+						'内容1',
+						'内容2'
+					]
+				}
+			]
+		},
+		{
+			'name'    : '手臂知识',
+			'priority': 1, // 顺序，越大越前,
+			'statu'   : 1 , // 状态, 1启用，2停用,
+			'cover'   : URL, // 封面图片
+			'mediaType': 'gif', // gif 或 video
+			'media': URL, // 视频或gif地址
+			'contents': [
+				{
+					'title': '副标题',
+					'text': [
+						'内容1',
+						'内容2'
+					]
+				}
+			]
+		}
+	]
+}
+

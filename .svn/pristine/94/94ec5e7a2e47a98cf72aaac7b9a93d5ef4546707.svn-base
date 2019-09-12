@@ -1,0 +1,107 @@
+{% set _Title = '赛事' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<style type="text/css">
+#upfile { visibility: hidden; }
+#upfile-btn { min-width: 200px; max-width: 300px; white-space: nowrap; }
+#upfile-btn.inactive { color: #999; }
+#upfile-frame { position: absolute; top: 0; right: 0; width: 200px; height: 160px; visibility: hidden; }
+#natatorium-import-desc-title { color: #666; }
+#natatorium-import-desc { padding-left: 10px; margin-top: 10px; line-height: 20px; color: #666; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>{{_Title}}</small></h1>
+	{% include 'match/match_nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>赛事列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="box box-color box-bordered">
+			<div class="box-title">
+				<h3>
+					<i class="fa fa-download"></i>
+					导入赛事运动员数据
+				</h3>
+			</div>
+			<div class="box-content relative">
+				<div class="box-pd">
+					<p>请选择要导入的文件：</p>
+					<p>&nbsp;</p>
+					<form id="up-form" method="POST" action="home/match/match_import.html" target="up" enctype="multipart/form-data">
+						<button type="button" id="upfile-btn" class="btn inactive">选择文件...</button>
+						<button type="button" id="upfile-submit" class="btn btn-success">开始导入</button>
+						<input type="file" id="upfile" name="upfile" />
+					</form>
+					<p id="natatorium-import-desc-title">文件格式：</p>
+					<ul id="natatorium-import-desc">
+						<li>每行一个运动员信息</li>
+						<li>运动员信息为“赛事”,"项目","组别","名次","成绩","姓名","参赛编号",并以“,"分隔</li>
+						<li>例如：</li>
+						<li>第一届竞标赛,400自由泳,A组,第一名,1.44分,孙杨,022211</li>
+						<li>第十届竞标赛,200自由泳,C组,第二名,1.44分,刘子歌,023411</li>
+					</ul>
+				</div>
+				<iframe name="up" id="upfile-frame"></iframe>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(function() {
+	$('#upfile').on('change', function() {
+		var val = this.value;
+		if(val) {
+			$('#upfile-btn').text(val).removeClass('inactive');
+		} else {
+			$('#upfile-btn').text('选择文件...').addClass('inactive');
+		}
+	});
+	$('#upfile-btn').on('click', function() {
+		$('#upfile').trigger('click');
+	});
+	$('#upfile-submit').on('click', function() {
+		if($('#upfile-btn').hasClass('inactive')) {
+			App.alert('请选择文件。');
+		} else {
+			$('#up-form').submit();
+		}
+	});
+	$('#upfile-frame').on('load', function() {
+		var content = $(this.contentWindow.document.body).text();
+		if(content != '') {
+			var rs;
+			try {
+				rs = JSON.parse(content);
+			} catch(e) {
+				rs = {result: false}
+			}
+			if(!rs.result) {
+				App.alert(rs.error || '发生了一个未知的错误。');
+			} else {
+				App.alert('成功导入' + rs.num + '条数据。');
+				$('#up-form').get(0).reset();
+				$('#upfile-btn').text('选择文件...').addClass('inactive');
+			}
+		}
+	});
+});
+</script>
+{% endblock %}

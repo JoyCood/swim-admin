@@ -1,0 +1,326 @@
+{% set _Title = '订单' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#order-form-content {
+    height: 420px;
+    overflow: auto;
+}
+
+#order-form-content>div {
+    display: inline-block;
+    vertical-align: top;
+}
+
+#order-form-main>div {
+    width: 320px;
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 18px;
+}
+
+#order-form { width: 720px; }
+#query-search { padding: 0 0 10px 0; }
+#query-search>* { float: left; width: auto; }
+/*#order-form-contet>div { display: inline-block; vertical-align: top; }*/
+#order-form-main { width:680px; padding-bottom: 30px; }
+/*#order-form-photos { width: 300px; padding-left: 10px; display: inline-block; vertical-align: top; }*/
+#order-contents textarea { height: 80px; resize: none; }
+.order-icon { max-height: 60px; max-width: 60px; }
+.order-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.order-actions { text-align: left; }
+.order-actions>a.fa { padding: 3px; }
+.teacher-name { padding: 0; margin: 0; padding-bottom: 5px; color: #888; }
+#order-menu { 
+	position: absolute; display: none; margin-top: -34px;
+	background-color: #fff;
+	border: 1px solid #369; padding: 3px; 
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+#order-menu>i.fa-caret-right {
+	position: absolute; top: 50%; right: -7px; margin-top: -14px;
+	color: #369;
+	font-size: 18px;
+}
+#order-menu>a.disabled { color: #999!important; cursor: default; background-color: #fff!important; }
+#order-menu>a { 
+	display: block; padding: 5px 30px 5px 10px;
+	text-decoration: none;
+}
+#order-menu>a:hover {
+	background-color: #69c; color: #fff;
+}
+.teacher-avatar { max-width: 40px; height: 40px; }
+#teacher-search>* { float: left; width: auto; }
+#teacher-list div.pagination-info, #teacher-list ul.pagination { margin-top: 5px; margin-bottom: 5px; }
+
+#order-active { 
+	display: inline-block; margin: 0 0 20px 0; padding: 5px; 
+	border: 1px solid #ccc;
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+#order-active h2 { font-size: 12px; font-weight: normal; margin: 0; padding: 0; line-height: 24px; }
+#order-active>dl { display: none; margin: 5px 0; color: #999; }
+#order-active>dl>dd>a { 
+	display: block; cursor: pointer; 
+	line-height: 22px;
+}
+#upfile-frame {position: absolute; top:0; right:0; width: 0; height:0; visibility:hidden;}
+#teacher-form-reply {display: none;position: absolute;top:0px;left:0px; width:100%;height:100%;z-index: 9;background-color:rgba(55, 55, 55, .75);}
+#teacher-form-reply>div {position: absolute;top:50%;left:50%;width: 500px;transform: translate(-50%, -50%);background-color:#fff;box-shadow:0 0 3px #000;}
+#teacher-reply-title {padding:10px;color:#fff;margin-bottom:25px;}
+#teacher-form-reply .form-group {padding:10px;}
+#teacher-form-reply .control-label {width:20%;line-height:34px;text-align:center;color:#000;}
+#teacher-form-reply .form-control {width:40%;}
+#teacher-form-reply-submit {display:block;margin:0 auto;margin-bottom:20px;}
+/*#clock-box t*/
+.clock-speed {position:relative;margin-top:10px;}
+.clock-speed>span{display: inline-block;vertical-align: top;width:54px;text-align:center;}
+.clock-speed>span:first-child,.clock-speed>span:last-child{color:#969799;}
+.clock-speed>span.speed-item.first:before{width:26px;left:-6px;}
+.clock-speed>span.speed-item:before{content:'';display:block;position:relative;z-index:-1;width:50px;left:-24px;height:1px;background-color:#969799;top:7px;}
+.clock-speed>span.last:before{content:'';display:block;position:relative;z-index:-1;width:26px;left:-29px;height:1px;background-color:#969799;top:7px;}
+.clock-speed>span.speed-item>.speed-title{width:15px;height:15px;border-radius:50%;background-color:#969799;border:2px solid #d5d5d6;}
+.clock-speed>span.speed-item.active>.speed-title{background-color:#348fe3;border:2px solid #c2def8;}
+.clock-speed>span.last.active{color:#348fe3;}
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>订单列表 <small>{{_Title}}</small></h1>
+	{#% include 'order/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="order/list.html">订单</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>订单列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="order-body">
+            {#
+			{% if check_perm('orders', 'CONFIRM') %}
+			<form id="order-active">
+				<h2>订单核消：</h2>
+				<div>
+					<input type="text" id="order-code-input" name="code" style="width: 200px;" placeholder="请输入核消号码" />
+					<input type="hidden" id="order-id-input" name="orderId" />
+					<button type="submit" id="order-code-ok" class="btn btn-primary">确定</button>
+				</div>
+				<dl>
+					<dt>核消号对应多个订单，请选择下面一个订单：</dt>
+					<dd>
+					</dd>
+				</dl>
+			</form>
+			{% endif %}
+            #}
+            <div class="text-right bar">
+            <form id="query-search" method="GET" action="order/list.html">
+				<select name="order_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{order_status=='-'? ' selected': ''}}>订单状态</option>
+					<option value="1"{{order_status=='1'? ' selected': ''}}>已支付</option>
+					<option value="0"{{order_status=='0'? ' selected': ''}}>待付款</option>
+				</select>
+				<select name="train_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{train_status=='-'? ' selected': ''}}>培训状态</option>
+					<option value="0"{{train_status=='0'? ' selected': ''}}>排课中</option>
+					<option value="1"{{train_status=='1'? ' selected': ''}}>上课中</option>
+					<option value="2"{{train_status=='2'? ' selected': ''}}>已毕业</option>
+				</select>
+				<select name="process_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{process_status=='-'? ' selected': ''}}>退款状态</option>
+					<option value="2"{{process_status=='2'? ' selected': ''}}>退款处理中</option>
+					<option value="1"{{process_status=='1'? ' selected': ''}}>退款完成</option>
+				</select>
+                <input type="text" name="name" value="{{name}}" class="form-control" placeholder="姓名" /> 
+                <input type="text" name="phone" value="{{phone}}" class="form-control" placeholder="手机号" />
+				<input type="text" name="query" value="{{query}}" class="form-control" placeholder="订单号" />
+				<button type="submit" class="btn btn-success" style="height:auto;">搜索</button>
+				{% if query or phone or name %}
+				<a href="order/list.html" style="display: inline-block; padding: 10px; margin: 0 10px;">&times;</a>
+				{% endif %}
+			</form>
+            <form id="up-form" method="POST" target="up" action="order/import.html" enctype="multipart/form-data" style="right:0px; width:30%; left:70%;"> 
+        {% if check_perm('orders', 'ADD') %}
+            <button type="button" id="order-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新增</button>
+            
+            <button type="button" id="order-import-btn" class="btn btn-primary"><b class="fa fa-download"></b>批量导入</button>
+        {% endif %}
+            <button type="button" id="order-export-btn" class="btn btn-info"><b class="fa fa-cloud-upload"></b>报表导出</button>
+            <input type="file" name="upfile" id="order-import" style="visibility:hidden"/>
+            </form>
+            <iframe name="up" id="upfile-frame"></iframe>
+            </div>
+			<div id="order-list">
+				{% include 'order/list.html' %}
+			</div>
+			<nav id="order-menu">
+				<a href="javascript:;" data-action="detail"><i class="fa fa-edit"></i> 详情</a>
+				<a href="javascript:;" data-action="teacher" class="{{check_perm('orders', 'ALLOCATE_TEACHER')? '': 'disabled'}}"><i class="fa fa-link"></i> 指派教练</a>
+				<a href="javascript:;" data-action="sign" class="{{check_perm('orders', 'CLOCK')? '': 'disabled'}}"><i class="fa fa-check-square"></i> 签到</a>
+				<a href="javascript:;" data-action="refund" class="{{check_perm('orders', 'REFUND')? '': 'disabled'}}"><i class="fa fa-arrow-circle-o-left"></i> 退款</a>
+				<a href="javascript:;" data-action="cancel_refund" class="{{check_perm('orders', 'COMPLETE')? '': 'disabled'}}"><i class="fa fa-arrow-circle-o-left"></i> 取消退款</a>
+                <a href="javascript:;" data-action="note" class="{{check_perm('orders', 'COMPLETE')? '': 'disabled'}}"><i class="fa fa-link"></i> 备注</a>
+                {# 
+                <a href="javascript:;" data-action="active" class="{{check_perm('orders', 'CONFIRM')? '': 'disabled'}}"><i class="fa fa-check-square-o"></i> 核销</a>
+				<a href="javascript:;" data-action="finish" class="{{check_perm('orders', 'COMPLETE')? '': 'disabled'}}"><i class="fa fa-check-square-o"></i> 确认完成</a>
+                <a href="javascript:;" data-action="comment" class=""><i class="fa fa-comments"></i> 评论</a>
+                <a href="javascript:;" data-action="delete" class="{{check_perm('orders', 'DELETE')? '': 'disabled'}}"><i class="fa fa-trash"></i> 删除</a>
+                #}
+				<i class="fa fa-caret-right"></i>
+			</nav>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('#order-add-btn').on('click', function() {
+        App.Box.open('order/form.html'); 
+    });
+    $('#order-export-btn').on('click', function() {
+        location.href = 'order/export.html?order_status={{order_status}}&train_status={{train_status}}&process_status={{process_status}}&query={{query}}&phone={{phone}}&name={{name}}&pn={{data.pn}}';
+    });
+
+    $('#order-import').on('change', function() {
+        $('#up-form').submit();
+    });
+
+    $('#order-import-btn').on('click', function() {
+        $('#order-import').trigger('click'); 
+    });
+    $('#upfile-frame').on('load', function() {
+        var content = $(this.contentWindow.document.body).text();
+        if(content != '') {
+            var rs;
+            try {
+                rs = JSON.parse(content);
+            } catch(e) {
+                rs = {result: false}
+            }
+            if(!rs.result) {
+                App.alert(rs.error || '发生一个未知的错误');
+				location.reload();
+            } else {
+                App.alert('成功导入' + rs.num + '条数据。');
+                location.reload();
+            }
+        } 
+    });
+
+	$('#order-list').on('click', 'a.fa-bars', function() {
+		var id     = $(this).closest('tr').attr('data-id');
+		var offset = $(this).offset();
+		$('#order-menu').css({
+			'display': 'block', 
+			'top':     -1000,
+			'left':    -1000
+		});
+		var w = $('#order-menu').outerWidth();
+		var h = $('#order-menu').outerHeight();
+		$('#order-menu').css({
+			'display': 'block',
+			'top': offset.top,
+			'left': offset.left - w - 5
+		}).data('order-id', id);
+		$(window).one('click', function() {
+			$('#order-menu').css({
+				'display': 'none'
+			});
+		});
+		return false;
+	});
+
+	var orderActive = function(orderId) {
+		$('#order-active>dl').hide();
+		App.ajax({
+			url      : 'order/active',
+			type     : 'post',
+			dataType : 'html',
+			target   : '#order-list',
+			form     : '#order-active',
+			success  : function() {
+				setTimeout(function() {
+					if(!$('#order-active>dl').is(':visible')) {
+						App.Notific.success('核消成功。');
+						$('#order-code-input').val('');
+					}
+					$('#order-id-input').val('');
+					$('#order-code-input').focus();
+				}, 50);
+			}
+		});
+	}
+	$('#order-active').on('submit', function() {
+		orderActive();
+		return false;
+	}).on('click', 'dl>dd>a', function() {
+		var orderId = $.trim($(this).text());
+		$('#order-id-input').val(orderId);
+		orderActive(orderId);
+		$('#order-id-input').val('');
+	});
+	$('#order-menu').on('click', 'a[data-action]', function() {
+		var oid = $('#order-menu').data('order-id');
+		if(!$(this).hasClass('disabled')) {
+			switch(this.getAttribute('data-action')) {
+				case 'detail':
+					// location.href = 'order/detail.html?id=' + encodeURIComponent(oid);
+					App.Box.open('order/detail.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'active':
+					App.Box.open('order/active.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'teacher':
+					App.Box.open('order/teacher.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'sign':
+					App.Box.open('order/clock.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'finish':
+					App.Box.open('order/finish.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'refund':
+					App.Box.open('order/refund.html?id=' + encodeURIComponent(oid));
+					break;
+                case 'note':
+                    App.Box.open('order/note.html?id=' + encodeURIComponent(oid));
+                    break;
+                case 'comment':
+                    App.Box.open('order/comment.html?id=' + encodeURIComponent(oid));
+                    break;
+                case 'cancel_refund':
+                    App.Box.open('order/cancel-refund.html?id=' + encodeURIComponent(oid));
+                    break;
+                case 'delete':
+                    App.Box.open('order/delete.html?id=' + encodeURIComponent(oid));
+                    break;
+			}
+		}
+	});
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,219 @@
+{% set _Title = '订单' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#order-form { width: 720px; }
+#query-search { padding: 0 0 10px 0; }
+#query-search>* { float: left; width: auto; }
+/*#order-form-contet>div { display: inline-block; vertical-align: top; }*/
+#order-form-main { width:680px; padding-bottom: 30px; }
+/*#order-form-photos { width: 300px; padding-left: 10px; display: inline-block; vertical-align: top; }*/
+#order-contents textarea { height: 80px; resize: none; }
+.order-icon { max-height: 60px; max-width: 60px; }
+.order-dot { 
+	display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 24px; 
+	background-color: #368EE0; color: #fff;
+	text-align: center; font-size: 14px;
+}
+.order-actions { text-align: left; }
+.order-actions>a.fa { padding: 3px; }
+.teacher-name { padding: 0; margin: 0; padding-bottom: 5px; color: #888; }
+#order-menu { 
+	position: absolute; display: none; margin-top: -34px;
+	background-color: #fff;
+	border: 1px solid #369; padding: 3px; 
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+#order-menu>i.fa-caret-right {
+	position: absolute; top: 50%; right: -7px; margin-top: -14px;
+	color: #369;
+	font-size: 18px;
+}
+#order-menu>a.disabled { color: #999!important; cursor: default; background-color: #fff!important; }
+#order-menu>a { 
+	display: block; padding: 5px 30px 5px 10px;
+	text-decoration: none;
+}
+#order-menu>a:hover {
+	background-color: #69c; color: #fff;
+}
+.teacher-avatar { max-width: 40px; height: 40px; }
+#teacher-search>* { float: left; width: auto; }
+#teacher-list div.pagination-info, #teacher-list ul.pagination { margin-top: 5px; margin-bottom: 5px; }
+
+#order-active { 
+	display: inline-block; margin: 0 0 20px 0; padding: 5px; 
+	border: 1px solid #ccc;
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+#order-active h2 { font-size: 12px; font-weight: normal; margin: 0; padding: 0; line-height: 24px; }
+#order-active>dl { display: none; margin: 5px 0; color: #999; }
+#order-active>dl>dd>a { 
+	display: block; cursor: pointer; 
+	line-height: 22px;
+}
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>订单列表 <small>{{_Title}}</small></h1>
+	{#% include 'order/nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="order/list.html">订单</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>订单列表</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div id="order-body">
+			{% if check_perm('orders', 'CONFIRM') %}
+			<form id="order-active">
+				<h2>订单核消：</h2>
+				<div>
+					<input type="text" id="order-code-input" name="code" style="width: 200px;" placeholder="请输入核消号码" />
+					<input type="hidden" id="order-id-input" name="orderId" />
+					<button type="submit" id="order-code-ok" class="btn btn-primary">确定</button>
+				</div>
+				<dl>
+					<dt>核消号对应多个订单，请选择下面一个订单：</dt>
+					<dd>
+					</dd>
+				</dl>
+			</form>
+			{% endif %}
+			<form id="query-search" method="GET" action="order/list.html">
+				<select name="order_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{order_status=='-'? ' selected': ''}}>订单状态</option>
+					<option value="1"{{order_status=='1'? ' selected': ''}}>已支付</option>
+					<option value="0"{{order_status=='0'? ' selected': ''}}>待付款</option>
+				</select>
+				<select name="train_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{train_status=='-'? ' selected': ''}}>培训状态</option>
+					<option value="0"{{train_status=='0'? ' selected': ''}}>排课中</option>
+					<option value="1"{{train_status=='1'? ' selected': ''}}>上课中</option>
+					<option value="2"{{train_status=='2'? ' selected': ''}}>已毕业</option>
+				</select>
+				<select name="process_status" class="form-control" onchange="this.form.submit();">
+					<option value="-"{{process_status=='-'? ' selected': ''}}>退款状态</option>
+					<option value="2"{{process_status=='2'? ' selected': ''}}>退款处理中</option>
+					<option value="1"{{process_status=='1'? ' selected': ''}}>退款完成</option>
+				</select>
+				<input type="text" name="query" value="{{query}}" class="form-control" placeholder="订单号" />
+				<button type="submit" class="btn btn-success">搜索</button>
+				{% if query %}
+				<a href="order/list.html" style="display: inline-block; padding: 10px; margin: 0 10px;">&times;</a>
+				{% endif %}
+			</form>
+			<div id="order-list">
+				{% include 'order/list.html' %}
+			</div>
+			<nav id="order-menu">
+				<a href="javascript:;" data-action="detail"><i class="fa fa-edit"></i> 详情</a>
+				<a href="javascript:;" data-action="teacher" class="{{check_perm('orders', 'CONFIRM')? '': 'disabled'}}"><i class="fa fa-link"></i> 教练</a>
+				<a href="javascript:;" data-action="finish" class="{{check_perm('orders', 'COMPLETE')? '': 'disabled'}}"><i class="fa fa-check-square-o"></i> 确认完成</a>
+				<a href="javascript:;" data-action="refund" class="{{check_perm('orders', 'REFUND')? '': 'disabled'}}"><i class="fa fa-arrow-circle-o-left"></i> 退款</a>
+				<i class="fa fa-caret-right"></i>
+			</nav>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#order-list').on('click', 'a.fa-bars', function() {
+		var id     = $(this).closest('tr').attr('data-id');
+		var offset = $(this).offset();
+		$('#order-menu').css({
+			'display': 'block', 
+			'top':     -1000,
+			'left':    -1000
+		});
+		var w = $('#order-menu').outerWidth();
+		var h = $('#order-menu').outerHeight();
+		$('#order-menu').css({
+			'display': 'block',
+			'top': offset.top,
+			'left': offset.left - w - 5
+		}).data('order-id', id);
+		$(window).one('click', function() {
+			$('#order-menu').css({
+				'display': 'none'
+			});
+		});
+		return false;
+	});
+
+	var orderActive = function(orderId) {
+		$('#order-active>dl').hide();
+		App.ajax({
+			url      : 'order/active',
+			type     : 'post',
+			dataType : 'html',
+			target   : '#order-list',
+			form     : '#order-active',
+			success  : function() {
+				setTimeout(function() {
+					if(!$('#order-active>dl').is(':visible')) {
+						App.Notific.success('核消成功。');
+						$('#order-code-input').val('');
+					}
+					$('#order-id-input').val('');
+					$('#order-code-input').focus();
+				}, 50);
+			}
+		});
+	}
+	$('#order-active').on('submit', function() {
+		orderActive();
+		return false;
+	}).on('click', 'dl>dd>a', function() {
+		var orderId = $.trim($(this).text());
+		$('#order-id-input').val(orderId);
+		orderActive(orderId);
+		$('#order-id-input').val('');
+	});
+	$('#order-menu').on('click', 'a[data-action]', function() {
+		var oid = $('#order-menu').data('order-id');
+		if(!$(this).hasClass('disabled')) {
+			switch(this.getAttribute('data-action')) {
+				case 'detail':
+					// location.href = 'order/detail.html?id=' + encodeURIComponent(oid);
+					App.Box.open('order/detail.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'code':
+					App.Box.open('order/code.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'teacher':
+					App.Box.open('order/teacher.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'finish':
+					App.Box.open('order/finish.html?id=' + encodeURIComponent(oid));
+					break;
+				case 'refund':
+					App.Box.open('order/refund.html?id=' + encodeURIComponent(oid));
+					break;
+			}
+		}
+	});
+});
+</script>
+{% endblock %}
+

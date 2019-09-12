@@ -1,0 +1,51 @@
+<div class="text-right">
+	<button id="interview-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>
+	<button id="interview-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button>
+	<form id="interview-filter-form" action="home/interview/list.html" method="GET">
+		<select name="content_type" class="form-control" style="display: inline-block; width: auto;" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+			<option value="">类型</option>
+			<option value="link"{{content_type=='link'? ' selected': ''}}>H5</option>
+			<option value="native"{{content_type and content_type!='link'? ' selected': ''}}>原生</option>
+		</select>
+		<select name="tagId" class="form-control" style="display: inline-block; width: auto;" onchange="if(!this.value) { this.disabled = true; } this.form.submit();">
+			<option value="">看点类型</option>
+            {% for tag in tags %}
+            <option value="{{ tag._id }}"{{tag._id==tagId? ' selected': ''}}>{{ tag.name }}</option>
+            {% endfor %}
+		</select>
+	</form>
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#interview-trash-btn" /></th>
+			<th width="60">图标</th>
+			<th>标题</th>
+			<th width="70">首页显示</th>
+			<th width="90">最后更新</th>
+			<th width="66"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+		<tr data-id="{{item._id}}">
+			<td><input type="checkbox" name="interview" value="{{item._id}}" /></td>
+			<td>{% if item.icon %}<img src="{{item.icon}}" class="interview-icon" />{% endif %}</td>
+			<td>
+				<span class="push-text">{{item.title}}</span>
+				<p style="padding-top: 5px;">
+					{% if item.content_type == 'link' %}<i class="fa fa-html5"></i> {% endif %}{{item.res_type|restype}}
+					<b style="color: #369;">{% if item.type == 'equipment' %}测评{% else %}专访{% endif %}</b>
+				</p>
+			</td>
+			<td>{{item.promotion|status}}</td>
+			<td>{{item.modified_on? item.modified_on|date('Y-m-d H:i:s'): item.create_time|date('Y-m-d H:i:s')}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+				<!-- <a href="javascript:;" class="fa fa-arrow-circle-o-up" data-action="push" data-mod="interview" title="推送" app-bubble="false"></a> -->
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

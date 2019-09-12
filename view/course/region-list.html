@@ -1,0 +1,32 @@
+{% block css %}
+
+<style type="text/css">
+.adv-img>img { max-width: 240px; max-height: 80px; }
+</style>
+{% endblock %}
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#region-trash-btn" /></th>
+			<th>名称</th>
+			<th width="240">pc端图片</th>
+			<th width="50">次序</th>
+			<th width="50">状态</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for region in regionList %}
+		<tr region-id="{{region._id}}">
+			<td><input type="checkbox" name="region" value="{{region._id}}" /></td>
+			<td>{{region.name}}</td>
+			<td class="adv-img"><img src="{{region.pc_cover}}" /></td>
+			<td>{{region.priority}}</td>
+			<td>{{region.status|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

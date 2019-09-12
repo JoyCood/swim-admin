@@ -1,0 +1,98 @@
+{% set _Title = '教练招募' %}
+{% extends '_base.html' %}
+
+{% block css %}
+{% endblock %}
+
+{% block main %}
+	<h1>{{_Title}} <small>列表</small></h1>
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>{{_Title}}>招募详情</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+	<form action="newcoach/teacher.html" method="post" style="width:50%;padding-bottom:5px;">
+					<select name="status" class="form-control" style="width:20%;float:left">
+						<option value="10">分类</option>
+						<option value="0">审核中</option>
+						<option value="1">审核通过</option>
+						<option value="2">审核失败</option>
+					</select>
+					<input type="text" name="phoneEmail" style="width:50%;margin-left:10px;float:left" class="form-control" placeholder="请输入电话号码或者邮箱"/>
+					<input type='submit' class="form-control" style="width:15%;margin-left:10px;margin-bottom:8px;float:left" value="搜索"/>
+	</form>
+		{% if check_perm('main-contents', 'ADD') %}<!--  <button id="adv-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>-->{% endif %}
+		<div id="feedback-list">
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th width="30"><input type="checkbox" rel="#feedback-trash-btn" /></th>
+						<th width="90">姓名</th>
+						<th width="90">性别</th>
+						<th width="90">电话号码</th>
+						<th width="90">城市</th>
+						<th width="70">具体地址</th>
+						<th width="70">身份证号码</th>
+                        <th width="120">邮箱</th>
+						<th width="120">微信号码</th>
+						<th width="100">审核状态</th>
+						<th width="100">审核备注</th>
+						<th width="90">申请时间</th>
+						<th width="90">审核时间</th>
+						<th width="90">操作</th>
+					</tr>
+				</thead>
+
+				<tbody id="wechat-list">
+					{% for item in datapage.items %}{% set uid = item.user_id %}
+					<tr data-id="{{item._id}}">
+						<td><input type="checkbox" name="feedback" value="{{item._id}}" /></td>
+						<td>{{item.name}}</td>
+					    <td>{{item.sex}}</td>
+						<td>{{item.phone}}</td>
+						<td>{{item.city}}</td>
+						<td>{{item.address}}</td>
+						<td>{{item.id_card}}</td>
+                        <td>{{item.email}}</td>
+                        <td>{{item.wechat}}</td>
+						<td style="color:red">{% if item.status == 0 %}审核中{% elseif item.status==1 %}审核通过  {% elseif item.status==2 %}审核失败{% endif %}</td>
+						<td>{{item.remark}}</td>
+						<td>{{item.create_time? item.create_time|date('Y-m-d H:i:s'): '-'}}</td>
+						<td>{{item.check_time? item.check_time|date('Y-m-d H:i:s'): '-'}}</td>
+						<td><a id="adv-add-btn1" class="bianji">审核</a></td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+       {% include '_pagination.html' with datapage %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/bootstrap-datepicker.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/locales/bootstrap-datepicker.zh-CN.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#wechat-list').on('click', 'a.bianji', function() {
+		var row = $(this).closest('tr');
+		var id = row.attr('data-id');
+		App.Box.open('newcoach/teacher_info.html/' + id);
+	});
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+<form id="tag-form" action="home/interview/tag/form.html" target="#tag-list">
+	<div class="box">
+		<div class="box-title">
+			<h3>趣看点标签</h3>
+		</div>
+		<div class="box-content">
+			<div>
+				<table class="form">
+					<tr>
+						<th width="50">名称：</th>
+						<td colspan="2">
+							<input type="text" name="name" id="tag-name" class="form-control" value="{{tag.name}}" placeholder="请输入标签名称" autofocus="on" app-required="on" autocomplete="off" maxlength="4" />
+						</td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td colspan="2">
+							<input type="checkbox" name="status" id="tag-status" value="1"{{not tag._id or tag.status? ' checked': ''}} />
+							<label for="tag-status">启用</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+            <input type="hidden" name="id" value="{{tag._id}}" />
+			<button type="submit" id="tag-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#tag-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

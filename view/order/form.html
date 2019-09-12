@@ -1,0 +1,177 @@
+<form id="order-form" action="order/form.html" target="#order-list">
+    <div class="box">
+        <div class="box-title">
+            <h3>新增订单</h3>
+        </div>
+        <div id="order-form-content" class="box-content">
+            <div id="order-form-main">
+                <div id="order-form-left">
+                    <table class="form">
+                      <tr>
+                        <th width="60">订单号：</th>
+                        <td>
+                          <input type="text" name="orderId" id="order-id" class="form-control" value="" placeholder="请输入订单号" autofocus="on" autocomplete="off" app-required="on" />
+                        </td>
+                      </tr
+                      <tr>
+                        <th>渠道：</th>
+                        <td>
+                            <select name="channel" id="course-channel" class="form-control" app-required="on">
+                                <option value="美团">美团</option>
+                                <option value="大众点评">大众点评</option>
+                                <option value="友赞">友赞</option>
+                                <option value="淘宝">淘宝</option>
+                                <option value="阿里体育">阿里体育</option>
+                                <option value="趣游泳app">趣游泳app</option>
+                                <option value="现金/支付宝">现金/支付宝</option>
+                            </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>商品名：</th>
+                        <td>
+                            <select name="course" id="course-title" class="form-control" autocomplete="off" app-required="on">
+                                {% for item in course %}
+                                <option value="{{ item._id }}::{{ item.title }}">{{ item.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                      </tr>
+                      <tr>
+                          <th>姓名：</th>
+                          <td>
+                            <input type="text" name="name" id="order-name" class="form-control" placeholder="请输入客户姓名" autocomplete="off" app-required="on" />
+                          </td>
+                      </tr>
+                      <tr>
+                          <th>电话：</th>
+                          <td>
+                            <input type="text" name="phone" id="order-phone" class="form-control" placeholder="请输入客户电话号码" autocomplete="off" app-required="on" />
+                          </td>
+                      </tr>
+                      <tr>
+                          <th>价格：</th>
+                          <td>
+                            <input  type="text" name="price" class="form-control" app-required="on" />
+                          </td>
+                      </tr>
+                      <tr>
+                          <th>数量：</th>
+                          <td>
+                            <input type="text" name="quantity" class="form-control" app-required="on" />
+                          </td>
+                      </tr>
+                      <tr>
+                          <th>支付时间：</th>
+                          <td>
+                            <input type="payTime" name="payTime" class="form-control" app-required="on" />
+                          </td>
+                      </tr>
+                    </table>
+                </div>
+                <!--end order-form-left-->
+                <div id="order-form-right">
+                    <table class="form">
+                      <tr>
+                          <th width="60">支付平台：</th>
+                          <td>
+                            <select name="payMethod" class="form-control">
+                              <option value="weixin">微信</option>
+                              <option value="alipay">支付宝</option>
+                              <option value="other">其它</option>
+                            </select>
+                          </td>
+                      </tr>
+                      <tr>
+                        <th>校区：</th>
+                        <td>
+                          <select id="region" name="xiaoqu" class="form-control">
+                              <option value=""></option>
+                            {% for item in region %}
+                            <option value="{{ item._id }}::{{ item.name }}">{{ item.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>种类：</th>
+                        <td>
+                          <select name="zhonglei" class="form-control">
+                              {% for key, name in property[0].values %}
+                              <option value="{{ key }}::{{ name }}">{{ name }}</option>
+                              {% endfor %}
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>规格：</th>
+                        <td>
+                          <select name="guige" class="form-control">
+                            {% for key, name in property[1].values %}
+                            <option value="{{ key }}::{{ name }}">{{ name }}</option>
+                            {% endfor %}
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>场馆：</th>
+                        <td>
+                          <select id="natatorium" name="natatorium" class="form-control" app-required="on">
+                          </select>
+                        </td>
+                      </tr>
+                    </table>
+                </div>
+                <div id="order-form-bottom" style="width:100%;">
+                  <table class="form">
+                    <tr>
+                      <th width="60">商家备注：</th>
+                      <td>
+                        <textarea name="note" rows="3" maxlength="35"  class="form-control"></textarea>
+                      </td>
+                    </tr>
+                  </table> 
+                </div>
+            </div>
+            <!--end order-form-main-->
+        </div>
+        <!--end order-form-content-->
+        <div class="box-footer">
+          <button type="submit" id="order-submit" class="btn btn-primary">确定</button>
+          <button type="button" class="btn" app-state="cancel">取消</button>
+        </div>
+    </div>
+</form>
+<script>
+$(document).ready(function() {
+    $('#region').on('change', function() {
+        var region = $('#region').val();
+        region = region.split('::');
+        App.ajax({
+            url: 'order/natatorium.html?region=' + encodeURIComponent(region[0]),
+            type: 'get',
+            success: function(data) {
+                var natatorium = $('#natatorium');
+                natatorium.empty();
+                var natatoriums = JSON.parse(data);
+                $.each(natatoriums, function(i, item){
+                    natatorium.append($("<option></option>").attr("value", item.id+"::"+item.title).text(item.title));
+                });
+            } 
+        });
+    });
+
+    $('#order-form').on('submit', function() {
+        if(App.checkValidity(this)) {
+            App.ajax({
+                form: this,
+                success: function() {
+                    location.reload();
+                    App.Box.close();
+                }
+            });
+        }
+        return false;
+    });
+});
+</script>

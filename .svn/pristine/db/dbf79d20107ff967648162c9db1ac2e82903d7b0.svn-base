@@ -1,0 +1,96 @@
+{% set _Title = '游泳馆' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<link type="text/css" href="css/3rd/plugins/chosen/chosen.css?ver={{_Config.res3rdVersion}}" rel="stylesheet" />
+<style type="text/css">
+#adv-table li { clear: both; }
+#adv-table label { float: left; line-height: 20px; }
+#adv-table a, #adv-table span { float: left; display: inline-block; line-height: 20px; max-width: 500px; overflow: hidden; text-overflow: ellipsis; }
+#adv-mod-slt { width: 200px; float: left; }
+#adv-list { clear: both; margin-top: 20px; }
+#adv-form { width: 460px; }
+#adv-link { width: 300px; display: inline-block; }
+.adv-img { width: 260px; }
+.adv-img>img { max-width: 240px; max-height: 80px; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>广告设置 <small>广告</small></h1>
+	{#% include 'lbs/teacher-nav.html' %#}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>广告</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="text-right">
+			<select id="adv-mod-slt" class="form-control">
+				<option value="">选择模块</option>
+				{% for mKey, mVal in mods %}
+				<option value="{{mKey}}"{{mKey==currentMod? ' selected': ''}}>{{mVal}}</option>
+				{% endfor %}
+			</select>
+			&nbsp;
+			<button id="adv-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>
+			<!-- <button id="adv-trash-btn" class="btn disabled"><b class="fa fa-trash"></b>删除选中</button> -->
+		</div>
+		<div id="adv-list">
+			{% include 'adv/list.html' %}
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="js/3rd/plugins/chosen/chosen.jquery.min.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/bootstrap-datepicker.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript" src="js/3rd/plugins/datepicker/locales/bootstrap-datepicker.zh-CN.js?ver={{_Config.res3rdVersion}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#adv-add-btn').on('click', function() {
+		App.Box.open('adv/form.html');
+	});
+	$('#adv-list').on('click', 'a.fa-edit', function() {
+		var id = $(this).closest('tr').attr('data-id');
+		App.Box.open('adv/form.html?id=' + id);
+	}).on('click', 'a.fa-trash', function() {
+		var row   = $(this).closest('tr');
+		var id    = row.attr('data-id');
+		var title = $.trim(row.find('b.adv-title').text());
+		if(confirm(title + '\n\n确定要删除此记录吗？')) {
+			App.ajax({
+				url: 'adv/delete.html',
+				data: {'id': id},
+				type: 'post',
+				dataType: 'json',
+				success: function(rs) {
+					if(rs.result) {
+						row.remove();
+					}
+				}
+			});
+		}
+	});
+	$('#adv-mod-slt').on('change', function() {
+		var m = this.value;
+		if(m) {
+			location.href = 'adv/index.html?mod=' + encodeURIComponent(m);
+		} else {
+			location.href = 'adv/index.html';
+		}
+	});
+});
+</script>
+{% endblock %}

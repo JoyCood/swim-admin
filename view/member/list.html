@@ -1,0 +1,95 @@
+<div class="text-right bar">
+	<form method="GET" action="member/index.html">
+		<input type="hidden" name="type" value="{{type}}" />
+		<div>
+			<select class="form-control" name="statu" onchange="this.form.submit();">
+				<option value=""{{statu==""? ' selected': ''}}>全部</option>
+				<option value="0"{{statu=="0"? ' selected': ''}}>启用</option>
+				<option value="1"{{statu=="1"? ' selected': ''}}>禁用</option>
+			</select>
+		</div>
+		{% if type == 2 %}
+		<div>
+			<select class="form-control" name="title" onchange="this.form.submit();" data-placeholder="请选择分类">
+			    <option value="">标签</option>
+				{% for tag in tags %}
+				<option value="{{tag.title}}"{{title==tag.title? 'selected': ''}}>{{tag.title}}</option>
+				{% endfor %}
+				
+			</select>
+		</div>
+		{% endif %}
+		<div class="search">
+			<input type="text" placeholder="电话" name="phone" value="{{phone}}" />
+		</div>
+		<div class="search">
+			<input type="text" placeholder="搜索会员名称" name="query" value="{{query}}" />
+			<button type="submit" class="btn"><i class="fa fa-search"></i></button>
+		</div>
+		{% if query!='' ? type == 2 %}<a class="search_remove" href="member/index.html?type=2" class="清除"><i class="fa fa-remove"></i></a>{% endif %}
+		{% if query!='' ? type == 0 %}<a class="search_remove" href="member/index.html?type=0" class="清除"><i class="fa fa-remove"></i></a>{% endif %}
+	</form>
+	{% if check_perm('members', 'ADD') %}<button id="member-add-btn" class="btn btn-success"><b class="fa fa-plus"></b>新建</button>{% endif %}
+	{% if check_perm('members', 'EDIT') %}
+	<button id="member-export-btn" class="btn btn-info" btn-style="primary"><b class="fa fa-download"></b>导出用户</button> 
+	<button id="member-yes-btn" class="btn disabled" btn-style="primary"><b class="fa fa-check"></b>启用选中</button>
+	<button id="member-no-btn" class="btn disabled" btn-style="warning"><b class="fa fa-times"></b>禁用选中</button>
+	<button id="member-del-btn" class="btn disabled" btn-style="danger"><b class="fa fa-times"></b>删除选中</button>
+	{% endif %}
+</div>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th width="30"><input type="checkbox" rel="#member-yes-btn, #member-no-btn, #member-del-btn" /></th>
+			<th width="40">类型</th>
+			<th width="60">头像</th>
+			<th width="120">名称</th>
+			<th width="40">性别</th>
+			<th width="70">地区</th>
+			<th width="100">电话</th>
+			<th width="70">标签名称</th>
+			<th width="">个性签名</th>
+            <th width="70">查看动态</th>
+			<th width="160">注册/登录时间</th>
+			<th width="40">积分</th>
+			<th width="40">问答</th>
+			<th width="40">达人</th>
+			<th width="40">状态</th>
+			<th width="30"></th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for item in data.items %}
+			{% set class = item.type == 2? 'mj': (item.type == 1? 'tc': '') %}
+		<tr data-id="{{item._id}}" >
+			<td><input type="checkbox" name="member" value="{{item._id}}" /></td>
+			{% if item.type == 2 %}<td class="t">马甲</td>
+			{% elseif item.type == 1 %}<td class="t">教练</td>
+			{% else %}<td class="t">会员</td>{% endif %}
+			<td>{% if item.avatar_small %}<img src="{{item.avatar_small}}" class="member-avatar" />{% endif %}</td>
+            <td>{{item.nick}}<br>{{item._id}}</td>
+			<td>{{item.sex}}</td>
+			<td>{{item.location}}</td>
+			<td>{{item.phone}}</td>
+			<td>{{item.title}}</td>
+			<td>{{item.sig}}</td>
+            <td class="table-action">
+                <a class="fa fa-arrow-circle-o-up" app-bubble="false"></a>
+            </td>
+			<td>
+				注册: {{item.reg_time? item.reg_time|date('Y-m-d H:i:s'): 'N/A'}}
+				<br />
+				登录: {{item.last_login? item.last_login|date('Y-m-d H:i:s'): 'N/A'}}
+			</td>
+			<td>{{item.points}}</td>
+			<td>{{(item.inviteable? 1|status: '-')}}</td>
+			<td>{{(item.recommand? 1|status: '-')}}</td>
+			<td>{{(item.block == 0? 1: 0)|status}}</td>
+			<td class="table-action">
+				<a class="fa icon-edit" app-bubble="false"></a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% include '_pagination.html' with data %}

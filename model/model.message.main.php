@@ -1,0 +1,355 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+class ModelMessageMain
+{
+	private static $instance;
+    private $errMsg;
+
+    const ACTION_SEND_MSG      = 1;    //有人给你传递小纸条
+    const ACTION_REPLY_MSG     = 2;    //回复小纸条
+    const ACTION_TWEET_COMMENT = 3;    //评论泳圈动态
+    const ACTION_TWEET_LIKE    = 4;    //赞动态
+    const ACTION_COMMENT_REPLY = 5;    //别人回复你的评论
+    const ACTION_NEW_FANS      = 6;    //有人关注你
+    const ACTION_WELCOME_MSG   = 7;    //新用户欢迎消息
+    const ACTION_SYSTEM_MSG    = 1000; //系统消息
+
+	public static function factory()
+	{
+		if(!is_object(self::$instance))
+		{
+			self::$instance = new Model_Message_Main();
+		}
+
+		return self::$instance;
+	}
+
+    /**
+     *
+     * @return object
+     */
+    public function collection() {
+        return SwimAdmin::db('message');
+    }
+
+    /**
+     * 发送消息
+     *
+     * @param $sender    string 发送消息的人
+     * @param $acceptor  string 接收消息的人
+     * @param $objectId  string 消息内容id
+     * @param $type      string ['at', 'follow', 'reply', 'like']
+     *
+     * @return bool
+     */
+	public function sendMsg($sender, $receptor, $objectId, $action)
+	{
+		$time = time();
+
+        $belongSwim = array(
+            self::ACTION_TWEET_COMMENT,
+            self::ACTION_TWEET_LIKE
+        );
+        $belongMine = array(
+            self::ACTION_SEND_MSG,      //有人给你传递小纸条
+            self::ACTION_REPLY_MSG,     //回复小纸条
+            self::ACTION_COMMENT_REPLY, //别人回复你的评论
+            self::ACTION_NEW_FANS,      //有人关注你
+            self::ACTION_WELCOME_MSG,   //新用户欢迎消息
+            self::ACTION_SYSTEM_MSG     //系统消息
+        );
+
+        if(in_array($action, $belongSwim))
+        {
+            $belong = 'swim';
+        }
+        else if(in_array($action, $belongMine))
+        {
+            $belong = 'mine';
+        }
+        else
+        {
+            return FALSE;
+        }
+
+        $doc = array(
+            'acceptor'    => $receptor,
+            'sender'      => $sender,
+            'object_id'   => $objectId,
+            'action'      => $action,
+            'belong'      => $belong,
+            'has_read'    => 0,
+            'statu'       => 0,
+            'create_time' => $time
+        );
+
+        $res = $this->collection()->insert($doc);
+        
+        if(isset($doc['_id']))
+        {
+            $this->freshMsgCounter($receptor, $action);
+            
+            if($belong == 'mine')
+            {
+                $key = Config_Cache_Key::mineMsgNotice($receptor);
+
+                Loader_Redis::common()->set($key, 1);
+            }
+
+            return TRUE;
+        }
+
+        return FALSE;    
+	}
+
+    /**
+     * 检查是否有新的消息
+     *
+     * @param $userId  string
+     * @param $secret  string
+     *
+     * @return array|FALSE
+     */
+    public function msgCheck($userId, $secret)
+    {
+        $secret2 = Model_Member_Main::factory()->getSecret($userId);
+
+        if($secret != $secret2 OR !$secret2)
+        {
+            $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+
+            return FALSE;
+        }
+        
+        $defaultCounter = array(
+            'mine_msg_counter' => 0, //我滴消息
+            'swim_msg_counter' => 0  //泳圈消息
+        );
+
+        $allowed = array_keys($defaultCounter);
+
+        $key     = Config_Cache_Key::newMsgCounter($userId);
+        $key2    = Config_Cache_Key::mineMsgNotice($userId);
+
+        $counter = Loader_Redis::common()->hGetAll($key);
+        $mineMsgNotice = Loader_Redis::common()->get($key2);
+        $counter['mine_msg_counter'] = Helper::uint($mineMsgNotice);
+
+        $counter = Helper::allowed($counter, $allowed);
+        $counter = array_merge($defaultCounter, $counter);
+
+        return $counter;
+    }
+
+    /**
+     * 更新新消息数
+     *
+     * @param $receptor  string
+     * @param $type      int
+     * @param $step      int
+     *
+     * @return false|int
+     */
+    public function freshMsgCounter($receptor, $action, $step=1)
+    {
+        //泳圈的消息
+        $belongSwim = array(
+            self::ACTION_TWEET_COMMENT,
+            self::ACTION_COMMENT_REPLY
+        );
+
+        if(in_array($action, $belongSwim))
+        {
+                $key = Config_Cache_Key::newMsgCounter($receptor);
+                
+                $res = Loader_Redis::common()->hIncrBy($key, 'swim_msg_counter', $step);
+
+            return $res;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+
+    /**
+     * 接收消息列表
+     *
+     * @param $userId  string
+     * @param $secret  string
+     * @param $offset  timestamp
+     * @param $limit   int
+     *
+     * @return array
+     */
+	public function getMsg($userId, $secret, $offset=0, $limit=10, $filter)
+	{
+        $secret2 = Model_Member_Main::factory()->getSecret($userId);
+
+        if($secret != $secret2 OR !$secret2)
+        {
+            $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+
+            return FALSE;
+        }
+
+	    $offset = Helper::uint($offset);
+	    $offset = $offset ? array('create_time' => array('$lt' => $offset)) : array();
+
+        if(isset($filter['belong']) AND in_array($filter['belong'], array('swim', 'mine')))
+        {
+            $belong = $filter['belong'];
+
+            if($belong == 'mine')
+            {
+                $key = Config_Cache_Key::mineMsgNotice($userId);
+
+                Loader_Redis::common()->set($key, 0);
+            }
+        }
+        else
+        {
+            return array();
+        }
+
+	    $limit = Helper::uint($limit);
+	    $limit = $limit ? min(20, $limit) : 10;
+        
+        $sort = array('create_time' => -1);
+
+	    $macher = array(
+            'acceptor' => $userId, 
+            'belong' => $belong
+        );
+	    $macher = array_merge($macher, $offset);
+
+        $cursor = Loader_Mongo::dbmaster()->message()->find($macher)->sort($sort)->limit($limit);
+        
+        $ids = array();
+        $message = array();
+
+        foreach($cursor as $item)
+        {
+        	switch($item['action'])
+            {
+                case self::ACTION_SEND_MSG: //发送小纸条
+                    $item['object'] = Model_Note_Main::factory()->getMsg($item['object_id']);
+                break;
+
+                case self::ACTION_COMMENT_REPLY: //回复你泳圈动态评论
+                    $item['object'] = Model_Tweet_Comment::factory()->getMsg($item['object_id']);  
+                break;
+
+                case self::ACTION_REPLY_MSG: //回复小纸条
+                    $item['object'] = Model_Note_Main::factory()->getMsg($item['object_id']);
+                break;
+
+                case self::ACTION_TWEET_COMMENT: //评论你的泳圈动态
+                    $item['object'] = Model_Tweet_Comment::factory()->getMsg($item['object_id']);
+                break;
+
+                case self::ACTION_NEW_FANS: //有朋友关注你
+                    $item['object']['user'] = Model_Friend_Main::factory()->getMsg($item['sender']);
+                break;
+
+                case self::ACTION_WELCOME_MSG: //欢迎消息
+                    $item['action'] = self::ACTION_SYSTEM_MSG;
+                    $item['object']['content'] = Config::$app['message']['welcome'];        
+                break;
+
+                case self::ACTION_SYSTEM_MSG: //系统消息
+                    $item['object'] = Model_Broadcast_Main::factory()->getMsg($item['object_id']);
+                break;          
+            }
+            
+            $item['id'] = (string)$item['_id'];
+
+            unset($item['_id']);
+
+            if($belong=='swim')
+            {
+                $ids[] = $item['id'];
+            }
+            
+            $message[] = $item;
+        }
+        
+        $totalIds = count($ids);
+
+        if($belong == 'swim' AND $totalIds > 0)
+        {
+            $key = Config_Cache_Key::newMsgCounter($userId);
+            $counter = Loader_Redis::common()->hGetAll($key);
+            
+            $total = $counter['swim_msg_counter'] - $totalIds;
+
+            if($total >= 0)
+            {
+                Loader_Redis::common()->hIncrBy($key, 'swim_msg_counter', -$totalIds);
+            }
+            else
+            {
+                $total = $counter['swim_msg_counter'] > 0 ? (-$counter['swim_msg_counter']) : $counter['swim_msg_counter'];
+
+                Loader_Redis::common()->hIncrBy($key, 'swim_msg_counter', $total);
+            }
+        }
+
+        return $message;
+	}
+
+    /**
+     * 将消息标记为已读状态
+     *
+     * @param $id  消息id
+     *
+     * @return bool
+     */
+	public function updateMsgStatu($id, $userId, $secret)
+	{
+        $secret2 = Model_Member_Main::factory()->getSecret($userId);
+
+        if($secret != $secret2 OR !$secret2)
+        {
+            $this->setError(Config_Statu_Code::$code['error_secret_key_invalid']);
+
+            return FALSE;
+        }
+
+        try
+        {
+        	$id = new MongoId($id);
+
+        	$macher = array('_id' => $id, 'has_read'=>0);
+
+            $msg = Loader_Mongo::dbmaster()->message()->findOne($macher);
+
+            if(!$msg)
+            {
+                return TRUE;
+            }
+
+        	$update = array('$set' => array('has_read' => 1));
+
+        	Loader_Mongo::dbmaster()->message()->update($macher, $update);
+            
+            $this->freshMsgCounter($userId, $msg['action'], -1);
+
+        	return TRUE;
+        }
+        catch(MongoException $e)
+        {
+        	return FALSE;
+        }
+	}
+
+    private function setError($msg)
+    {
+        $this->errMsg = $msg;
+    }
+
+    public function getError()
+    {
+        return $this->errMsg;
+    }
+}

@@ -1,0 +1,515 @@
+{% import "_macro.html" as macro %}
+<form id="course-form" action="course/form.html" target="#course-list"{% if not check_perm('main-contents', data._id? 'EDIT': 'ADD') %} class="readonly_form"{% endif %}>
+    <div class="box">
+        <div class="box-title">
+            <h3>课程详情{{data._id? ' - ' ~ data._id: ''}}</h3>
+        </div>
+        <div id="course-form-contet" class="box-content">
+            <div>
+                <div id="course-form-main">
+                    <table class="form">
+                        <tr>
+                            <th width="60">标题：</th>
+                            <td colspan="3">
+                                <input type="text" name="title" id="course-title" class="form-control" value="{{data.title}}" placeholder="请输入标题" autofocus="on" autocomplete="off" app-pattern="[^\s]+" app-required="on" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>分类：</th>
+                            <td colspan="3">
+                                <select id="course-category" name="category[]" class="form-control" multiple>
+                                    <option value=""></option>
+                                    {% for cat in cats %} {% set cid = cat._id ~ '' %}
+                                    <option value="{{cid}}::{{cat.name}}" {{belongs[cid] is defined? ' selected': ''}}>{{cat.name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>校区：</th>
+                            <td colspan="3">
+                                <select id="course-region" class="form-control" name="region[]" multiple>
+                                    <option value=""></option>
+                                    {% for region in regions %} {% set rid = region._id ~ '' %}
+                                    <option value="{{rid}}::{{region.name}}" {{slted.region[rid] is defined? ' selected': ''}}>{{region.name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>开放城市：</th>
+                            <td colspan="3">
+                                <select id="course-service-area" name="service_area[]" class="form-control" multiple>
+                                    {% for city in cities %} {% set cid = city._id ~ '' %}
+                                    <option value="{{cid}}::{{city.city}}" {{slted.city[cid] is defined? ' selected': ''}}>{{city.city}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>开放场馆：</th>
+                            <td colspan="3">
+                                <select id="course-natatorium" name="natatorium[]" class="form-control" multiple>
+                                    {% for nata in natatoriums %} {% set nid = nata._id ~ '' %}
+                                    <option value="{{nid}}::{{nata.title}}" {{slted.natatorium[nid] is defined? ' selected': ''}}>{{nata.title}}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>价格：</th>
+                            <td>
+                                <input type="text" name="price" id="course-price" class="form-control" value="{{data.price}}" placeholder="请输入价格" />
+                            </td>
+                            <th width="70">&nbsp; 价格说明：</th>
+                            <td>
+                                <input type="text" name="price_subject" id="course-price-subject" class="form-control" value="{{data.price_subject}}" placeholder="请输入说明,如:￥1000/人/期" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>课时：</th>
+                            <td>
+                                <input type="text" name="training_time" id="course-training-time" class="form-control" value="{{data.training_time}}" placeholder="请输入课时,如:10课时 每课时含1小时培训时间" />
+                            </td>
+                            <th>&nbsp; 类型：</th>
+                            <td>
+                                <input type="text" name="schedule" id="course-schedule" class="form-control" value="{{data.schedule}}" placeholder="周末班、全日班、寒暑班、其他" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>额外：</th>
+                            <td>
+                                <input type="text" name="extra" id="course-extra" class="form-control" value="{{data.extra|join(';')}}" placeholder="多个请以;隔开" />
+                            </td>
+                            <th>&nbsp; 顺序：</th>
+                            <td>
+                                <input type="text" name="priority" id="course-priority" class="form-control" value="{{data.priority}}" placeholder="数值越大越靠前" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>教练：</th>
+                            <td>
+                                <input type="text" name="teacher" id="course-teacher" class="form-control" value="{{data.teacher}}" placeholder="趣游泳精品教练团队" />
+                            </td>
+                            <th width="60">&nbsp; 教练资质：</th>
+                            <td>
+                                <input type="text" name="teacher_extra" id="course-teacher-extra" class="form-control" value="{{data.teacher_extra}}" placeholder="国家教练游泳资格证" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>教练电话：</th>
+                            <td>
+                                <input type="text" name="teacher_phone" id="course-teacher-phone" class="form-control" value="{{data.teacher_phone}}" placeholder="" />
+                            </td>
+                            <th width="60">&nbsp; 评分：</th>
+                            <td>
+                                <input type="text" name="score" id="course-score" class="form-control" value="{{data.score}}" placeholder="5" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>销量：</th>
+                            <td>
+                                <input type="text" name="sale_count" id="course-sale-count" class="form-control" value="{{data.sale_count}}" placeholder="" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="vertical-align:top;">价格组合：</th>
+                            <td colspan="3">
+                                <div id="price-group">
+                                    <div style="display: block;">
+                                        <label style="width: 80px; background-color: #ccc; border-color: #ccc;">校区</label>
+                                        <label style="width: 120px; background-color: #ccc; border-color: #ccc;">种类</label>
+                                        <label style="width: 50px; background-color: #ccc; border-color: #ccc;">规格</label>
+                                        <input type="text" value="价格" disabled="disabled" style="background-color: #ccc; border-color: #ccc;" />
+                                        <input type="text" value="库存" disabled="disabled" style="background-color: #ccc; border-color: #ccc;" />
+                                    </div>
+                                {% for id, val in property[0].values %}
+                                    {% for id2, val2 in property[1].values %}
+                                        {% for id3, val3 in property[2].values %}
+                                        <div name="{{id}}" data-name="price-group">
+                                            <label style="width: 80px;" title="{{val}}">{{val}}</label>
+                                            <label style="width: 120px;" title="{{val2}}">{{val2}}</label>
+                                            <label style="width: 50px;" title="{{val3}}">{{val3}}</label>
+                                            <input type="text" name="pg[{{id}}][{{id2}}][{{id3}}][value]" value="{{data.price_group[id][id2][id3]['value']}}" placeholder="价格" data-name="price" />
+                                            <input type="text" name="pg[{{id}}][{{id2}}][{{id3}}][stock]" value="{{data.price_group[id][id2][id3]['stock']}}" placeholder="库存" data-name="stock" />
+                                        </div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endfor %}
+                                    <div style="padding: 0;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="course-form-aside">
+                    <table class="form">
+                        <tr>
+                            <th width="40">封面：</th>
+                            <td colspan="3">
+                                <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                    <dt style="text-align: center; color: #999;">封面</dt>
+                                    <dd>
+                                        {{ macro.thumb('cover', data.cover) }} {{ macro.upload('course-cover', 'cover', '', false) }}
+                                    </dd>
+                                </dl>
+                                <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                    <dt style="text-align: center; color: #999;">封面(大)</dt>
+                                    <dd>
+                                        {{ macro.thumb('cover_big', data.cover_big) }} {{ macro.upload('course-cover-big', 'cover_big', '', false) }}
+                                    </dd>
+                                </dl>
+                                <dl style="float: left; border: 1px solid #efefef; margin: 5px 10px 5px 0; padding: 5px;">
+                                    <dt style="text-align: center; color: #999;">封面(小)</dt>
+                                    <dd>
+                                        {{ macro.thumb('cover_small', data.cover_small) }} {{ macro.upload('course-cover-small', 'cover_small', '', false) }}
+                                    </dd>
+                                </dl>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>图片：</th>
+                            <td colspan="3">
+                                {% for photo in data.photos %} {{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }} {% endfor %} {{ macro.upload('course-photos', 'photos[]', 'default') }}
+                            </td>
+                        </tr>
+                        <tr id="native-content">
+                            <th style="vertical-align:top">内容：</th>
+                            <td colspan="3" id="course-contents">
+                                {% set contents = data.contents %} {% for content in contents %} {% set idx = loop.index0 %}
+                                <div class="row">
+                                    <div class="col-sm-11">
+                                        <textarea name="content[{{idx}}]" placeholder="请输入内容" class="form-control">{{content.text}}</textarea>
+                                        <div>
+                                            {% for m in content.media %} {{ macro.thumb('contentThumbs['~idx~'][]', m.url, m.w ~ ',' ~ m.h) }} {% endfor %} {{ macro.upload('', 'contentThumbs['~idx~'][]') }}
+                                        </div>
+                                    </div>
+                                    <div class="course-actions col-sm-1">
+                                        <a class="fa fa-times"></a>
+                                        <a class="fa fa-plus"></a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div id="course-form-comments">
+                <div>
+                    <div id="course-comment">
+                        <h3>评论：</h3>
+                        <div id="course-comment-list">
+                            {% include 'course/comment-list.html' %}
+                        </div>
+                        {% if id %} {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="box-footer">
+        <span style="margin-left: 60px; float: left;">
+			<input type="checkbox" id="course-status" name="status" value="1"{{not data or data.statu? ' checked': ''}} />
+			<label for="course-status">启用</label>
+			</span>
+        <input type="hidden" id="course-id" name="id" value="{{id}}" />
+        <button type="submit" id="course-submit" class="btn btn-primary">确定</button>
+        <button type="button" class="btn" app-state="cancel">取消</button>
+        {% if id and check_perm('main-contents', 'EDIT') %}
+        <button type="button" id="course-reply" class="btn btn-secondary">添加评论</button>
+        {% endif %}
+    </div>
+    </div>
+</form>
+<form id="course-form-reply">
+    <div>
+        <div>
+            <h3 id="course-reply-title"></h3>
+            <div id="course-comment-text"></div>
+            <select id="course-comment-user-id" name="userId" class="form-control" data-placeholder="请选择用户">
+                <option></option>
+                {% for user in users %}
+                <option value="{{user._id}}" {{data.user_id==user._id ~ ''? ' selected': ''}}>{{user.nick}} ({{user._id}})</option>
+                {% endfor %}
+            </select>
+            <textarea id="course-comment-content" name="comment" class="form-control" placeholder="评论内容"></textarea>
+            <input id="course-time" name="time" type="text" class="form-control" placeholder="{{''|date('Y-m-d H:i:s')}}" />
+            <input id="course-comment-id" name="commentId" type="hidden" />
+            <div class="shop-rating">
+                <span class="title">评分：</span>
+                <ul class="rating-level" id="stars1">
+                    <li><a class="one-star" star:value="1" href="#">1</a></li>
+                    <li><a class="two-stars" star:value="2" href="#">2</a></li>
+                    <li><a class="three-stars" star:value="3" href="#">3</a></li>
+                    <li><a class="four-stars" star:value="4" href="#">4</a></li>
+                    <li><a class="five-stars" star:value="5" href="#">5</a></li>
+                </ul>
+                <span class="result" id="stars1-tips"></span>
+                <input type="hidden" id="stars1-input" name="score" value="" size="2" />
+            </div>
+            <!-- END 星级评分 -->
+            <button type="submit" id="course-form-reply-submit" class="btn btn-primary">确定</button>
+            <button type="button" id="course-form-reply-cancel" class="btn">取消</button>
+        </div>
+</form>
+<script>
+var Class = {
+	create: function() {
+		return function() { this.initialize.apply(this, arguments); }
+	}
+}
+var Extend = function(destination, source) {
+	for (var property in source) {
+		destination[property] = source[property];
+	}
+}
+function stopDefault( e ) {
+	 if ( e && e.preventDefault ){
+		e.preventDefault();
+	}else{
+		window.event.returnValue = false;
+	}
+	return false;
+} 
+/**
+ * 星星打分组件
+ *
+ * @author	Yunsd
+ * @date		2010-7-5
+ */
+var Stars = Class.create();
+Stars.prototype = {
+	initialize: function(star,options) {
+		this.SetOptions(options); //默认属性
+		var flag = 999; //定义全局指针
+		var isIE = (document.all) ? true : false; //IE?
+		var starlist = document.getElementById(star).getElementsByTagName('a'); //星星列表
+		var input = document.getElementById(this.options.Input) || document.getElementById(star+"-input"); // 输出结果
+		var tips = document.getElementById(this.options.Tips) || document.getElementById(star+"-tips"); // 打印提示
+		var nowClass = " " + this.options.nowClass; // 定义选中星星样式名
+		var tipsTxt = this.options.tipsTxt; // 定义提示文案
+		var len = starlist.length; //星星数量
+		
+
+		for(i=0;i<len;i++){ // 绑定事件 点击 鼠标滑过
+			starlist[i].value = i;
+			starlist[i].onclick = function(e){
+				stopDefault(e);
+				this.className = this.className + nowClass;
+				flag = this.value;
+				input.value = this.getAttribute("star:value");
+				tips.innerHTML = tipsTxt[this.value]
+			}
+			starlist[i].onmouseover = function(){
+				if (flag< 999){
+					var reg = RegExp(nowClass,"g");
+					starlist[flag].className = starlist[flag].className.replace(reg,"")
+				}
+			}
+			starlist[i].onmouseout = function(){
+				if (flag< 999){
+					starlist[flag].className = starlist[flag].className + nowClass;
+				}
+			}
+		};
+		if (isIE){ //FIX IE下样式错误
+			var li = document.getElementById(star).getElementsByTagName('li');
+			for (var i = 0, len = li.length; i < len; i++) {
+				var c = li[i];
+				if (c) {
+					c.className = c.getElementsByTagName('a')[0].className;
+				}
+			}
+		}
+	},
+	//设置默认属性
+	SetOptions: function(options) {
+		this.options = {//默认值
+			Input:			"",//设置触保存分数的INPUT
+			Tips:			"",//设置提示文案容器
+			nowClass:	"current-rating",//选中的样式名
+		};
+		Extend(this.options, options || {});
+	}
+}
+
+/* For TEST */
+function teststars(){
+	alert(document.getElementById("stars1-input").value )
+}
+
+var Stars1 = new Stars("stars1",{nowClass:"current-rating",tipsTxt:["1分-严重不合格","2分-不合格","3分-合格","4分-优秀","5分-完美"]})
+
+$(function() {
+    $('#course-form').on('init', function() {
+        $('#course-service-area, #course-natatorium,#course-comment-user-id, #course-category').chosen();
+        $('#course-region').chosen().change(function() {
+            var pg   = $('#price-group');
+            var vals = $(this).val();
+            pg.children('div[name]').hide();
+            pg.find('input').prop('disabled', true);
+            if(vals && vals.length > 0) {
+                $.each(vals, function() {
+                    var region = (this + '').split('::');
+                    $('#course-form').find('div[name="' + region[0] + '"]').show().find('input').prop('disabled', false);
+                });
+            }
+        }).trigger('change');
+        var updateContentIdx = function() {
+            $('#course-contents>div.row').each(function(idx) {
+                var row = $(this);
+                row.find('textarea').attr('name', 'content[' + idx + ']');
+                row.find('input[data-name="name"]').attr('name', 'contentThumbs[' + idx + '][]');
+                row.find('input[data-name="size"]').attr('name', 'size_of_contentThumbs[' + idx + '][]');
+                row.find('a.up-btn').attr('app-upload-name', 'contentThumb[' + idx + '][]');
+            });
+        }
+
+        $('#course-contents').on('click', 'a.fa-times', function() {
+            var row = $(this).closest('div.row');
+            if ($('#course-contents>div.row').length > 1) {
+                row.slideUp(100, function() {
+                    $(this).remove();
+                    updateContentIdx();
+                });
+            } else {
+                row.find('div.thumb').remove();
+                row.find('textarea').val('');
+                row.find('textarea').focus();
+                updateContentIdx();
+            }
+        }).on('click', 'a.fa-plus', function() {
+            var row = $(this).closest('div.row');
+            var clone = row.clone();
+            clone.find('div.thumb').remove();
+            clone.find('textarea').val('');
+            row.after(clone);
+            updateContentIdx();
+            clone.find('textarea').focus();
+        });
+
+        $(this).on('click', '#course-reply, .fa-reply', function() {
+            var title = '回复评论';
+            var text, type, id, url;
+            var time;
+            if (this.id == 'course-reply') {
+                title = '回复主题';
+                text = $('#course-title').val();
+                id = '';
+                url = 'course/comment.html';
+                time = $('#course-date').val();
+                $('#course-form-reply').removeClass('reply');
+            } else {
+                var t = $(this).prev('span');
+                time = $(this).attr('data-time');
+                text = t.prev('label').text() + ': ' + t.text();
+                id = $(this).parent().attr('comment-id');
+                url = 'course/comment-reply.html';
+                $('#course-form-reply').addClass('reply');
+            }
+            $('#course-form-reply').attr('action', url);
+            $('#course-comment-id').val(id);
+            $('#course-reply-title').html(title);
+            $('#course-comment-text').text(text);
+            $('#course-form-reply').css({
+                'transform': 'translate(0, 0)',
+                'visibility': 'visible'
+            });
+        });
+
+        $('#course-comment-list').on('click', 'a.fa-times', function() {
+            var id = $(this).parent().attr('comment-id');
+            $('#course-comment-list>div.active').removeClass('active');
+            $(this).addClass('active');
+            if (confirm('确定要删除些评论吗？')) {
+                App.ajax({
+                    url: 'course/comment-delete.html',
+                    data: {
+                        'commentId': id
+                    },
+                    type: 'post',
+                    dataType: 'html',
+                    success: function(response) {
+                        $('#course-comment-list').html(response);
+                    }
+                });
+            }
+        });
+
+        $('#course-form-reply').on('click', function(event) {
+            var targetId = event.target.id;
+            if (targetId == 'course-form-reply' || targetId == 'course-form-reply-cancel') {
+                $('#course-form-reply').css({
+                    'transform': 'translate(-100%, -100%)',
+                    'visibility': 'hidden'
+                });
+            }
+        }).on('submit', function() {
+            this.comment.value = $.trim(this.comment.value);
+            if (!this.userId.value) {
+                App.alert('请选择评论用户。1');
+            } else if (this.comment.value.length == 0) {
+                App.alert('请输入评论内容。', function() {
+                    $('#course-comment-content').focus();
+                });
+            } else if (this.score.value.length == 0) {
+                App.alert('请输入评分。', function() {
+                    $('#course-comment-score').focus();
+                });
+            } else {
+                var courseId = $('#course-id').val();
+                var data = $(this).serialize() + '&courseId=' + encodeURIComponent(courseId);
+                App.ajax({
+                    url: 'course/comment.html',
+                    data: data,
+                    dataType: 'html',
+                    type: 'post',
+                    success: function(response, status, xhr) {
+                        $('#course-comment-list').html(response);
+                        $('#course-comment-content').val('');
+                        $('#stars1-tips').text('');
+                        $('a').removeClass('current-rating');
+                        $('#course-form-reply').css({
+                            'transform': 'translate(-100%, -100%)',
+                            'visibility': 'hidden'
+                        });
+                    }
+                });
+            }
+            return false;
+        });
+        $('#course-form-contet').mousewheelStopPropagation();
+
+        $(this).on('submit', function() {
+            $('#price-group div[data-name="price-group"]').each(function() {
+                var p = $(this).find('input[data-name="price"]');
+                var s = $(this).find('input[data-name="stock"]');
+                var price = $.trim(p.val());
+                var stock = $.trim(s.val());
+                if(price == '' && stock == '') {
+                    p.prop('disabled', true);
+                    s.prop('disabled', true);
+                } else {
+                    console.log(p.attr('id'));
+                    p.val(price * 1 || 0);
+                    s.val(stock * 1 || 0);
+                }
+            });
+            if ($('a.up-loading', this).length > 0) {
+                App.alert('图片正在上传，请等待图片上传完成。');
+            } else if (App.checkValidity(this)) {
+                App.ajax({
+                    form: this,
+                    success: function() {
+                        App.Box.close();
+                    }
+                });
+            }
+            return false;
+        });
+    }).on('close', function(event, box, state) {
+
+    });
+});
+</script>

@@ -1,0 +1,91 @@
+<form id="push-form" action="push.html" data-type="json" style="width: 500px;">
+	<div class="box">
+		<div class="box-title">
+			<h3>消息推送 {{id}}</h3>
+		</div>
+		<div id="push-form-contet" class="box-content">
+			<div id="push-form-main">
+				<table class="form">
+					<tr>
+						<th width="70">标题:</th>
+						<td><input type="text" name="title" value="{{text}}" style="width: 360px;" autofocus="on" /></td>
+					</td>
+					<tr>
+						<th valign="top">内容:</th>
+                        <td><textarea id="push-text" name="text" style="width: 360px; height: 100px;">{{text}}</textarea></td>
+					</td>
+				</tr>
+				<table class="form">
+					<tr>
+						<th width="70">推送时间:</th>
+						<td>
+							<select name="year">
+							{% for i in range(date.Y - 1, date.Y + 4) %}
+								<option value="{{i}}"{{i==date.Y? ' selected': ''}}>{{i}}</option>
+							{% endfor %}
+							</select>年
+							<select name="month">
+							{% for i in range(1, 12) %}
+								<option value="{{i}}"{{i==date.m? ' selected': ''}}>{{i}}</option>
+							{% endfor %}
+							</select>月
+							<select name="date">
+							{% for i in range(1, 31) %}
+								<option value="{{i}}"{{i==date.d? ' selected': ''}}>{{i}}</option>
+							{% endfor %}
+							</select>日
+							&nbsp;
+							<select name="hour">
+							{% for i in range(0, 23) %}
+								<option value="{{i}}"{{i==date.h? ' selected': ''}}>{{i}}</option>
+							{% endfor %}
+							</select>时
+							<select name="minute">
+							{% for i in range(0, 5) %}
+								<option value="{{i * 10}}"{{i==date.i? ' selected': ''}}>{{i*10}}</option>
+							{% endfor %}
+							</select>分
+						</td>
+					</tr>
+					<tr>
+						<th>立即推送:</th>
+						<td>
+							<input type="checkbox" id="push-now" name="now" value="1" style="float: left;" />
+							<label for="push-now">&nbsp; 立即推送</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{id}}" />
+			<input type="hidden" name="mod" value="{{mod}}" />
+			<button type="submit" class="btn btn-primary">推送</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$('#push-form').on('init', function() {
+	$('#push-now', this).on('click', function() {
+		console.log('click');
+		$('#push-form select').attr('disabled', this.checked);
+	});
+	$('#push-form').on('submit', function() {
+		var now = $('#push-now', this).prop('checked');
+		App.ajax({
+			form: this,
+			success: function(rs) {
+				App.Box.close();
+				if(rs.result) {
+					App.popover(now? 
+						'消息已发送。':
+						'消息即将发送。'
+					);
+				}
+			}
+		});
+		return false;
+	});
+});
+</script>

@@ -1,0 +1,216 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+define('PERM_READ',              1);
+define('PERM_ADD',               2);
+define('PERM_EDIT',              4);
+define('PERM_DELETE',            8);
+define('PERM_MANAGE',            16);
+define('PERM_COMPLETE',          32);
+define('PERM_REFUND',            64);
+define('PERM_CONFIRM',           128);
+define('PERM_PUSH',              256);
+define('PERM_UPGRADE',           512);
+define('PERM_CLOCK',             1024);
+define('PERM_ALLOCATE_TEACHER',  2048);
+define('PERM_ALLOCATE_YONGGUAN', 4096);
+
+class ModelPermissionMain
+{
+	const READ 		= PERM_READ;
+	const ADD 		= PERM_ADD;
+	const EDIT 		= PERM_EDIT;
+    const DELETE    = PERM_DELETE;
+    const MANAGE    = PERM_MANAGE;
+    const COMPLETE  = PERM_COMPLETE;
+    const REFUND    = PERM_REFUND;
+    const CONFIRM   = PERM_CONFIRM;
+    const PUSH      = PERM_PUSH;
+	const UPGRADE 	= PERM_UPGRADE;
+    const CLOCK     = PERM_CLOCK;
+    const ALLOCATE_TEACHER  = PERM_ALLOCATE_TEACHER;
+    const ALLOCATE_YONGGUAN = PERM_ALLOCATE_YONGGUAN;
+
+	static protected $PermissionDict = array(
+		self::READ 		=> '读取',
+		self::ADD 		=> '添加',
+		self::EDIT 		=> '修改',
+        self::DELETE    => '删除',
+        self::MANAGE    => '管理',
+        self::COMPLETE  => '完成',
+        self::REFUND    => '退款',
+        self::CONFIRM   => '核消',
+        self::PUSH      => '推送',
+		self::UPGRADE 	=> '升级包',
+        self::CLOCK     => '打卡',
+        self::ALLOCATE_TEACHER  => '指派教练',
+        self::ALLOCATE_YONGGUAN => '指派场馆',
+	);
+
+    static protected $Settings = array(
+    	'main-contents' => array(
+    		'text' 	 => '运营内容',
+    		'values' => array(self::READ, self::ADD, self::EDIT, self::PUSH, self::DELETE, self::UPGRADE)
+    	),
+    	'orders' 	    => array(
+    		'text' 	 => '订单管理',
+    		'values' => array(self::READ, self::EDIT, self::CONFIRM, self::COMPLETE, self::REFUND, self::ADD, self::CLOCK, self::ALLOCATE_TEACHER, self::ALLOCATE_YONGGUAN)
+    	),
+        'finance' => array(
+            'text'   => '打款管理',
+            'values' => array(self::READ, self::ADD, self::EDIT)
+        ),
+        'members' => array(
+            'text'   => '会员管理',
+            'values' => array(self::READ, self::ADD, self::EDIT, self::DELETE)
+        ),
+    	'users' 		=> array(
+    		'text' 	 => '用户管理',
+    		'values' => array(self::READ, self::ADD, self::EDIT, self::DELETE)
+    	),
+        'groups'        => array(
+            'text'   => '用户组管理',
+            'values' => array(self::READ, self::ADD, self::EDIT, self::DELETE)
+        )
+    );
+
+    private $fields = array(
+    	'gid' 		=> '',
+    	'privilege'	=> array()
+    );
+
+    private $allowed = array(
+        'name', 
+        'description',
+        'privilege',
+        'statu'
+    );
+
+    public function collection() {
+        return SwimAdmin::db('group');
+    }
+
+    public function insert($data) {
+        $collection = $this->collection();
+        $data = Helper::allowed($data, $this->allowed);
+        $data['created_by'] = $_SESSION[S_USER];
+        $data['create_time'] = time();
+        $result = $collection->insert($data);
+        return $result;
+    }
+
+    public function update($data, $id) {
+        $collection = $this->collection();
+        $id = new MongoId($id);
+        $data = Helper::allowed($data, $this->allowed);
+        $data['modified_by'] = $_SESSION[S_USER];
+        $data['modified_on'] = time();
+        $result = $collection->update(array('_id' => $id), array('$set' => $data));
+        return $result;
+    }
+
+    public function deleteById($ids) {
+        $ids = (array)$ids;
+        for($idx=0, $l=sizeof($ids); $idx<$l; $idx++) {
+            $ids[$idx] = new MongoId($ids[$idx]);
+        }
+        $collection = $this->collection();
+        $result = $collection->remove(array(
+            '_id' => array('$in' => $ids)
+        ));
+        return $result;
+    }
+
+    public function getPermissionSettings() {
+        return self::$Settings;
+    }
+
+    public function getPermissionDict() {
+        return self::$PermissionDict;
+    }
+
+    public function getPermission($user) {
+    	$user       = SwimAdmin::model('user.main')->getUserByUsername($user);
+        $privileges = null;
+        if($user && $user['active']) {
+            if(isset($user['group'])) {
+                if($user['group'] == -1) {
+                    // 默认管理员帐号, 取全部权限
+                    foreach(self::$Settings as $mod => $item) {
+                        $value = 0;
+                        foreach($item['values'] as $val) {
+                            $value += intval($val);
+                        }
+                        $privileges[$mod] = $value;
+                    }
+                } else if(!empty($user['privilege'])) {
+                    $privileges = $user['privilege'];
+                }
+            }
+        }
+
+    	return $privileges;
+    }
+
+    public function getPermissionByGids($gids) {
+        $privileges = null;
+        if($gids) {
+            $privileges = array();
+            $collection = $this->collection();
+            $gids       = (array)$gids;
+            $groups     = $collection->find(array(
+                '_id' => array('$in' => $gids)
+            ));
+            foreach($groups as $group) {
+                if($group['statu'] == 1) {
+                    foreach($group['privilege'] as $mod => $val) {
+                        if(!isset($privileges[$mod])) {
+                            $privileges[$mod] = 0;
+                        }
+                        $privileges[$mod] = $privileges[$mod] | $val;
+                    }
+                }
+            }
+        }
+        return $privileges;
+    }
+
+    public function getGroups() {
+        $filters = $_SESSION[S_USER]=='admin'? array() : array('created_by'=>$_SESSION[S_USER]);
+        $collection = $this->collection();
+        $result     = $collection->find($filters)->sort(array(
+            'statu' => -1,
+            'name'  => 1,
+        ));
+        $groups     = array();
+        foreach($result as $group) {
+            $gid          = (string)$group['_id'];
+            $groups[$gid] = $group;
+            unset($groups[$gid]['_id']);
+        }
+        return $groups;
+    }
+
+
+    public function getOneById($id) {
+        $collection = $this->collection();
+        $row = $collection->findOne(array('_id' => new MongoId($id)));
+        return $row;
+    }
+
+    public function pagination($url = '', $pnValue = null) {
+        $params  = Helper::parseQueryString($url? $url: $_SERVER['REQUEST_URI']);
+        $pn      = Helper::popValue($params, 'pn', 1);
+        $sort    = Helper::popValue($params, 'sort', 'name');
+        $order   = Helper::popValue($params, 'order', 1);
+        $filters = array();
+        $data = SwimAdmin::pagination(
+            $url,
+            $this->collection(),
+            is_null($pnValue)? $pn: $pnValue,
+            $filters,
+            array($sort => intval($order) > 0? 1: -1)
+        );
+        return $data;
+    }
+
+}

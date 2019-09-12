@@ -1,0 +1,111 @@
+{% set _Title = '游泳馆' %}
+{% extends '_base.html' %}
+
+{% block css %}
+<style type="text/css">
+#upfile { visibility: hidden; }
+#upfile-btn { min-width: 200px; max-width: 300px; white-space: nowrap; }
+#upfile-btn.inactive { color: #999; }
+#upfile-frame { position: absolute; top: 0; right: 0; width: 200px; height: 160px; visibility: hidden; }
+#natatorium-import-desc-title { color: #666; }
+#natatorium-import-desc { padding-left: 10px; margin-top: 10px; line-height: 20px; color: #666; }
+</style>
+{% endblock %}
+
+{% block main %}
+	<h1>游泳馆 <small>附近场所</small></h1>
+	{% include 'lbs/natatorium-nav.html' %}
+	<div id="main-content">
+		<div class="breadcrumbs">
+			<ul>
+				<li>
+					<a href="index.html">首页</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<a href="lbs/natatorium.html">游泳馆</a>
+					<i class="fa fa-angle-right"></i>
+				</li>
+				<li>
+					<span>导入游泳馆数据</span>
+				</li>
+			</ul>
+			<div class="close-bread">
+				<a>
+					<i class="fa fa-times"></i>
+				</a>
+			</div>
+		</div>
+		<div class="box box-color box-bordered">
+			<div class="box-title">
+				<h3>
+					<i class="fa fa-download"></i>
+					导入游泳馆数据
+				</h3>
+			</div>
+			<div class="box-content relative">
+				<div class="box-pd">
+					<p>请选择要导入的文件：</p>
+					<p>&nbsp;</p>
+					<form id="up-form" method="POST" action="lbs/natatorium/import.html" target="up" enctype="multipart/form-data">
+						<button type="button" id="upfile-btn" class="btn inactive">选择文件...</button>
+						<button type="button" id="upfile-submit" class="btn btn-success">开始导入</button>
+						<input type="file" id="upfile" name="upfile" />
+					</form>
+					<p id="natatorium-import-desc-title">文件格式：</p>
+					<ul id="natatorium-import-desc">
+						<li>每行一个游泳馆信息</li>
+						<li>游泳馆信息为“名称”,"经度","纬度","电话","地区","地址","营业时间","价格"，并以“,"分隔</li>
+						<li>例如：</li>
+						<li>天河游泳馆,180.2341,198.4531,86999090,天河区,天河二路B座18楼,10:00-21:00,10元起</li>
+						<li>清水湾游泳馆,190.7890,218.1889,,天河区,清水湾大道188号假日广场C座27楼</li>
+					</ul>
+				</div>
+				<iframe name="up" id="upfile-frame"></iframe>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(function() {
+	$('#upfile').on('change', function() {
+		var val = this.value;
+		if(val) {
+			$('#upfile-btn').text(val).removeClass('inactive');
+		} else {
+			$('#upfile-btn').text('选择文件...').addClass('inactive');
+		}
+	});
+	$('#upfile-btn').on('click', function() {
+		$('#upfile').trigger('click');
+	});
+	$('#upfile-submit').on('click', function() {
+		if($('#upfile-btn').hasClass('inactive')) {
+			App.alert('请选择文件。');
+		} else {
+			$('#up-form').submit();
+		}
+	});
+	$('#upfile-frame').on('load', function() {
+		var content = $(this.contentWindow.document.body).text();
+		if(content != '') {
+			var rs;
+			try {
+				rs = JSON.parse(content);
+			} catch(e) {
+				rs = {result: false}
+			}
+			if(!rs.result) {
+				App.alert(rs.error || '发生了一个未知的错误。');
+			} else {
+				App.alert('成功导入' + rs.num + '条数据。');
+				$('#up-form').get(0).reset();
+				$('#upfile-btn').text('选择文件...').addClass('inactive');
+			}
+		}
+	});
+});
+</script>
+{% endblock %}

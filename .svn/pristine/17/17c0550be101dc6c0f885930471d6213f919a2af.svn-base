@@ -1,0 +1,131 @@
+{% import "_macro.html" as macro %}
+<form id="category-form" action="course/category/form.html" target="#category-list"{{check_perm('main-contents', cat._id? 'EDIT': 'ADD')? '': ' class="readonly_form"'}}>
+	<div class="box">
+		<div class="box-title">
+			<h3>课程分类{{cat._id? ' - ' ~ cat._id:''}}</h3>
+		</div>
+		<div class="box-content">
+			<div style="float: left; width: 500px;">
+				<table class="form">
+					<tr>
+						<th width="60">名称：</th>
+						<td colspan="3">
+							<input type="text" name="name" id="category-name" class="form-control" value="{{cat.name}}" placeholder="请输入分类名称" autofocus="on" app-required="on" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>名字标题：</th>
+						<td colspan="3">
+							<input type="text" name="subtitle" id="category-subtitle" class="form-control" value="{{cat.subtitle}}" placeholder="请输入子名称" autocomplete="off" />
+						</td>
+					</tr>
+					<tr>
+						<th>封面：</th>
+						<td colspan="3">
+							{{ macro.thumb('cover', cat.cover) }}
+							{{ macro.upload('category-cover', 'cover', '', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>封面(大)：</th>
+						<td>
+							{{ macro.thumb('cover_big', cat.cover_big) }}
+							{{ macro.upload('category-cover-big', 'cover_big', '', false) }}
+						</td>
+						<th>封面(小)：</th>
+						<td>
+							{{ macro.thumb('cover_small', cat.cover_small) }}
+							{{ macro.upload('category-cover-small', 'cover_small', '', false) }}
+						</td>
+					</tr>
+					<tr>
+						<th>查看方式：</th>
+						<td colspan="3">
+							<select name="list_type" class="form-control">
+								<option value="1"{{cat.list_type==1? ' selected': ''}}>列表</option>
+								<option value="2"{{cat.list_type==2? ' selected': ''}}>图标</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>城市：</th>
+						<td colspan="3">
+							<select name="city" class="form-control" onchange="$('#category-city-name').val(this.options[this.selectedIndex].text);">
+								<option value="">请选择城市</option>
+								{% for city in cities %}
+								<option value="{{city._id}}"{{city._id==cat.city.id? ' selected': ''}}>{{city.city}}</option>
+								{% endfor %}
+							</select>
+							<input type="hidden" name="city_name" id="category-city-name" value="{{cat.city.name}}" />
+						</td>
+					</tr>
+					<tr>
+						<th>价格：</th>
+						<td><input type="text" name="price" id="category-price" value="{{cat.price}}" class="form-control" placeholder="最低价格,如:453.0" autocomplete="off" /></td>
+						<th width="70">&nbsp; 次序：</th>
+						<td><input type="text" name="priority" id="category-priority" value="{{cat.priority}}" class="form-control" placeholder="数值越大越靠前" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<th>排序：</th>
+						<td>
+							<input type="text" name="sort" id="category-sort" value="{{cat.sort}}" class="form-control" placeholder="请输入排序字段,如:create_time" />
+						</td>
+						<th>&nbsp; 排序方式：</th>
+						<td>
+							<input type="radio" name="order" id="category-order-2" value="-1"{{not cat or cat.order == -1? ' checked': ''}} />
+							<label for="category-order-2">倒序</label>
+							&nbsp;
+							<input type="radio" name="order" id="category-order-1" value="1"{{cat and cat.order != -1? ' checked': ''}} />
+							<label for="category-order-1">顺序</label>
+						</td>
+					</tr>
+					<tr>
+						<th>状态：</th>
+						<td>
+							<input type="checkbox" name="status" id="category-status" value="1"{{not cat._id or cat.status? ' checked': ''}} />
+							<label for="category-status">启用</label>
+						</td>
+						<th>&nbsp; 首页展示：</th>
+						<td>
+							<input type="checkbox" name="promotion" id="category-promotion" value="1"{{not cat._id or cat.promotion? ' checked': ''}} />
+							<label for="category-promotion">展示</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div style="float: left; width: 180px; padding-top: 10px;">
+				<p>图片：</p>
+				<div>
+					{% for photo in cat.photos %}
+					{{ macro.thumb('photos[]', photo.url, photo.w ~ ',' ~ photo.h) }}
+					{% endfor %}
+					{{ macro.upload('cat-photos', 'photos[]', 'default') }}
+				</div>
+			</div>
+		</div>
+		<div class="box-footer">
+			<input type="hidden" name="id" value="{{cat._id}}" />
+			<button type="submit" id="category-submit" class="btn btn-primary">确定</button>
+			<button type="button" class="btn" app-state="cancel">取消</button>
+		</div>
+	</div>
+</form>
+<script>
+$(function() {
+	$('#category-form').on('init', function() {
+		$(this).on('submit', function() {
+			if(App.checkValidity(this)) {
+				App.ajax({
+					form: this,
+					success: function() {
+						App.Box.close();
+					}
+				});
+			}
+			return false;
+		});
+	}).on('close', function(event, box, state) {
+		
+	});
+});
+</script>

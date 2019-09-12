@@ -1,0 +1,181 @@
+<?php !defined('YOUNG_TEAM') AND exit('Access Denied!');
+
+define('AdminTemplatePath', DOC_ROOT . '/view');
+
+class Config
+{
+    public static $admin = array(
+		// 网站标题
+		'title' => '趣游泳',
+		'listRowsNum' => 30,
+
+		// Slim 配置
+		'slim' => array(
+			// 是否打开调试
+			'debug' 			=> false,
+			// 模式设置：
+			// 开发模式： “development”
+			// 测试模式： “test”
+			// 生产环境： “production”
+			'mode' 				=> 'production',
+			// 模板路径
+			'templates.path'	=> AdminTemplatePath
+		),
+
+		// SESSION
+		'sessionSecret' => '^_^ SwIm',
+
+		// 静态资源版本号，CSS、JS等
+		'resVersion' => '20160402-1',
+		// 第三方静态资源版本号，jQuery, awesome等
+		'res3rdVersion' => '20151205-1'
+	);
+	// -- 后台配置结束
+
+	public static $imageSize = array(
+		'default' 	=> null,			// null 表示不处理
+		'banner'	=> null,
+		'icon'		=> '152x152',
+		'goods-icon'=> null,			// 牛装备封面图标
+		'tweet' 	=> array('mid' => '160x160', 'big' => null),
+		'avatar'	=> array('small' => '40x40', 'mid' => '160x160', 'big' => '400x400')
+	);
+
+	public static $app = array(
+        //通信密钥
+	    'app_key' => '8ac5a142126a2d413fc57f540091bd3d'
+	);
+    
+    public static $system = array(
+		'copyright' => ' © 1999-2014'
+	);
+
+    //推送服务器配置
+	public static $pusher = array(
+        'host' => '127.0.0.1',
+        'port' => 7777,
+        'secret' => 'e820c512c1a2f9aefbc98d76757dd9e2',
+        
+        'umeng_android_app_key' => '54a9ea19fd98c5c9c6000a1b',
+        'umeng_android_app_master_secret' => 'euc4f3jc7xv5n8yiiudykzqofscpuup1',
+        'umeng_ios_app_key' => '55c9c596e0f55a5f1d005327',
+        'umeng_ios_app_master_secret' => 'rxjvjkh3xlulafh9rwvthwlnviyg0vif'
+	);
+
+	public static $payment = array(
+	    'weixin_app_id'          => 'wxd32d25b2a43c0f93',
+	    'weixin_app_secret'      => '01c6d59a3f9024db6336662ac95c8e74',
+	    'weixin_app_key'         => 'f9c62cccbdc99de463304d89358788f9',
+	    'weixin_mch_id'          => '1312998901',
+	    'weixin_sslcert_path'    => '/usr/local/paykey/wxpay/apiclient_cert.pem',
+	    'weixin_sslkey_path'     => '/usr/local/paykey/wxpay/apiclient_key.pem',
+	    'weixin_curl_proxy_host' => '0.0.0.0',
+	    'weixin_curl_proxy_port' => 0,
+	    'weixin_report_level'    => 1,
+	    'weixin_notify_url'      => 'https://developer.7swim.com:8787/swim/pay/weixin',
+
+	    'alipay_partner'           => '2088021002933404',
+	    'alipay_seller_id'         => 'tbkpay@7swim.com',
+	    'alipay_notify_url'        => 'https://developer.7swim.com:8787/swim/pay/alipay',
+	    'alipay_input_charset'     => 'utf-8',
+	    'alipay_payment_type'      => "1",
+	    'alipay_sign_type'         => 'RSA',
+	    'alipay_private_key_path'  => '/usr/local/paykey/alipay/rsa_private_key.pem',
+	    'alipay_public_key_path'   => '/usr/local/paykey/alipay/rsa_public_key.pem',
+	    'alipay_cacert_path'       => '/usr/local/paykey/alipay/cacert.pem',
+	    'alipay_transport'         => 'https',
+	    'alipay_refund_notify_url' => 'https://developer.7swim.com:8787/swim/pay/refund/alipay',
+
+	    'pay_platform' => array('weixin', 'alipay')
+	);
+    
+	public static $storage = array(
+		'APIKey' => 'aKeWScZ5JsqDW3ziM9ZCFn1zktI=',
+		'image'  => array(
+			'host' 		=> 'http://funswim.b0.upaiyun.com',
+			'bucket' 	=> 'funswim',
+			'user' 		=> 'helloswim',
+			'pass' 		=> 'helloswim'
+		),
+		'media'  => array( // http://funswim-media.b0.upaiyun.com/video-20150326-95538-PJovUR0WQnyGO0fXJKP9hC.mp4
+			'host' 		=> 'http://funswim-media.b0.upaiyun.com',
+			'bucket' 	=> 'funswim-media',
+			'user' 		=> 'helloswim',
+			'pass' 		=> 'helloswim'
+		),
+		'file'   => array(
+			'host' 		=> 'http://funswim-media.b0.upaiyun.com',
+			'bucket' 	=> 'funswim-media',
+			'user' 		=> 'helloswim',
+			'pass' 		=> 'helloswim'
+		),
+        'redis'  => array(
+            'common' => array(array('localhost', '6379')),
+            'member' => array(array('localhost', '6379'))
+        ),
+
+        'mongo'  => array(
+            'master' => array('localhost', '27017'),
+            'slave'  => array('localhost', '27018')
+        )
+	); 
+
+	public static $db = array(
+		'allowed' => array(
+			'admin',
+			'member',
+			'member_tags',
+			'member_recommand',
+			'location_teacher',
+			'member_ident',
+
+			'natatorium',
+			'natatorium_score',
+
+			'technical',
+			'technical_video',
+			'technical_category',
+
+			'news',
+			'news_category',
+
+			'goods',
+			'goods_category',
+
+			'topic',
+
+			'report',
+
+			'group',
+			'user',
+
+			'setting',
+
+			'feedback',
+
+			'message',
+            'msg_counter',
+
+			'tweet',
+			'tweet_group',
+			'tweet_comment',
+			'tweet_recommand',
+
+			'course_order',
+			'service_area',
+			'course',
+			'course_order',
+			'course_comment',
+			'course_category',
+			'course_region',
+
+			'device_tokens',
+
+			'interview',
+			'interview_category',
+
+			'match',
+			'match_category',
+		)
+	);
+}
